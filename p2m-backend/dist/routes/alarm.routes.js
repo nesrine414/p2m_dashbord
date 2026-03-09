@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const alarmController_1 = require("../controllers/alarmController");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.get('/', alarmController_1.getAlarms);
+router.get('/:id', alarmController_1.getAlarmById);
+router.post('/', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.createAlarm);
+router.patch('/:id/acknowledge', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.acknowledgeAlarm);
+router.patch('/:id/resolve', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.resolveAlarm);
+exports.default = router;

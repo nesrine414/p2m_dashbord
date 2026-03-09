@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Backend Terminal Proof</title>
+  <style>
+    body { margin: 0; background: #0b0f17; color: #d5e3ff; font-family: Consolas, 'Courier New', monospace; }
+    .wrap { padding: 24px; }
+    .ok { color: #7ee7a7; }
+    .warn { color: #ffd089; }
+    pre {
+      background: #111827;
+      border: 1px solid #2f3b53;
+      border-radius: 12px;
+      padding: 16px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Backend Startup Log (Captured)</h2>
+<pre>> nqms-backend@1.0.0 dev
+> nodemon --watch src --ext ts --exec ts-node src/server.ts
+
+<span class="ok">?? Server started on http://localhost:5000</span>
+<span class="ok">? CORS enabled for: http://localhost:3000</span>
+<span class="ok">?? WebSocket ready on ws://localhost:5000</span>
+
+GET / => {"message":"?? NQMS Backend API - Running"}
+GET /health => {"status":"OK","databaseConnected":false}
+
+<span class="warn">?? PostgreSQL not connected yet (degraded mode)</span></pre>
+  </div>
+</body>
+</html>

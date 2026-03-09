@@ -1,11 +1,15 @@
 body {
   margin: 0;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Sora', 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #121212;
+  background:
+    radial-gradient(circle at 12% -12%, rgba(106, 217, 255, 0.26), transparent 38%),
+    radial-gradient(circle at 88% 12%, rgba(243, 169, 201, 0.22), transparent 34%),
+    radial-gradient(circle at 52% 130%, rgba(132, 216, 163, 0.2), transparent 45%),
+    #0e1324;
+  color: #eef4ff;
+  min-height: 100vh;
 }
 
 code {
@@ -15,4 +19,63 @@ code {
 
 * {
   box-sizing: border-box;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #7cdfff;
+  color: #121724;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #182036;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #5f7399;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6f87b2;
+}
+
+.MuiPaper-root,
+.MuiCard-root {
+  transition: transform 220ms ease, box-shadow 240ms ease, border-color 220ms ease;
+  animation: soft-rise 440ms ease both;
+}
+
+.MuiPaper-root:hover,
+.MuiCard-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 38px rgba(6, 12, 26, 0.3);
+  border-color: rgba(172, 193, 237, 0.42);
+}
+
+@keyframes soft-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .MuiPaper-root,
+  .MuiCard-root {
+    animation: none;
+    transition: none;
+  }
 }

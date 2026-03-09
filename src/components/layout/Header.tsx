@@ -23,9 +23,10 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
       sx={{
         width: { md: `calc(100% - ${drawerWidth}px)` },
         ml: { md: `${drawerWidth}px` },
-        backgroundColor: '#171d28',
+        backgroundColor: 'rgba(24, 33, 53, 0.56)',
         boxShadow: 'none',
-        borderBottom: '1px solid #2b3445',
+        borderBottom: '1px solid rgba(175, 194, 232, 0.22)',
+        backdropFilter: 'blur(14px)',
       }}
     >
       <Toolbar sx={{ gap: 1.2 }}>
@@ -40,18 +41,18 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
           sx={{
             width: { xs: '100%', sm: 360, md: 420 },
             maxWidth: { xs: '100%', md: 460 },
-            backgroundColor: '#111823',
+            backgroundColor: 'rgba(40, 54, 82, 0.72)',
             borderRadius: 2,
             '& .MuiOutlinedInput-root': {
               color: 'white',
               '& fieldset': {
-                borderColor: '#304056',
+                borderColor: 'rgba(175, 194, 232, 0.28)',
               },
               '&:hover fieldset': {
-                borderColor: '#3f5572',
+                borderColor: 'rgba(183, 206, 244, 0.45)',
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#5f9eff',
+                borderColor: '#82d7ff',
               },
             },
           }}
@@ -74,14 +75,15 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
 
         <Box
           sx={{
-            backgroundColor: '#2f8f56',
-            color: 'white',
+            background: 'linear-gradient(120deg, rgba(136, 198, 168, 0.92), rgba(106, 168, 132, 0.92))',
+            color: '#10271d',
             px: 1.8,
             py: 0.5,
             borderRadius: 4,
             mr: 1,
             fontSize: 12,
             fontWeight: 700,
+            boxShadow: '0 8px 18px rgba(104, 168, 130, 0.35)',
             display: { xs: 'none', sm: 'block' },
           }}
         >
@@ -89,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
         </Box>
 
         <IconButton sx={{ p: 0 }}>
-          <Avatar sx={{ width: 34, height: 34, backgroundColor: '#3b82f6', fontSize: 14 }}>A</Avatar>
+          <Avatar sx={{ width: 34, height: 34, backgroundColor: '#7ea5e8', fontSize: 14 }}>A</Avatar>
         </IconButton>
       </Toolbar>
     </AppBar>

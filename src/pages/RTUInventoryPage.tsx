@@ -26,7 +26,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import { RTUStatus } from '../types';
 import { rtuInventoryRecords } from '../data/mockData';
 
-const PIE_COLORS = ['#4caf50', '#ff9800', '#f44336'];
+const PIE_COLORS = ['#4caf50', '#ff9800', '#ef4444', '#b43bf2'];
 
 const getTemperatureColor = (temperature: number): 'success' | 'warning' | 'error' => {
   if (temperature >= 40) {
@@ -65,6 +65,7 @@ const RTUInventoryPage: React.FC = () => {
     const online = rtuInventoryRecords.filter((item) => item.status === RTUStatus.ONLINE).length;
     const warning = rtuInventoryRecords.filter((item) => item.status === RTUStatus.WARNING).length;
     const offline = rtuInventoryRecords.filter((item) => item.status === RTUStatus.OFFLINE).length;
+    const unreachable = rtuInventoryRecords.filter((item) => item.status === RTUStatus.UNREACHABLE).length;
     const avgTemp =
       rtuInventoryRecords.reduce((acc, item) => acc + item.temperature, 0) / rtuInventoryRecords.length;
 
@@ -73,6 +74,7 @@ const RTUInventoryPage: React.FC = () => {
       online,
       warning,
       offline,
+      unreachable,
       avgTemp: avgTemp.toFixed(1),
     };
   }, []);
@@ -81,6 +83,7 @@ const RTUInventoryPage: React.FC = () => {
     { name: 'Online', value: summary.online },
     { name: 'Warning', value: summary.warning },
     { name: 'Offline', value: summary.offline },
+    { name: 'Unreachable', value: summary.unreachable },
   ];
 
   const handleStatusChange = (event: SelectChangeEvent<'all' | RTUStatus>) => {
@@ -105,7 +108,7 @@ const RTUInventoryPage: React.FC = () => {
             RTU Inventory
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Static operations snapshot for field and NOC teams.
+            Sante RTU: status global, alimentation, communication, disponibilite OTDR.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<DownloadOutlined />} sx={{ borderRadius: 2 }}>
@@ -114,8 +117,8 @@ const RTUInventoryPage: React.FC = () => {
       </Stack>
 
       <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#1b2230', border: '1px solid #2c3748' }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#252d42', border: '1px solid #445069' }}>
             <Typography variant="caption" color="text.secondary">
               Total RTU
             </Typography>
@@ -124,8 +127,8 @@ const RTUInventoryPage: React.FC = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#17261e', border: '1px solid #2d4d3e' }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#25362d', border: '1px solid #486957' }}>
             <Typography variant="caption" color="text.secondary">
               Online
             </Typography>
@@ -134,8 +137,8 @@ const RTUInventoryPage: React.FC = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2b2318', border: '1px solid #5d4624' }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3b3126', border: '1px solid #7a6442' }}>
             <Typography variant="caption" color="text.secondary">
               Warning
             </Typography>
@@ -144,8 +147,18 @@ const RTUInventoryPage: React.FC = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2c1d20', border: '1px solid #57323a' }}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3a2b31', border: '1px solid #77525b' }}>
+            <Typography variant="caption" color="text.secondary">
+              Offline + Unreachable
+            </Typography>
+            <Typography variant="h4" fontWeight={700} color="#ff9fa9">
+              {summary.offline + summary.unreachable}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2d3250', border: '1px solid #5f6294' }}>
             <Typography variant="caption" color="text.secondary">
               Average Temperature
             </Typography>
@@ -156,7 +169,7 @@ const RTUInventoryPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445', mb: 3 }}>
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
           <TextField
             fullWidth
@@ -172,6 +185,7 @@ const RTUInventoryPage: React.FC = () => {
               <MenuItem value={RTUStatus.ONLINE}>Online</MenuItem>
               <MenuItem value={RTUStatus.WARNING}>Warning</MenuItem>
               <MenuItem value={RTUStatus.OFFLINE}>Offline</MenuItem>
+              <MenuItem value={RTUStatus.UNREACHABLE}>Unreachable</MenuItem>
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
@@ -189,9 +203,9 @@ const RTUInventoryPage: React.FC = () => {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
-              RTU Fleet
+              RTU Health Board
             </Typography>
             <TableContainer>
               <Table size="small">
@@ -199,11 +213,12 @@ const RTUInventoryPage: React.FC = () => {
                   <TableRow>
                     <TableCell>RTU</TableCell>
                     <TableCell>Zone</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>RTU Status</TableCell>
+                    <TableCell>Power</TableCell>
+                    <TableCell>Communication</TableCell>
+                    <TableCell>OTDR</TableCell>
                     <TableCell>Temperature</TableCell>
-                    <TableCell>Uptime</TableCell>
-                    <TableCell>Optical Budget</TableCell>
-                    <TableCell>Active Alarms</TableCell>
+                    <TableCell>Attenuation</TableCell>
                     <TableCell>Last Seen</TableCell>
                   </TableRow>
                 </TableHead>
@@ -222,7 +237,16 @@ const RTUInventoryPage: React.FC = () => {
                       <TableCell>
                         <StatusBadge status={record.status} />
                       </TableCell>
-                      <TableCell sx={{ width: 160 }}>
+                      <TableCell>
+                        <StatusBadge status={record.powerSupply} variant="outlined" />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={record.communication} variant="outlined" />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={record.otdrAvailability} variant="outlined" />
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 150 }}>
                         <Typography variant="body2" color="white">
                           {record.temperature === 0 ? 'N/A' : `${record.temperature} C`}
                         </Typography>
@@ -233,9 +257,7 @@ const RTUInventoryPage: React.FC = () => {
                           sx={{ mt: 0.6, height: 6, borderRadius: 4 }}
                         />
                       </TableCell>
-                      <TableCell>{record.uptimePercent.toFixed(1)}%</TableCell>
                       <TableCell>{record.opticalBudgetDb === 0 ? 'N/A' : `${record.opticalBudgetDb} dB`}</TableCell>
-                      <TableCell>{record.activeAlarms}</TableCell>
                       <TableCell>{record.lastSeen}</TableCell>
                     </TableRow>
                   ))}
@@ -247,7 +269,7 @@ const RTUInventoryPage: React.FC = () => {
 
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={3}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={2}>
                 Fleet Status Mix
               </Typography>
@@ -265,11 +287,11 @@ const RTUInventoryPage: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Stack direction="row" spacing={1} alignItems="center" mb={2}>
                 <HubOutlined sx={{ color: '#7dc3ff' }} />
                 <Typography variant="h6" color="white">
-                  Maintenance Queue
+                  Priority Actions
                 </Typography>
               </Stack>
               <Stack spacing={1.4}>
@@ -278,7 +300,15 @@ const RTUInventoryPage: React.FC = () => {
                     RTU-MRS-003
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Dispatch crew for power module swap.
+                    Replace power module and validate communication.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="white" fontWeight={600}>
+                    RTU-TOU-006
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Recover reachability and rerun baseline OTDR test.
                   </Typography>
                 </Box>
                 <Box>
@@ -286,15 +316,7 @@ const RTUInventoryPage: React.FC = () => {
                     RTU-PAR-014
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Cooling inspection required in the next 6 hours.
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="white" fontWeight={600}>
-                    RTU-BDX-002
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Verify splice point due to repeated attenuation peaks.
+                    Cooling inspection due to recurrent temperature peaks.
                   </Typography>
                 </Box>
               </Stack>

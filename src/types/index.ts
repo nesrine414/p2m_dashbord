@@ -4,6 +4,7 @@ export enum RTUStatus {
   ONLINE = 'online',
   OFFLINE = 'offline',
   WARNING = 'warning',
+  UNREACHABLE = 'unreachable',
 }
 
 export enum AlarmSeverity {
@@ -18,6 +19,51 @@ export enum RiskLevel {
   MEDIUM = 'medium',
   HIGH = 'high',
   CRITICAL = 'critical',
+}
+
+export enum PowerSupplyStatus {
+  NORMAL = 'normal',
+  FAILURE = 'failure',
+}
+
+export enum CommunicationStatus {
+  CONNECTED = 'connected',
+  DISCONNECTED = 'disconnected',
+}
+
+export enum OtdrAvailabilityStatus {
+  READY = 'ready',
+  BUSY = 'busy',
+  FAULT = 'fault',
+}
+
+export enum FiberStatus {
+  NORMAL = 'normal',
+  DEGRADED = 'degraded',
+  BROKEN = 'broken',
+}
+
+export enum RouteStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SKIPPED = 'skipped',
+}
+
+export enum TestMode {
+  AUTO = 'auto',
+  MANUAL = 'manual',
+  SCHEDULED = 'scheduled',
+}
+
+export enum TestResult {
+  PASS = 'pass',
+  FAIL = 'fail',
+}
+
+export enum AlarmLifecycleStatus {
+  ACTIVE = 'active',
+  ACKNOWLEDGED = 'acknowledged',
+  CLEARED = 'cleared',
 }
 
 // ==================== INTERFACES ====================

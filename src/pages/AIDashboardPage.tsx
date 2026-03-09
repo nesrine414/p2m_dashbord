@@ -67,7 +67,7 @@ const AIDashboardPage: React.FC = () => {
         sx={{
           p: 2.8,
           borderRadius: 3,
-          background: 'linear-gradient(140deg, #223250 0%, #1b273d 50%, #182234 100%)',
+          background: 'linear-gradient(140deg, #4b5f84 0%, #425673 50%, #3a4b66 100%)',
           border: '1px solid #2f4569',
           mb: 3,
         }}
@@ -89,7 +89,7 @@ const AIDashboardPage: React.FC = () => {
                 height: 12,
                 borderRadius: 6,
                 mt: { xs: 1, md: 0.8 },
-                backgroundColor: '#132033',
+                backgroundColor: '#2f4360',
               }}
             />
             <Typography variant="caption" color="#9dc0e7">
@@ -101,7 +101,7 @@ const AIDashboardPage: React.FC = () => {
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
               <Typography variant="h6" color="white">
@@ -122,7 +122,7 @@ const AIDashboardPage: React.FC = () => {
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445', height: '100%' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
             <Typography variant="h6" color="white" mb={2}>
               Model Metrics
             </Typography>
@@ -161,7 +161,7 @@ const AIDashboardPage: React.FC = () => {
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 6 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
               Feature Importance
             </Typography>
@@ -179,7 +179,7 @@ const AIDashboardPage: React.FC = () => {
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, lg: 6 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
               What-If Risk Simulator
             </Typography>
@@ -202,7 +202,7 @@ const AIDashboardPage: React.FC = () => {
                 </Typography>
                 <Slider value={attenuationDrift} onChange={(_, value) => setAttenuationDrift(value as number)} />
               </Box>
-              <Paper sx={{ p: 1.7, backgroundColor: '#1f2a3c', border: '1px solid #364b68' }}>
+              <Paper sx={{ p: 1.7, backgroundColor: '#1f2a3c', border: '1px solid #4f6481' }}>
                 <Typography variant="caption" color="text.secondary">
                   Projected failure probability
                 </Typography>
@@ -215,7 +215,7 @@ const AIDashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Typography variant="h6" color="white" mb={2}>
           Predicted High-Risk RTUs
         </Typography>

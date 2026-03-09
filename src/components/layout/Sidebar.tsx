@@ -75,15 +75,24 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
   const drawerContent = (
     <>
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h5" fontWeight={800} color="#61b3ff" letterSpacing={0.5}>
-          P2M
+        <Typography
+          variant="h4"
+          fontWeight={800}
+          sx={{
+            letterSpacing: 0.6,
+            background: 'linear-gradient(120deg, #9de8ff 0%, #d9d0ff 46%, #ffd8e9 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          NQMS
         </Typography>
         <Typography variant="caption" color="text.secondary">
           Fiber supervision cockpit
         </Typography>
       </Box>
 
-      <Divider sx={{ borderColor: '#2b3445' }} />
+      <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.24)' }} />
 
       <List sx={{ px: 1.2, py: 2 }}>
         {menuItems.map((item) => {
@@ -100,14 +109,25 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
                   onMobileClose();
                 }}
                 sx={{
-                  borderRadius: 2,
-                  backgroundColor: isActive ? '#2f6fb0' : 'transparent',
+                  borderRadius: 3,
+                  backgroundColor: isActive ? 'rgba(118, 178, 243, 0.28)' : 'transparent',
+                  border: isActive ? '1px solid rgba(170, 210, 255, 0.4)' : '1px solid transparent',
                   '&:hover': {
-                    backgroundColor: isActive ? '#2b639d' : 'rgba(255, 255, 255, 0.05)',
+                    backgroundColor: isActive ? 'rgba(118, 178, 243, 0.36)' : 'rgba(255, 255, 255, 0.08)',
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: isActive ? 'white' : '#96a7bd', minWidth: 40 }}>
+                <ListItemIcon
+                  sx={{
+                    color: isActive ? '#dff2ff' : '#a5b5d2',
+                    minWidth: 40,
+                    '& .MuiSvgIcon-root': {
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.06)',
+                      borderRadius: '10px',
+                      p: 0.4,
+                    },
+                  }}
+                >
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
@@ -120,7 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
                 {item.badge && item.badge > 0 && (
                   <Box
                     sx={{
-                      backgroundColor: '#e14646',
+                      background: 'linear-gradient(120deg, #f29aaa, #cf6f87)',
                       color: 'white',
                       borderRadius: '12px',
                       px: 1,
@@ -152,9 +172,10 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            backgroundColor: '#171d28',
+            backgroundColor: 'rgba(26, 35, 56, 0.62)',
             color: 'white',
-            borderRight: '1px solid #2b3445',
+            borderRight: '1px solid rgba(175, 194, 232, 0.22)',
+            backdropFilter: 'blur(16px)',
           },
         }}
       >
@@ -168,9 +189,10 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            backgroundColor: '#171d28',
+            backgroundColor: 'rgba(26, 35, 56, 0.62)',
             color: 'white',
-            borderRight: '1px solid #2b3445',
+            borderRight: '1px solid rgba(175, 194, 232, 0.22)',
+            backdropFilter: 'blur(16px)',
           },
         }}
         open

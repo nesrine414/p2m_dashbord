@@ -12,15 +12,31 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' })
     switch (status.toLowerCase()) {
       case 'online':
       case 'normal':
+      case 'connected':
+      case 'ready':
+      case 'pass':
+      case 'cleared':
         return 'success';
       case 'offline':
       case 'critical':
+      case 'broken':
+      case 'failure':
+      case 'fault':
+      case 'disconnected':
+      case 'unreachable':
+      case 'fail':
         return 'error';
       case 'warning':
       case 'major':
+      case 'degraded':
+      case 'busy':
+      case 'active':
+      case 'inactive':
         return 'warning';
       case 'minor':
       case 'info':
+      case 'acknowledged':
+      case 'scheduled':
         return 'info';
       default:
         return 'default';
@@ -28,7 +44,10 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' })
   };
 
   const getLabel = () => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    return status
+      .split(/[_-\s]+/)
+      .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
+      .join(' ');
   };
 
   return (

@@ -1,4 +1,16 @@
-import { AlarmSeverity, RiskLevel, RTUStatus } from '../types';
+import {
+  AlarmLifecycleStatus,
+  AlarmSeverity,
+  CommunicationStatus,
+  FiberStatus,
+  OtdrAvailabilityStatus,
+  PowerSupplyStatus,
+  RiskLevel,
+  RouteStatus,
+  RTUStatus,
+  TestMode,
+  TestResult,
+} from '../types';
 
 export interface RtuInventoryRecord {
   id: number;
@@ -7,6 +19,9 @@ export interface RtuInventoryRecord {
   vendor: string;
   ipAddress: string;
   status: RTUStatus;
+  powerSupply: PowerSupplyStatus;
+  communication: CommunicationStatus;
+  otdrAvailability: OtdrAvailabilityStatus;
   temperature: number;
   uptimePercent: number;
   opticalBudgetDb: number;
@@ -22,6 +37,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'EXFO',
     ipAddress: '10.42.1.11',
     status: RTUStatus.ONLINE,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.READY,
     temperature: 31,
     uptimePercent: 99.6,
     opticalBudgetDb: 18.2,
@@ -35,6 +53,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'Viavi',
     ipAddress: '10.42.1.29',
     status: RTUStatus.WARNING,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.BUSY,
     temperature: 42,
     uptimePercent: 96.1,
     opticalBudgetDb: 21.7,
@@ -48,6 +69,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'Yokogawa',
     ipAddress: '10.43.2.9',
     status: RTUStatus.ONLINE,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.READY,
     temperature: 29,
     uptimePercent: 99.8,
     opticalBudgetDb: 16.9,
@@ -61,6 +85,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'EXFO',
     ipAddress: '10.44.6.5',
     status: RTUStatus.OFFLINE,
+    powerSupply: PowerSupplyStatus.FAILURE,
+    communication: CommunicationStatus.DISCONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.FAULT,
     temperature: 0,
     uptimePercent: 87.5,
     opticalBudgetDb: 0,
@@ -74,6 +101,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'Viavi',
     ipAddress: '10.45.4.17',
     status: RTUStatus.ONLINE,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.READY,
     temperature: 34,
     uptimePercent: 98.9,
     opticalBudgetDb: 19.8,
@@ -87,6 +117,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'Anritsu',
     ipAddress: '10.46.2.3',
     status: RTUStatus.WARNING,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.BUSY,
     temperature: 39,
     uptimePercent: 95.4,
     opticalBudgetDb: 22.3,
@@ -100,6 +133,9 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     vendor: 'EXFO',
     ipAddress: '10.47.3.41',
     status: RTUStatus.ONLINE,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.CONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.READY,
     temperature: 30,
     uptimePercent: 99.1,
     opticalBudgetDb: 17.6,
@@ -112,12 +148,145 @@ export const rtuInventoryRecords: RtuInventoryRecord[] = [
     zone: 'Toulouse South',
     vendor: 'Viavi',
     ipAddress: '10.48.1.78',
-    status: RTUStatus.ONLINE,
-    temperature: 33,
-    uptimePercent: 98.3,
-    opticalBudgetDb: 20.5,
-    activeAlarms: 1,
-    lastSeen: '1 min ago',
+    status: RTUStatus.UNREACHABLE,
+    powerSupply: PowerSupplyStatus.NORMAL,
+    communication: CommunicationStatus.DISCONNECTED,
+    otdrAvailability: OtdrAvailabilityStatus.FAULT,
+    temperature: 36,
+    uptimePercent: 82.2,
+    opticalBudgetDb: 0,
+    activeAlarms: 3,
+    lastSeen: '16 min ago',
+  },
+];
+
+export interface FiberRouteRecord {
+  id: number;
+  routeName: string;
+  source: string;
+  destination: string;
+  fiberStatus: FiberStatus;
+  routeStatus: RouteStatus;
+  lengthKm: number;
+  attenuationDb: number;
+  reflectionEvents: boolean;
+  lastTestTime: string;
+}
+
+export const fiberRouteRecords: FiberRouteRecord[] = [
+  {
+    id: 1,
+    routeName: 'PAR-NORTH-CORE',
+    source: 'POP-A',
+    destination: 'POP-D',
+    fiberStatus: FiberStatus.NORMAL,
+    routeStatus: RouteStatus.ACTIVE,
+    lengthKm: 33.4,
+    attenuationDb: 16.1,
+    reflectionEvents: false,
+    lastTestTime: '2026-03-09 14:20',
+  },
+  {
+    id: 2,
+    routeName: 'PAR-EAST-RING',
+    source: 'POP-D',
+    destination: 'POP-F',
+    fiberStatus: FiberStatus.DEGRADED,
+    routeStatus: RouteStatus.ACTIVE,
+    lengthKm: 27.8,
+    attenuationDb: 21.9,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09 14:12',
+  },
+  {
+    id: 3,
+    routeName: 'MRS-WEST-BACKBONE',
+    source: 'POP-K',
+    destination: 'POP-M',
+    fiberStatus: FiberStatus.BROKEN,
+    routeStatus: RouteStatus.INACTIVE,
+    lengthKm: 40.1,
+    attenuationDb: 0,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09 13:31',
+  },
+  {
+    id: 4,
+    routeName: 'LYO-METRO-02',
+    source: 'POP-L2',
+    destination: 'POP-L8',
+    fiberStatus: FiberStatus.NORMAL,
+    routeStatus: RouteStatus.ACTIVE,
+    lengthKm: 18.9,
+    attenuationDb: 14.7,
+    reflectionEvents: false,
+    lastTestTime: '2026-03-09 14:28',
+  },
+  {
+    id: 5,
+    routeName: 'BDX-HUB-SPUR',
+    source: 'POP-B1',
+    destination: 'POP-B4',
+    fiberStatus: FiberStatus.DEGRADED,
+    routeStatus: RouteStatus.SKIPPED,
+    lengthKm: 12.6,
+    attenuationDb: 20.4,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09 12:57',
+  },
+];
+
+export interface OtdrTestRecord {
+  id: number;
+  routeName: string;
+  mode: TestMode;
+  pulseWidth: string;
+  dynamicRangeDb: number;
+  wavelengthNm: 1310 | 1550 | 1625;
+  result: TestResult;
+  testedAt: string;
+}
+
+export const otdrRecentTests: OtdrTestRecord[] = [
+  {
+    id: 501,
+    routeName: 'PAR-NORTH-CORE',
+    mode: TestMode.SCHEDULED,
+    pulseWidth: '100 ns',
+    dynamicRangeDb: 39,
+    wavelengthNm: 1550,
+    result: TestResult.PASS,
+    testedAt: '2026-03-09 14:20',
+  },
+  {
+    id: 502,
+    routeName: 'PAR-EAST-RING',
+    mode: TestMode.AUTO,
+    pulseWidth: '500 ns',
+    dynamicRangeDb: 37,
+    wavelengthNm: 1625,
+    result: TestResult.FAIL,
+    testedAt: '2026-03-09 14:12',
+  },
+  {
+    id: 503,
+    routeName: 'LYO-METRO-02',
+    mode: TestMode.MANUAL,
+    pulseWidth: '50 ns',
+    dynamicRangeDb: 35,
+    wavelengthNm: 1310,
+    result: TestResult.PASS,
+    testedAt: '2026-03-09 14:07',
+  },
+  {
+    id: 504,
+    routeName: 'MRS-WEST-BACKBONE',
+    mode: TestMode.MANUAL,
+    pulseWidth: '1 us',
+    dynamicRangeDb: 41,
+    wavelengthNm: 1550,
+    result: TestResult.FAIL,
+    testedAt: '2026-03-09 13:31',
   },
 ];
 
@@ -178,7 +347,7 @@ export const liveEvents: LiveEvent[] = [
     id: 'evt-002',
     timestamp: '15:39:22',
     severity: AlarmSeverity.MAJOR,
-    message: 'Unexpected attenuation increase above 2.5dB',
+    message: 'Unexpected attenuation increase above 2.5 dB',
     source: 'PAR-EDGE-07',
   },
   {
@@ -200,81 +369,95 @@ export const liveEvents: LiveEvent[] = [
 export interface AlarmRecord {
   id: number;
   severity: AlarmSeverity;
-  category: string;
+  alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   message: string;
   zone: string;
   rtuName: string;
+  occurredAt: string;
   elapsed: string;
   owner: string;
-  acknowledged: boolean;
+  lifecycleStatus: AlarmLifecycleStatus;
+  localizationKm: string;
 }
 
 export const alarmRecords: AlarmRecord[] = [
   {
     id: 1001,
     severity: AlarmSeverity.CRITICAL,
-    category: 'Power',
+    alarmType: 'RTU Down',
     message: 'RTU power supply unavailable',
     zone: 'Marseille West',
     rtuName: 'RTU-MRS-003',
+    occurredAt: '2026-03-09 15:01',
     elapsed: '43 min',
     owner: 'NOC L2',
-    acknowledged: true,
+    lifecycleStatus: AlarmLifecycleStatus.ACKNOWLEDGED,
+    localizationKm: 'KM 40.8',
   },
   {
     id: 1002,
     severity: AlarmSeverity.CRITICAL,
-    category: 'Fiber Break',
+    alarmType: 'Fiber Cut',
     message: 'Optical signal dropped below -35 dBm',
     zone: 'Paris East',
     rtuName: 'RTU-PAR-014',
+    occurredAt: '2026-03-09 15:16',
     elapsed: '28 min',
     owner: 'Field Team Alpha',
-    acknowledged: false,
+    lifecycleStatus: AlarmLifecycleStatus.ACTIVE,
+    localizationKm: 'KM 22.3',
   },
   {
     id: 1003,
     severity: AlarmSeverity.MAJOR,
-    category: 'Attenuation',
+    alarmType: 'High Loss',
     message: 'Trend slope exceeded warning profile',
     zone: 'Bordeaux Hub',
     rtuName: 'RTU-BDX-002',
+    occurredAt: '2026-03-09 15:25',
     elapsed: '19 min',
     owner: 'NOC L1',
-    acknowledged: true,
+    lifecycleStatus: AlarmLifecycleStatus.ACKNOWLEDGED,
+    localizationKm: 'KM 9.4',
   },
   {
     id: 1004,
     severity: AlarmSeverity.MAJOR,
-    category: 'Cooling',
+    alarmType: 'Temperature',
     message: 'Cabinet temperature over 40 C',
     zone: 'Paris East',
     rtuName: 'RTU-PAR-014',
+    occurredAt: '2026-03-09 15:32',
     elapsed: '12 min',
     owner: 'NOC L1',
-    acknowledged: false,
+    lifecycleStatus: AlarmLifecycleStatus.ACTIVE,
+    localizationKm: 'KM 20.7',
   },
   {
     id: 1005,
     severity: AlarmSeverity.MINOR,
-    category: 'Synchronization',
+    alarmType: 'High Loss',
     message: 'Clock drift exceeds 25 ms',
     zone: 'Lyon South',
     rtuName: 'RTU-LYO-007',
+    occurredAt: '2026-03-09 15:36',
     elapsed: '8 min',
     owner: 'Automation Bot',
-    acknowledged: true,
+    lifecycleStatus: AlarmLifecycleStatus.CLEARED,
+    localizationKm: 'KM 4.1',
   },
   {
     id: 1006,
     severity: AlarmSeverity.INFO,
-    category: 'Maintenance',
+    alarmType: 'Maintenance',
     message: 'Scheduled OTDR run started',
     zone: 'Nantes Metro',
     rtuName: 'RTU-NAN-011',
+    occurredAt: '2026-03-09 15:42',
     elapsed: '2 min',
     owner: 'Scheduler',
-    acknowledged: true,
+    lifecycleStatus: AlarmLifecycleStatus.CLEARED,
+    localizationKm: 'N/A',
   },
 ];
 
@@ -376,16 +559,17 @@ export interface NetworkPerformancePoint {
   month: string;
   availability: number;
   mttr: number;
+  mtbf: number;
   criticalAlarms: number;
 }
 
 export const networkPerformanceSeries: NetworkPerformancePoint[] = [
-  { month: 'Oct', availability: 99.1, mttr: 3.3, criticalAlarms: 15 },
-  { month: 'Nov', availability: 99.2, mttr: 3.1, criticalAlarms: 13 },
-  { month: 'Dec', availability: 99.3, mttr: 2.9, criticalAlarms: 11 },
-  { month: 'Jan', availability: 99.4, mttr: 2.8, criticalAlarms: 10 },
-  { month: 'Feb', availability: 99.5, mttr: 2.6, criticalAlarms: 8 },
-  { month: 'Mar', availability: 99.6, mttr: 2.4, criticalAlarms: 6 },
+  { month: 'Oct', availability: 99.1, mttr: 3.3, mtbf: 101, criticalAlarms: 15 },
+  { month: 'Nov', availability: 99.2, mttr: 3.1, mtbf: 108, criticalAlarms: 13 },
+  { month: 'Dec', availability: 99.3, mttr: 2.9, mtbf: 116, criticalAlarms: 11 },
+  { month: 'Jan', availability: 99.4, mttr: 2.8, mtbf: 124, criticalAlarms: 10 },
+  { month: 'Feb', availability: 99.5, mttr: 2.6, mtbf: 132, criticalAlarms: 8 },
+  { month: 'Mar', availability: 99.6, mttr: 2.4, mtbf: 141, criticalAlarms: 6 },
 ];
 
 export interface ScheduledReport {
@@ -399,6 +583,185 @@ export const scheduledReports: ScheduledReport[] = [
   { id: 'sch-001', title: 'Daily Availability Pack', schedule: 'Every day 07:00', recipients: 12 },
   { id: 'sch-002', title: 'Weekly Fiber Health', schedule: 'Monday 08:30', recipients: 7 },
   { id: 'sch-003', title: 'Monthly Executive Summary', schedule: '1st day 09:00', recipients: 4 },
+];
+
+export interface QualityKpi {
+  id: string;
+  label: string;
+  value: string;
+  trend: string;
+  criticality: 'Critique' | 'Moyenne' | 'Faible';
+}
+
+export const qualityKpis: QualityKpi[] = [
+  { id: 'q-1', label: 'MTTR', value: '2.4 h', trend: '-0.4 h vs last month', criticality: 'Moyenne' },
+  { id: 'q-2', label: 'MTBF', value: '141 h', trend: '+9 h vs last month', criticality: 'Faible' },
+  { id: 'q-3', label: 'Attenuation Drift', value: '0.22 dB/day', trend: 'Stable', criticality: 'Moyenne' },
+  { id: 'q-4', label: 'SLA Availability', value: '99.6%', trend: '+0.1%', criticality: 'Critique' },
+];
+
+export interface NqmsMatrixRow {
+  domain: 'RTU' | 'Fibre' | 'OTDR' | 'Alarmes' | 'Performance';
+  parameter: string;
+  description: string;
+  values: string;
+  widgetType: string;
+  criticality: 'Critique' | 'Moyenne' | 'Faible';
+}
+
+export const nqmsMatrixRows: NqmsMatrixRow[] = [
+  {
+    domain: 'RTU',
+    parameter: 'RTU Status',
+    description: 'Etat global de la RTU',
+    values: 'Online / Offline / Unreachable',
+    widgetType: 'Tuile / LED',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'RTU',
+    parameter: 'Power Supply',
+    description: 'Etat alimentation RTU',
+    values: 'Normal / Failure',
+    widgetType: 'Tuile',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'RTU',
+    parameter: 'Temperature',
+    description: 'Temperature interne RTU',
+    values: 'Valeur C + seuils',
+    widgetType: 'Jauge',
+    criticality: 'Moyenne',
+  },
+  {
+    domain: 'RTU',
+    parameter: 'OTDR Availability',
+    description: 'Disponibilite OTDR',
+    values: 'Ready / Busy / Fault',
+    widgetType: 'Icone statut',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Fibre',
+    parameter: 'Fiber Status',
+    description: 'Etat global de la fibre',
+    values: 'Normal / Degraded / Broken',
+    widgetType: 'Carte / Liste',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Fibre',
+    parameter: 'Route Status',
+    description: 'Etat de la route optique',
+    values: 'Active / Inactive / Skipped',
+    widgetType: 'Liste',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Fibre',
+    parameter: 'Length',
+    description: 'Longueur de la fibre',
+    values: 'Valeur km',
+    widgetType: 'Texte',
+    criticality: 'Faible',
+  },
+  {
+    domain: 'Fibre',
+    parameter: 'Attenuation',
+    description: 'Attenuation totale',
+    values: 'dB seuil configurable',
+    widgetType: 'Jauge',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'OTDR',
+    parameter: 'Test Mode',
+    description: 'Mode de test OTDR',
+    values: 'Auto / Manual / Scheduled',
+    widgetType: 'Texte',
+    criticality: 'Faible',
+  },
+  {
+    domain: 'OTDR',
+    parameter: 'Wavelength',
+    description: 'Longueur d onde',
+    values: '1310 / 1550 / 1625 nm',
+    widgetType: 'Texte',
+    criticality: 'Faible',
+  },
+  {
+    domain: 'OTDR',
+    parameter: 'Test Result',
+    description: 'Resultat du test',
+    values: 'Pass / Fail',
+    widgetType: 'Tableau',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'OTDR',
+    parameter: 'Last Test Time',
+    description: 'Horodatage dernier test',
+    values: 'Date / Heure',
+    widgetType: 'Texte',
+    criticality: 'Moyenne',
+  },
+  {
+    domain: 'Alarmes',
+    parameter: 'Alarm Type',
+    description: 'Type d alarme',
+    values: 'Fiber Cut / High Loss / RTU Down',
+    widgetType: 'Liste',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Alarmes',
+    parameter: 'Severity',
+    description: 'Niveau de severite',
+    values: 'Critical / Major / Minor',
+    widgetType: 'Heatmap',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Alarmes',
+    parameter: 'Alarm Status',
+    description: 'Etat de l alarme',
+    values: 'Active / Acknowledged / Cleared',
+    widgetType: 'Liste',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Alarmes',
+    parameter: 'Localization',
+    description: 'Localisation du defaut',
+    values: 'Distance / Section',
+    widgetType: 'Carte',
+    criticality: 'Critique',
+  },
+  {
+    domain: 'Performance',
+    parameter: 'Attenuation Trend',
+    description: 'Evolution attenuation',
+    values: 'Graphique temporel',
+    widgetType: 'Graphique',
+    criticality: 'Moyenne',
+  },
+  {
+    domain: 'Performance',
+    parameter: 'MTTR',
+    description: 'Temps moyen de reparation',
+    values: 'Heures',
+    widgetType: 'KPI',
+    criticality: 'Moyenne',
+  },
+  {
+    domain: 'Performance',
+    parameter: 'MTBF',
+    description: 'Temps moyen entre pannes',
+    values: 'Heures',
+    widgetType: 'KPI',
+    criticality: 'Faible',
+  },
 ];
 
 export interface RiskTrendPoint {

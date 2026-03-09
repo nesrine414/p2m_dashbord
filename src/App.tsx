@@ -12,14 +12,130 @@ import AIDashboardPage from './pages/AIDashboardPage';
 import { ROUTE_PATHS, ROUTE_SEGMENTS } from './constants/routes';
 
 const darkTheme = createTheme({
+  shape: {
+    borderRadius: 8,
+  },
+  typography: {
+    fontFamily: '"Sora", "Plus Jakarta Sans", "Segoe UI", sans-serif',
+    h4: {
+      fontWeight: 700,
+      letterSpacing: -0.4,
+      fontSize: '1.95rem',
+    },
+    h6: {
+      fontWeight: 600,
+      letterSpacing: 0.1,
+    },
+    body2: {
+      letterSpacing: 0.12,
+    },
+  },
   palette: {
     mode: 'dark',
     primary: {
-      main: '#2196f3',
+      main: '#6ad9ff',
+      light: '#9de8ff',
+      dark: '#3eb8e0',
+    },
+    secondary: {
+      main: '#f3a9c9',
+    },
+    success: {
+      main: '#84d8a3',
+    },
+    warning: {
+      main: '#f1c07f',
+    },
+    error: {
+      main: '#f08ba1',
+    },
+    info: {
+      main: '#9bbef4',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: '#0e1324',
+      paper: 'rgba(25, 35, 58, 0.68)',
+    },
+    text: {
+      primary: '#eef4ff',
+      secondary: '#b7c3e0',
+    },
+    divider: 'rgba(156, 176, 217, 0.28)',
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(25, 35, 58, 0.68)',
+          backgroundImage: 'linear-gradient(160deg, rgba(132, 164, 224, 0.14), rgba(255, 255, 255, 0.03))',
+          border: '1px solid rgba(156, 176, 217, 0.28)',
+          backdropFilter: 'blur(14px)',
+          boxShadow: '0 16px 36px rgba(5, 10, 22, 0.24)',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(25, 35, 58, 0.68)',
+          backgroundImage: 'linear-gradient(160deg, rgba(132, 164, 224, 0.14), rgba(255, 255, 255, 0.03))',
+          border: '1px solid rgba(156, 176, 217, 0.28)',
+          backdropFilter: 'blur(14px)',
+          boxShadow: '0 16px 36px rgba(5, 10, 22, 0.24)',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(20, 30, 50, 0.72)',
+          backdropFilter: 'blur(12px)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 14,
+          textTransform: 'none',
+          fontWeight: 600,
+          letterSpacing: 0.1,
+          boxShadow: 'none',
+        },
+        contained: {
+          backgroundImage: 'linear-gradient(120deg, rgba(106, 217, 255, 0.95), rgba(126, 165, 232, 0.95))',
+          color: '#0d1730',
+          '&:hover': {
+            boxShadow: '0 10px 22px rgba(74, 136, 198, 0.34)',
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderColor: '#3f4a63',
+        },
+        head: {
+          color: '#d4def2',
+          fontWeight: 700,
+          backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+        },
+      },
+    },
+    MuiBadge: {
+      styleOverrides: {
+        badge: {
+          boxShadow: '0 0 0 2px rgba(20, 30, 50, 0.8)',
+        },
+      },
     },
   },
 });

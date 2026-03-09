@@ -19,6 +19,8 @@ import { DownloadOutlined, FilePresentOutlined } from '@mui/icons-material';
 import {
   generatedReports,
   networkPerformanceSeries,
+  nqmsMatrixRows,
+  qualityKpis,
   reportTemplates,
   scheduledReports,
 } from '../data/mockData';
@@ -35,10 +37,10 @@ const ReportsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={800} color="white">
-            Reports Hub
+            Vue 3 - Qualite & Historique
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Build and distribute operational reports from static analytics views.
+            Tendances attenuation, KPI MTTR/MTBF et matrice de supervision NQMS.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<FilePresentOutlined />} sx={{ borderRadius: 2 }}>
@@ -47,32 +49,21 @@ const ReportsPage: React.FC = () => {
       </Stack>
 
       <Grid container spacing={2.5} mb={3}>
-        {reportTemplates.map((template) => (
-          <Grid key={template.id} size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6" color="white">
-                  {template.name}
+        {qualityKpis.map((kpi) => (
+          <Grid key={kpi.id} size={{ xs: 12, sm: 6, lg: 3 }}>
+            <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
+                <Typography variant="caption" color="text.secondary">
+                  {kpi.label}
                 </Typography>
-                <Chip label={template.status} color={template.status === 'Healthy' ? 'success' : 'warning'} size="small" />
+                <Chip label={kpi.criticality} size="small" color={kpi.criticality === 'Critique' ? 'error' : kpi.criticality === 'Moyenne' ? 'warning' : 'default'} />
               </Stack>
-              <Typography variant="body2" color="text.secondary" mb={2}>
-                {template.description}
+              <Typography variant="h5" color="white" fontWeight={700}>
+                {kpi.value}
               </Typography>
-              <Stack spacing={0.5} mb={2}>
-                <Typography variant="caption" color="text.secondary">
-                  Frequency: {template.frequency}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Owner: {template.owner}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Last run: {template.lastRun}
-                </Typography>
-              </Stack>
-              <Button variant="outlined" size="small">
-                Generate Now
-              </Button>
+              <Typography variant="caption" color="#8fb3d1">
+                {kpi.trend}
+              </Typography>
             </Paper>
           </Grid>
         ))}
@@ -80,9 +71,9 @@ const ReportsPage: React.FC = () => {
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
-              Monthly Network Performance
+              Performance Evolution
             </Typography>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 7 }}>
@@ -106,7 +97,7 @@ const ReportsPage: React.FC = () => {
                       <XAxis dataKey="month" stroke="#9aa9bd" />
                       <YAxis stroke="#9aa9bd" />
                       <Tooltip />
-                      <Bar dataKey="criticalAlarms" fill="#ff8f6c" name="Critical alarms" />
+                      <Bar dataKey="mttr" fill="#ff8f6c" name="MTTR h" />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -115,13 +106,13 @@ const ReportsPage: React.FC = () => {
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445', height: '100%' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
             <Typography variant="h6" color="white" mb={2}>
               Scheduled Deliveries
             </Typography>
             <Stack spacing={1.3}>
               {scheduledReports.map((item) => (
-                <Box key={item.id} sx={{ p: 1.4, borderRadius: 2, backgroundColor: '#1c2433' }}>
+                <Box key={item.id} sx={{ p: 1.4, borderRadius: 2, backgroundColor: '#293247' }}>
                   <Typography variant="body2" color="white" fontWeight={600}>
                     {item.title}
                   </Typography>
@@ -138,7 +129,63 @@ const ReportsPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
+      <Grid container spacing={3} mb={3}>
+        {reportTemplates.map((template) => (
+          <Grid key={template.id} size={{ xs: 12, md: 4 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="h6" color="white">
+                  {template.name}
+                </Typography>
+                <Chip label={template.status} color={template.status === 'Healthy' ? 'success' : 'warning'} size="small" />
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                {template.description}
+              </Typography>
+              <Stack spacing={0.5} mb={2}>
+                <Typography variant="caption" color="text.secondary">Frequency: {template.frequency}</Typography>
+                <Typography variant="caption" color="text.secondary">Owner: {template.owner}</Typography>
+                <Typography variant="caption" color="text.secondary">Last run: {template.lastRun}</Typography>
+              </Stack>
+              <Button variant="outlined" size="small">Generate Now</Button>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
+        <Typography variant="h6" color="white" mb={2}>
+          Matrice NQMS Complete
+        </Typography>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Domaine</TableCell>
+                <TableCell>Parametre</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Valeurs</TableCell>
+                <TableCell>Widget</TableCell>
+                <TableCell>Criticite</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {nqmsMatrixRows.map((row) => (
+                <TableRow key={`${row.domain}-${row.parameter}`} hover>
+                  <TableCell>{row.domain}</TableCell>
+                  <TableCell>{row.parameter}</TableCell>
+                  <TableCell>{row.description}</TableCell>
+                  <TableCell>{row.values}</TableCell>
+                  <TableCell>{row.widgetType}</TableCell>
+                  <TableCell>{row.criticality}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Typography variant="h6" color="white" mb={2}>
           Generated Files
         </Typography>
@@ -167,12 +214,7 @@ const ReportsPage: React.FC = () => {
                     <Chip label={report.status} size="small" color={report.status === 'Ready' ? 'success' : 'warning'} />
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<DownloadOutlined />}
-                      disabled={report.status !== 'Ready'}
-                    >
+                    <Button size="small" variant="outlined" startIcon={<DownloadOutlined />} disabled={report.status !== 'Ready'}>
                       Download
                     </Button>
                   </TableCell>

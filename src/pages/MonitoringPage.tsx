@@ -1,98 +1,110 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
-  Chip,
-  Divider,
   Grid,
-  LinearProgress,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from '@mui/material';
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { BoltOutlined, SpeedOutlined, MemoryOutlined, RouterOutlined } from '@mui/icons-material';
+import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
 import StatusBadge from '../components/common/StatusBadge';
-import { attenuationSeries, liveEvents, monitoringNodes } from '../data/mockData';
+import {
+  attenuationSeries,
+  fiberRouteRecords,
+  liveEvents,
+  otdrRecentTests,
+} from '../data/mockData';
+import { FiberStatus, TestResult } from '../types';
 
 const MonitoringPage: React.FC = () => {
+  const summary = useMemo(() => {
+    const normal = fiberRouteRecords.filter((route) => route.fiberStatus === FiberStatus.NORMAL).length;
+    const degraded = fiberRouteRecords.filter((route) => route.fiberStatus === FiberStatus.DEGRADED).length;
+    const broken = fiberRouteRecords.filter((route) => route.fiberStatus === FiberStatus.BROKEN).length;
+    const avgAttenuation =
+      fiberRouteRecords
+        .filter((route) => route.attenuationDb > 0)
+        .reduce((sum, route) => sum + route.attenuationDb, 0) /
+      fiberRouteRecords.filter((route) => route.attenuationDb > 0).length;
+    const failedTests = otdrRecentTests.filter((test) => test.result === TestResult.FAIL).length;
+
+    return {
+      normal,
+      degraded,
+      broken,
+      avgAttenuation: avgAttenuation.toFixed(1),
+      failedTests,
+    };
+  }, []);
+
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>
-        Real-Time Monitoring
+        Vue 2 - Reseau
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Static live board for optical links and device telemetry.
+        Topologie optique, attenuation et resultats OTDR.
       </Typography>
 
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#1d2330', border: '1px solid #2f3b4e' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Throughput
-                </Typography>
-                <Typography variant="h5" color="white" fontWeight={700}>
-                  18.4 Gbps
-                </Typography>
-              </Box>
-              <SpeedOutlined sx={{ color: '#8fd3ff' }} />
-            </Stack>
+          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#27382e', border: '1px solid #4b6b59' }}>
+            <Typography variant="caption" color="text.secondary">
+              Fiber Normal
+            </Typography>
+            <Typography variant="h5" color="#8fe7a7" fontWeight={700}>
+              {summary.normal}
+            </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#1f2a20', border: '1px solid #31543c' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Healthy Links
-                </Typography>
-                <Typography variant="h5" color="#8fe7a7" fontWeight={700}>
-                  92%
-                </Typography>
-              </Box>
-              <RouterOutlined sx={{ color: '#8fe7a7' }} />
-            </Stack>
+          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#3a3228', border: '1px solid #7c6646' }}>
+            <Typography variant="caption" color="text.secondary">
+              Fiber Degraded
+            </Typography>
+            <Typography variant="h5" color="#ffc98c" fontWeight={700}>
+              {summary.degraded}
+            </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#2a221a', border: '1px solid #5e4828' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Mean Latency
-                </Typography>
-                <Typography variant="h5" color="white" fontWeight={700}>
-                  14.8 ms
-                </Typography>
-              </Box>
-              <BoltOutlined sx={{ color: '#ffc98c' }} />
-            </Stack>
+          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
+            <Typography variant="caption" color="text.secondary">
+              Fiber Broken
+            </Typography>
+            <Typography variant="h5" color="#ff8d9a" fontWeight={700}>
+              {summary.broken}
+            </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#251f2c', border: '1px solid #4d3a62' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Core CPU
-                </Typography>
-                <Typography variant="h5" color="white" fontWeight={700}>
-                  57%
-                </Typography>
-              </Box>
-              <MemoryOutlined sx={{ color: '#c2a8ff' }} />
-            </Stack>
+          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#252d40', border: '1px solid #46546c' }}>
+            <Typography variant="caption" color="text.secondary">
+              Avg Attenuation
+            </Typography>
+            <Typography variant="h5" color="white" fontWeight={700}>
+              {summary.avgAttenuation} dB
+            </Typography>
           </Paper>
         </Grid>
       </Grid>
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
-            <Typography variant="h6" color="white" mb={2}>
-              Attenuation Trend (dB)
-            </Typography>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+              <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
+              <Typography variant="h6" color="white">
+                Attenuation Trend
+              </Typography>
+            </Stack>
             <Box sx={{ height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={attenuationSeries}>
@@ -100,30 +112,9 @@ const MonitoringPage: React.FC = () => {
                   <XAxis dataKey="slot" stroke="#9aa9bd" />
                   <YAxis stroke="#9aa9bd" />
                   <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="backboneNorth"
-                    stroke="#55c2ff"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Backbone North"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="backboneSouth"
-                    stroke="#ff9f5a"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Backbone South"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="metroRing"
-                    stroke="#92e7a9"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Metro Ring"
-                  />
+                  <Line type="monotone" dataKey="backboneNorth" stroke="#55c2ff" strokeWidth={2} dot={false} name="Backbone North" />
+                  <Line type="monotone" dataKey="backboneSouth" stroke="#ff9f5a" strokeWidth={2} dot={false} name="Backbone South" />
+                  <Line type="monotone" dataKey="metroRing" stroke="#92e7a9" strokeWidth={2} dot={false} name="Metro Ring" />
                 </LineChart>
               </ResponsiveContainer>
             </Box>
@@ -131,13 +122,13 @@ const MonitoringPage: React.FC = () => {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445', height: '100%' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
             <Typography variant="h6" color="white" mb={2}>
               Event Stream
             </Typography>
             <Stack spacing={1.5}>
               {liveEvents.map((event) => (
-                <Box key={event.id} sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#1c2433' }}>
+                <Box key={event.id} sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#293247' }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="caption" color="text.secondary">
                       {event.timestamp}
@@ -157,59 +148,91 @@ const MonitoringPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#171d28', border: '1px solid #2b3445' }}>
-        <Typography variant="h6" color="white" mb={2}>
-          Node Health Board
-        </Typography>
-        <Grid container spacing={2}>
-          {monitoringNodes.map((node) => (
-            <Grid key={node.id} size={{ xs: 12, md: 6, xl: 4 }}>
-              <Box sx={{ p: 2, borderRadius: 2.5, backgroundColor: '#1c2433' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.4}>
-                  <Typography variant="body1" color="white" fontWeight={700}>
-                    {node.name}
-                  </Typography>
-                  <StatusBadge status={node.status} />
-                </Stack>
-                <Stack spacing={1.2}>
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="caption" color="text.secondary">
-                        CPU
-                      </Typography>
-                      <Typography variant="caption" color="white">
-                        {node.cpuPercent}%
-                      </Typography>
-                    </Stack>
-                    <LinearProgress variant="determinate" value={node.cpuPercent} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
-                  </Box>
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between">
-                      <Typography variant="caption" color="text.secondary">
-                        Packet Loss
-                      </Typography>
-                      <Typography variant="caption" color="white">
-                        {node.packetLossPercent}%
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(node.packetLossPercent * 20, 100)}
-                      color={node.packetLossPercent > 1 ? 'warning' : 'success'}
-                      sx={{ mt: 0.5, height: 6, borderRadius: 3 }}
-                    />
-                  </Box>
-                </Stack>
-                <Divider sx={{ my: 1.4, borderColor: '#2f3a4e' }} />
-                <Stack direction="row" justifyContent="space-between">
-                  <Chip label={`Latency ${node.latencyMs} ms`} size="small" />
-                  <Chip label={`Signal ${node.signalDbm} dBm`} size="small" />
-                </Stack>
-              </Box>
-            </Grid>
-          ))}
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, xl: 8 }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+              <RouteOutlined sx={{ color: '#8fd3ff' }} />
+              <Typography variant="h6" color="white">
+                Optical Routes
+              </Typography>
+            </Stack>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Route</TableCell>
+                    <TableCell>Path</TableCell>
+                    <TableCell>Fiber Status</TableCell>
+                    <TableCell>Route Status</TableCell>
+                    <TableCell>Length</TableCell>
+                    <TableCell>Attenuation</TableCell>
+                    <TableCell>Reflection Events</TableCell>
+                    <TableCell>Last Test</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {fiberRouteRecords.map((route) => (
+                    <TableRow key={route.id} hover>
+                      <TableCell>{route.routeName}</TableCell>
+                      <TableCell>{route.source} to {route.destination}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={route.fiberStatus} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={route.routeStatus} variant="outlined" />
+                      </TableCell>
+                      <TableCell>{route.lengthKm.toFixed(1)} km</TableCell>
+                      <TableCell>{route.attenuationDb === 0 ? 'N/A' : `${route.attenuationDb.toFixed(1)} dB`}</TableCell>
+                      <TableCell>{route.reflectionEvents ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>{route.lastTestTime}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         </Grid>
-      </Paper>
+
+        <Grid size={{ xs: 12, xl: 4 }}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+              <DeviceHubOutlined sx={{ color: '#9bb9ff' }} />
+              <Typography variant="h6" color="white">
+                OTDR Recent Tests ({summary.failedTests} fail)
+              </Typography>
+            </Stack>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Route</TableCell>
+                    <TableCell>Mode</TableCell>
+                    <TableCell>Pulse</TableCell>
+                    <TableCell>Range</TableCell>
+                    <TableCell>Wavelength</TableCell>
+                    <TableCell>Result</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {otdrRecentTests.map((test) => (
+                    <TableRow key={test.id} hover>
+                      <TableCell>{test.routeName}</TableCell>
+                      <TableCell>{test.mode}</TableCell>
+                      <TableCell>{test.pulseWidth}</TableCell>
+                      <TableCell>{test.dynamicRangeDb} dB</TableCell>
+                      <TableCell>{test.wavelengthNm} nm</TableCell>
+                      <TableCell>
+                        <StatusBadge status={test.result} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

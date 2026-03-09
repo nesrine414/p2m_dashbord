@@ -1,0 +1,138 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { databaseState } from '../config/database';
+import { User } from '../models';
+import { AuthRequest } from '../middleware/auth.middleware';
+
+const signToken = (user: { id: number; username: string; role: 'admin' | 'user' | 'customer' }): string =>
+  jwt.sign(user, process.env.JWT_SECRET || 'fallback_secret', {
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+  } as jwt.SignOptions);
+
+export const register = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    const { username, password, email, role, firstName, lastName, phone } = req.body as {
+      username?: string;
+      password?: string;
+      email?: string;
+      role?: 'admin' | 'user' | 'customer';
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    };
+
+    if (!username || !password || !email) {
+      res.status(400).json({ error: 'username, password and email are required' });
+      return;
+    }
+
+    const existing = await User.findOne({ where: { username } });
+    if (existing) {
+      res.status(409).json({ error: 'username already exists' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const createdUser = await User.create({
+      username,
+      password: hashedPassword,
+      email,
+      role: role || 'user',
+      firstName,
+      lastName,
+      phone,
+    });
+
+    const token = signToken({
+      id: createdUser.id,
+      username: createdUser.username,
+      role: createdUser.role,
+    });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: createdUser.id,
+        username: createdUser.username,
+        email: createdUser.email,
+        role: createdUser.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+};
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    const { username, password } = req.body as { username?: string; password?: string };
+
+    if (!username || !password) {
+      res.status(400).json({ error: 'username and password are required' });
+      return;
+    }
+
+    const user = await User.findOne({ where: { username } });
+    if (!user) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const token = signToken({ id: user.id, username: user.username, role: user.role });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to login' });
+  }
+};
+
+export const me = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+};
