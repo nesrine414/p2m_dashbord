@@ -5,4 +5,5 @@ const dashboardController_1 = require("../controllers/dashboardController");
 const router = (0, express_1.Router)();
 router.get('/stats', dashboardController_1.getDashboardStats);
 router.get('/topology', dashboardController_1.getTopology);
+router.get('/otdr-recent', dashboardController_1.getRecentOtdrTests);
 exports.default = router;

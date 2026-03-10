@@ -4,13 +4,23 @@ exports.deleteRTU = exports.updateRTU = exports.createRTU = exports.getRTUById =
 const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
+const demoData_1 = require("../data/demoData");
 const getRTUs = async (req, res) => {
     try {
+        const { status, search } = req.query;
         if (!database_1.databaseState.connected) {
-            res.json([]);
+            const normalizedSearch = search?.toLowerCase().trim();
+            const filtered = demoData_1.demoRtus.filter((item) => {
+                const statusMatch = !status || item.status === status;
+                const searchMatch = !normalizedSearch ||
+                    item.name.toLowerCase().includes(normalizedSearch) ||
+                    item.ipAddress.toLowerCase().includes(normalizedSearch) ||
+                    item.serialNumber.toLowerCase().includes(normalizedSearch);
+                return statusMatch && searchMatch;
+            });
+            res.json(filtered);
             return;
         }
-        const { status, search } = req.query;
         const whereClause = {};
         if (status) {
             whereClause.status = status;
@@ -36,7 +46,13 @@ exports.getRTUs = getRTUs;
 const getRTUById = async (req, res) => {
     try {
         if (!database_1.databaseState.connected) {
-            res.status(503).json({ error: 'Database not connected' });
+            const id = Number(req.params.id);
+            const rtu = demoData_1.demoRtus.find((item) => item.id === id);
+            if (!rtu) {
+                res.status(404).json({ error: 'RTU not found' });
+                return;
+            }
+            res.json(rtu);
             return;
         }
         const id = Number(req.params.id);

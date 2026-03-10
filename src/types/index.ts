@@ -145,10 +145,12 @@ export interface DashboardStats {
   rtuOnline: number;
   rtuOffline: number;
   rtuWarning: number;
+  rtuUnreachable: number;
   rtuTotal: number;
   criticalAlarms: number;
   majorAlarms: number;
   minorAlarms: number;
   mttr: number;
   availability: number;
+  degradedMode?: boolean;
 }

@@ -1,16 +1,12 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
-import { Alarm } from '../models';
+import { Alarm, RTU } from '../models';
+import { demoAlarms, demoRtus } from '../data/demoData';
 import { emitEvent } from '../utils/websocket';
 
 export const getAlarms = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!databaseState.connected) {
-      res.json({ data: [], total: 0, page: 1, totalPages: 0, degradedMode: true });
-      return;
-    }
-
     const {
       severity,
       status,
@@ -19,24 +15,74 @@ export const getAlarms = async (req: Request, res: Response): Promise<void> => {
       pageSize = '20',
     } = req.query as Record<string, string | undefined>;
 
+    const pageNumber = Math.max(Number(page) || 1, 1);
+    const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
+    const offset = (pageNumber - 1) * size;
+
+    if (!databaseState.connected) {
+      const filtered = demoAlarms
+        .filter((alarm) => {
+          const severityMatch = !severity || alarm.severity === severity;
+          const statusMatch = !status || alarm.lifecycleStatus === status;
+          const rtuMatch = !rtuId || alarm.rtuId === Number(rtuId);
+          return severityMatch && statusMatch && rtuMatch;
+        })
+        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+
+      const paged = filtered.slice(offset, offset + size).map((alarm) => {
+        const rtu = demoRtus.find((item) => item.id === alarm.rtuId);
+        return {
+          ...alarm,
+          rtuName: rtu?.name || 'Unknown RTU',
+          zone: rtu?.locationAddress || alarm.location,
+        };
+      });
+
+      res.json({
+        data: paged,
+        total: filtered.length,
+        page: pageNumber,
+        totalPages: Math.ceil(filtered.length / size),
+        degradedMode: true,
+      });
+      return;
+    }
+
     const whereClause: Record<string, unknown> = {};
     if (severity) whereClause.severity = severity;
     if (status) whereClause.lifecycleStatus = status;
     if (rtuId) whereClause.rtuId = Number(rtuId);
 
-    const pageNumber = Math.max(Number(page) || 1, 1);
-    const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
-    const offset = (pageNumber - 1) * size;
-
     const { rows, count } = await Alarm.findAndCountAll({
       where: whereClause,
+      include: [{ model: RTU, as: 'rtu', attributes: ['id', 'name', 'locationAddress'] }],
       order: [['occurredAt', 'DESC']],
       limit: size,
       offset,
     });
 
+    const mapped = rows.map((alarm) => {
+      const rtu = alarm.get('rtu') as RTU | undefined;
+      return {
+        id: alarm.get('id') as number,
+        rtuId: alarm.get('rtuId') as number | null,
+        rtuName: rtu ? (rtu.get('name') as string) : 'Unknown RTU',
+        zone: rtu ? ((rtu.get('locationAddress') as string) || 'Unknown zone') : 'Unknown zone',
+        severity: alarm.get('severity') as string,
+        lifecycleStatus: alarm.get('lifecycleStatus') as string,
+        alarmType: alarm.get('alarmType') as string,
+        message: alarm.get('message') as string,
+        location: alarm.get('location') as string | null,
+        localizationKm: alarm.get('localizationKm') as string | null,
+        owner: alarm.get('owner') as string | null,
+        occurredAt: alarm.get('occurredAt') as Date,
+        acknowledgedAt: alarm.get('acknowledgedAt') as Date | null,
+        resolvedAt: alarm.get('resolvedAt') as Date | null,
+      };
+    });
+
     res.json({
-      data: rows,
+      data: mapped,
       total: count,
       page: pageNumber,
       totalPages: Math.ceil(count / size),
@@ -49,7 +95,18 @@ export const getAlarms = async (req: Request, res: Response): Promise<void> => {
 export const getAlarmById = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!databaseState.connected) {
-      res.status(503).json({ error: 'Database not connected' });
+      const id = Number(req.params.id);
+      const alarm = demoAlarms.find((item) => item.id === id);
+      if (!alarm) {
+        res.status(404).json({ error: 'Alarm not found' });
+        return;
+      }
+      const rtu = demoRtus.find((item) => item.id === alarm.rtuId);
+      res.json({
+        ...alarm,
+        rtuName: rtu?.name || 'Unknown RTU',
+        zone: rtu?.locationAddress || alarm.location,
+      });
       return;
     }
 

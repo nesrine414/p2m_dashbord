@@ -2,15 +2,26 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { Alarm, HealthScore, OtdrTestResult, Prediction, RTU } from '../models';
+import { demoRtus } from '../data/demoData';
 
 export const getRTUs = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { status, search } = req.query as { status?: string; search?: string };
+
     if (!databaseState.connected) {
-      res.json([]);
+      const normalizedSearch = search?.toLowerCase().trim();
+      const filtered = demoRtus.filter((item) => {
+        const statusMatch = !status || item.status === status;
+        const searchMatch =
+          !normalizedSearch ||
+          item.name.toLowerCase().includes(normalizedSearch) ||
+          item.ipAddress.toLowerCase().includes(normalizedSearch) ||
+          item.serialNumber.toLowerCase().includes(normalizedSearch);
+        return statusMatch && searchMatch;
+      });
+      res.json(filtered);
       return;
     }
-
-    const { status, search } = req.query as { status?: string; search?: string };
 
     const whereClause: Record<string | symbol, unknown> = {};
     if (status) {
@@ -38,7 +49,13 @@ export const getRTUs = async (req: Request, res: Response): Promise<void> => {
 export const getRTUById = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!databaseState.connected) {
-      res.status(503).json({ error: 'Database not connected' });
+      const id = Number(req.params.id);
+      const rtu = demoRtus.find((item) => item.id === id);
+      if (!rtu) {
+        res.status(404).json({ error: 'RTU not found' });
+        return;
+      }
+      res.json(rtu);
       return;
     }
 

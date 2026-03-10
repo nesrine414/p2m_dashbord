@@ -1,0 +1,315 @@
+export type DemoRTUStatus = 'online' | 'offline' | 'warning' | 'unreachable';
+export type DemoAlarmSeverity = 'critical' | 'major' | 'minor' | 'info';
+export type DemoAlarmLifecycle = 'active' | 'acknowledged' | 'cleared';
+
+export interface DemoRTU {
+  id: number;
+  name: string;
+  locationAddress: string;
+  ipAddress: string;
+  serialNumber: string;
+  status: DemoRTUStatus;
+  temperature: number;
+  lastSeen: string;
+}
+
+export interface DemoFiberRoute {
+  id: number;
+  routeName: string;
+  source: string;
+  destination: string;
+  fiberStatus: 'normal' | 'degraded' | 'broken';
+  routeStatus: 'active' | 'inactive' | 'skipped';
+  lengthKm: number;
+  attenuationDb: number;
+  reflectionEvents: boolean;
+  lastTestTime: string;
+}
+
+export interface DemoAlarm {
+  id: number;
+  rtuId: number;
+  severity: DemoAlarmSeverity;
+  lifecycleStatus: DemoAlarmLifecycle;
+  alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
+  message: string;
+  location: string;
+  localizationKm: string;
+  owner: string;
+  occurredAt: string;
+}
+
+export interface DemoOtdrTest {
+  id: number;
+  routeId: number;
+  mode: 'auto' | 'manual' | 'scheduled';
+  pulseWidth: string;
+  dynamicRangeDb: number;
+  wavelengthNm: 1310 | 1550 | 1625;
+  result: 'pass' | 'fail';
+  testedAt: string;
+}
+
+export const demoRtus: DemoRTU[] = [
+  {
+    id: 1,
+    name: 'RTU-PAR-001',
+    locationAddress: 'Paris North',
+    ipAddress: '10.42.1.11',
+    serialNumber: 'NQMS-RTU-0001',
+    status: 'online',
+    temperature: 31,
+    lastSeen: '2026-03-09T19:58:00.000Z',
+  },
+  {
+    id: 2,
+    name: 'RTU-PAR-014',
+    locationAddress: 'Paris East',
+    ipAddress: '10.42.1.29',
+    serialNumber: 'NQMS-RTU-0014',
+    status: 'warning',
+    temperature: 42,
+    lastSeen: '2026-03-09T19:59:30.000Z',
+  },
+  {
+    id: 3,
+    name: 'RTU-LIL-004',
+    locationAddress: 'Lille Core',
+    ipAddress: '10.43.2.9',
+    serialNumber: 'NQMS-RTU-0004',
+    status: 'online',
+    temperature: 29,
+    lastSeen: '2026-03-09T19:57:00.000Z',
+  },
+  {
+    id: 4,
+    name: 'RTU-MRS-003',
+    locationAddress: 'Marseille West',
+    ipAddress: '10.44.6.5',
+    serialNumber: 'NQMS-RTU-0003',
+    status: 'offline',
+    temperature: 0,
+    lastSeen: '2026-03-09T19:20:00.000Z',
+  },
+  {
+    id: 5,
+    name: 'RTU-LYO-007',
+    locationAddress: 'Lyon South',
+    ipAddress: '10.45.4.17',
+    serialNumber: 'NQMS-RTU-0007',
+    status: 'online',
+    temperature: 34,
+    lastSeen: '2026-03-09T19:58:20.000Z',
+  },
+  {
+    id: 6,
+    name: 'RTU-BDX-002',
+    locationAddress: 'Bordeaux Hub',
+    ipAddress: '10.46.2.3',
+    serialNumber: 'NQMS-RTU-0002',
+    status: 'warning',
+    temperature: 39,
+    lastSeen: '2026-03-09T19:59:05.000Z',
+  },
+  {
+    id: 7,
+    name: 'RTU-NAN-011',
+    locationAddress: 'Nantes Metro',
+    ipAddress: '10.47.3.41',
+    serialNumber: 'NQMS-RTU-0011',
+    status: 'online',
+    temperature: 30,
+    lastSeen: '2026-03-09T19:56:40.000Z',
+  },
+  {
+    id: 8,
+    name: 'RTU-TOU-006',
+    locationAddress: 'Toulouse South',
+    ipAddress: '10.48.1.78',
+    serialNumber: 'NQMS-RTU-0006',
+    status: 'unreachable',
+    temperature: 36,
+    lastSeen: '2026-03-09T19:41:00.000Z',
+  },
+];
+
+export const demoFiberRoutes: DemoFiberRoute[] = [
+  {
+    id: 1,
+    routeName: 'PAR-NORTH-CORE',
+    source: 'POP-A',
+    destination: 'POP-D',
+    fiberStatus: 'normal',
+    routeStatus: 'active',
+    lengthKm: 33.4,
+    attenuationDb: 16.1,
+    reflectionEvents: false,
+    lastTestTime: '2026-03-09T19:10:00.000Z',
+  },
+  {
+    id: 2,
+    routeName: 'PAR-EAST-RING',
+    source: 'POP-D',
+    destination: 'POP-F',
+    fiberStatus: 'degraded',
+    routeStatus: 'active',
+    lengthKm: 27.8,
+    attenuationDb: 21.9,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09T19:02:00.000Z',
+  },
+  {
+    id: 3,
+    routeName: 'MRS-WEST-BACKBONE',
+    source: 'POP-K',
+    destination: 'POP-M',
+    fiberStatus: 'broken',
+    routeStatus: 'inactive',
+    lengthKm: 40.1,
+    attenuationDb: 0,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09T18:31:00.000Z',
+  },
+  {
+    id: 4,
+    routeName: 'LYO-METRO-02',
+    source: 'POP-L2',
+    destination: 'POP-L8',
+    fiberStatus: 'normal',
+    routeStatus: 'active',
+    lengthKm: 18.9,
+    attenuationDb: 14.7,
+    reflectionEvents: false,
+    lastTestTime: '2026-03-09T19:18:00.000Z',
+  },
+  {
+    id: 5,
+    routeName: 'BDX-HUB-SPUR',
+    source: 'POP-B1',
+    destination: 'POP-B4',
+    fiberStatus: 'degraded',
+    routeStatus: 'skipped',
+    lengthKm: 12.6,
+    attenuationDb: 20.4,
+    reflectionEvents: true,
+    lastTestTime: '2026-03-09T18:57:00.000Z',
+  },
+];
+
+export const demoAlarms: DemoAlarm[] = [
+  {
+    id: 1001,
+    rtuId: 4,
+    severity: 'critical',
+    lifecycleStatus: 'acknowledged',
+    alarmType: 'RTU Down',
+    message: 'RTU power supply unavailable',
+    location: 'Marseille West',
+    localizationKm: 'KM 40.8',
+    owner: 'NOC L2',
+    occurredAt: '2026-03-09T19:01:00.000Z',
+  },
+  {
+    id: 1002,
+    rtuId: 2,
+    severity: 'critical',
+    lifecycleStatus: 'active',
+    alarmType: 'Fiber Cut',
+    message: 'Optical signal dropped below -35 dBm',
+    location: 'Paris East',
+    localizationKm: 'KM 22.3',
+    owner: 'Field Team Alpha',
+    occurredAt: '2026-03-09T19:16:00.000Z',
+  },
+  {
+    id: 1003,
+    rtuId: 6,
+    severity: 'major',
+    lifecycleStatus: 'acknowledged',
+    alarmType: 'High Loss',
+    message: 'Trend slope exceeded warning profile',
+    location: 'Bordeaux Hub',
+    localizationKm: 'KM 9.4',
+    owner: 'NOC L1',
+    occurredAt: '2026-03-09T19:25:00.000Z',
+  },
+  {
+    id: 1004,
+    rtuId: 2,
+    severity: 'major',
+    lifecycleStatus: 'active',
+    alarmType: 'Temperature',
+    message: 'Cabinet temperature over 40 C',
+    location: 'Paris East',
+    localizationKm: 'KM 20.7',
+    owner: 'NOC L1',
+    occurredAt: '2026-03-09T19:32:00.000Z',
+  },
+  {
+    id: 1005,
+    rtuId: 5,
+    severity: 'minor',
+    lifecycleStatus: 'cleared',
+    alarmType: 'High Loss',
+    message: 'Clock drift exceeds 25 ms',
+    location: 'Lyon South',
+    localizationKm: 'KM 4.1',
+    owner: 'Automation Bot',
+    occurredAt: '2026-03-09T19:36:00.000Z',
+  },
+  {
+    id: 1006,
+    rtuId: 7,
+    severity: 'info',
+    lifecycleStatus: 'cleared',
+    alarmType: 'Maintenance',
+    message: 'Scheduled OTDR run started',
+    location: 'Nantes Metro',
+    localizationKm: 'N/A',
+    owner: 'Scheduler',
+    occurredAt: '2026-03-09T19:42:00.000Z',
+  },
+];
+
+export const demoOtdrTests: DemoOtdrTest[] = [
+  {
+    id: 501,
+    routeId: 1,
+    mode: 'scheduled',
+    pulseWidth: '100 ns',
+    dynamicRangeDb: 39,
+    wavelengthNm: 1550,
+    result: 'pass',
+    testedAt: '2026-03-09T19:20:00.000Z',
+  },
+  {
+    id: 502,
+    routeId: 2,
+    mode: 'auto',
+    pulseWidth: '500 ns',
+    dynamicRangeDb: 37,
+    wavelengthNm: 1625,
+    result: 'fail',
+    testedAt: '2026-03-09T19:12:00.000Z',
+  },
+  {
+    id: 503,
+    routeId: 4,
+    mode: 'manual',
+    pulseWidth: '50 ns',
+    dynamicRangeDb: 35,
+    wavelengthNm: 1310,
+    result: 'pass',
+    testedAt: '2026-03-09T19:07:00.000Z',
+  },
+  {
+    id: 504,
+    routeId: 3,
+    mode: 'manual',
+    pulseWidth: '1 us',
+    dynamicRangeDb: 41,
+    wavelengthNm: 1550,
+    result: 'fail',
+    testedAt: '2026-03-09T18:31:00.000Z',
+  },
+];
