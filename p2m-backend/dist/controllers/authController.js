@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.me = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
 const signToken = (user) => jsonwebtoken_1.default.sign(user, process.env.JWT_SECRET || 'fallback_secret', {
@@ -18,18 +19,30 @@ const register = async (req, res) => {
             return;
         }
         const { username, password, email, role, firstName, lastName, phone } = req.body;
-        if (!username || !password || !email) {
-            res.status(400).json({ error: 'username, password and email are required' });
+        if (!password || !email) {
+            res.status(400).json({ error: 'password and email are required' });
             return;
         }
-        const existing = await models_1.User.findOne({ where: { username } });
-        if (existing) {
+        const baseUsername = (username || email.split('@')[0] || phone || '').trim();
+        if (!baseUsername) {
+            res.status(400).json({ error: 'username is required (or derivable from email/phone)' });
+            return;
+        }
+        let finalUsername = baseUsername;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const existing = await models_1.User.findOne({ where: { username: finalUsername } });
+            if (!existing)
+                break;
+            finalUsername = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+        const existingFinal = await models_1.User.findOne({ where: { username: finalUsername } });
+        if (existingFinal) {
             res.status(409).json({ error: 'username already exists' });
             return;
         }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const createdUser = await models_1.User.create({
-            username,
+            username: finalUsername,
             password: hashedPassword,
             email,
             role: role || 'user',
@@ -63,12 +76,17 @@ const login = async (req, res) => {
             res.status(503).json({ error: 'Database not connected' });
             return;
         }
-        const { username, password } = req.body;
-        if (!username || !password) {
-            res.status(400).json({ error: 'username and password are required' });
+        const { username, email, phone, password } = req.body;
+        const identifier = (username || email || phone || '').trim();
+        if (!identifier || !password) {
+            res.status(400).json({ error: 'email/phone (or username) and password are required' });
             return;
         }
-        const user = await models_1.User.findOne({ where: { username } });
+        const user = await models_1.User.findOne({
+            where: {
+                [sequelize_1.Op.or]: [{ username: identifier }, { email: identifier }, { phone: identifier }],
+            },
+        });
         if (!user) {
             res.status(401).json({ error: 'Invalid credentials' });
             return;

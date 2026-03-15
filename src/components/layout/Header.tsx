@@ -8,8 +8,11 @@ import {
   Avatar,
   TextField,
   InputAdornment,
+  Tooltip,
 } from '@mui/material';
 import { MenuOutlined, Search, NotificationsOutlined } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { ROUTE_PATHS } from '../../constants/routes';
 
 interface HeaderProps {
   drawerWidth: number;
@@ -17,6 +20,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
+  const navigate = useNavigate();
+
   return (
     <AppBar
       position="fixed"
@@ -90,9 +95,13 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
           Connected
         </Box>
 
-        <IconButton sx={{ p: 0 }}>
-          <Avatar sx={{ width: 34, height: 34, backgroundColor: '#7ea5e8', fontSize: 14 }}>A</Avatar>
-        </IconButton>
+        <Tooltip title="Profile" arrow>
+          <IconButton sx={{ p: 0 }} aria-label="Open profile" onClick={() => navigate(ROUTE_PATHS.profile)}>
+            <Avatar sx={{ width: 34, height: 34, backgroundColor: '#7ea5e8', fontSize: 14 }}>
+              A
+            </Avatar>
+          </IconButton>
+        </Tooltip>
       </Toolbar>
     </AppBar>
   );
