@@ -4,11 +4,11 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import MainLayout from './components/layout/MainLayout';
 import DashboardPage from './pages/DashboardPage';
-import RTUInventoryPage from './pages/RTUInventoryPage';
 import MonitoringPage from './pages/MonitoringPage';
 import AlarmsPage from './pages/AlarmsPage';
-import ReportsPage from './pages/ReportsPage';
-import AIDashboardPage from './pages/AIDashboardPage';
+import ReportsPage from './pages/Reports/ReportsPage';
+import DashboardIAPage from './pages/DashboardIA/DashboardIAPage';
+import RTUListPage from './pages/RTUList/RTUListPage';
 import { ROUTE_PATHS, ROUTE_SEGMENTS } from './constants/routes';
 
 const darkTheme = createTheme({
@@ -148,11 +148,12 @@ function App() {
         <Routes>
           <Route path={ROUTE_PATHS.dashboard} element={<MainLayout />}>
             <Route index element={<DashboardPage />} />
-            <Route path={ROUTE_SEGMENTS.rtu} element={<RTUInventoryPage />} />
+            <Route path={ROUTE_SEGMENTS.rtu} element={<RTUListPage />} />
             <Route path={ROUTE_SEGMENTS.monitoring} element={<MonitoringPage />} />
             <Route path={ROUTE_SEGMENTS.alarms} element={<AlarmsPage />} />
+            <Route path={`${ROUTE_SEGMENTS.alarms}/:alarmId`} element={<AlarmsPage />} />
             <Route path={ROUTE_SEGMENTS.reports} element={<ReportsPage />} />
-            <Route path={ROUTE_SEGMENTS.aiDashboard} element={<AIDashboardPage />} />
+            <Route path={ROUTE_SEGMENTS.aiDashboard} element={<DashboardIAPage />} />
             <Route path="*" element={<Navigate to={ROUTE_PATHS.dashboard} replace />} />
           </Route>
         </Routes>

@@ -79,3 +79,32 @@ code {
     transition: none;
   }
 }
+
+.glass-card {
+  background: linear-gradient(160deg, rgba(132, 164, 224, 0.14), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(156, 176, 217, 0.28);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 36px rgba(5, 10, 22, 0.24);
+}
+
+.animate-fadeInUp {
+  animation: fade-in-up 440ms ease both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeInUp {
+    animation: none;
+  }
+}

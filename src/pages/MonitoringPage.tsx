@@ -17,6 +17,7 @@ import {
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
 import StatusBadge from '../components/common/StatusBadge';
+import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
   BackendAlarm,
   BackendFiberRoute,
@@ -228,6 +229,16 @@ const MonitoringPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <RouteOutlined sx={{ color: '#8fd3ff' }} />
+          <Typography variant="h6" color="white">
+            Carte GPS temps reel
+          </Typography>
+        </Stack>
+        <RealtimeTunisiaMap />
+      </Paper>
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>

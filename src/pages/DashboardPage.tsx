@@ -7,19 +7,27 @@ import {
   Grid,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { CheckCircleOutline, CrisisAlertOutlined, DeviceHubOutlined, RouterOutlined } from '@mui/icons-material';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import WidgetCard from '../components/common/WidgetCard';
-import StatusBadge from '../components/common/StatusBadge';
-import { nqmsMatrixRows } from '../data/mockData';
+import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
+import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
+import RTUCardsWidget from '../components/widgets/RTUCardsWidget';
+import { attenuationSeries } from '../data/mockData';
 import { ROUTE_PATHS } from '../constants/routes';
 import {
   BackendAlarm,
@@ -31,17 +39,6 @@ import {
   getTopology,
 } from '../services/api';
 import { DashboardStats, FiberStatus } from '../types';
-
-const formatDateTime = (value?: string | null): string => {
-  if (!value) {
-    return 'N/A';
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString();
-};
 
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -113,7 +110,39 @@ const DashboardPage: React.FC = () => {
     };
   }, [stats, routes, otdrTests]);
 
-  const criticalRows = nqmsMatrixRows.filter((row) => row.criticality === 'Critique').slice(0, 8);
+  const alarmRows = useMemo<AlarmRow[]>(
+    () =>
+      criticalAlarms.map((item) => ({
+        id: item.id,
+        type: item.alarmType,
+        rtu: item.rtuName || `RTU-${item.rtuId || 'N/A'}`,
+        zone: item.zone || item.location || 'N/A',
+        severity: item.severity,
+        status: item.lifecycleStatus === 'cleared' ? 'resolved' : item.lifecycleStatus,
+        timestamp: item.occurredAt,
+        location: item.localizationKm || item.location || 'N/A',
+      })),
+    [criticalAlarms]
+  );
+
+  const routeRows = useMemo<CriticalRoute[]>(
+    () =>
+      routes
+        .filter((route) => route.fiberStatus !== FiberStatus.NORMAL)
+        .map((route) => ({
+          id: route.id,
+          name: route.routeName,
+          from: route.source,
+          to: route.destination,
+          status: route.fiberStatus === FiberStatus.BROKEN ? 'broken' : 'degraded',
+          attenuation:
+            route.attenuationDb && route.attenuationDb > 0
+              ? `${route.attenuationDb.toFixed(1)} dB`
+              : 'N/A',
+          lastTest: route.lastTestTime || 'N/A',
+        })),
+    [routes]
+  );
 
   return (
     <Box>
@@ -184,77 +213,52 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} mb={2}>
+          <Box>
+            <Typography variant="h6" color="white">
+              Attenuation Trend (30j)
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Suivi des variations sur les routes principales.
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="#8fb3d1">
+            Dernieres 4 semaines
+          </Typography>
+        </Stack>
+        <Box sx={{ width: '100%', height: 260 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={attenuationSeries}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
+              <XAxis dataKey="slot" stroke="#9aa9bd" />
+              <YAxis stroke="#9aa9bd" />
+              <Tooltip />
+              <ReferenceArea x1="14:00" x2="15:00" fill="rgba(140, 96, 255, 0.16)" />
+              <ReferenceLine
+                y={18}
+                stroke="#ff4d6d"
+                strokeDasharray="6 6"
+                label={{ value: 'Seuil critique 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
+              />
+              <Legend
+                iconType="circle"
+                wrapperStyle={{ color: '#e2ecff', fontWeight: 600 }}
+              />
+              <Line type="monotone" dataKey="backboneNorth" name="Backbone North" stroke="#76d6ff" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="backboneSouth" name="Backbone South" stroke="#f8b26a" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="metroRing" name="Metro Ring" stroke="#b28bff" strokeWidth={2.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Box>
+      </Paper>
+
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 7 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Typography variant="h6" color="white" mb={2}>
-              Alarmes critiques en cours
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>RTU</TableCell>
-                    <TableCell>Zone</TableCell>
-                    <TableCell>Severite</TableCell>
-                    <TableCell>Etat</TableCell>
-                    <TableCell>Localisation</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {criticalAlarms.map((item) => (
-                    <TableRow key={item.id} hover>
-                      <TableCell>{item.id}</TableCell>
-                      <TableCell>{item.alarmType}</TableCell>
-                      <TableCell>{item.rtuName || `RTU-${item.rtuId || 'N/A'}`}</TableCell>
-                      <TableCell>{item.zone || item.location || 'N/A'}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={item.severity} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={item.lifecycleStatus} />
-                      </TableCell>
-                      <TableCell>{item.localizationKm || 'N/A'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+          <RecentAlarmsTable alarms={alarmRows} />
         </Grid>
-
         <Grid size={{ xs: 12, lg: 5 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Typography variant="h6" color="white" mb={2}>
-              Routes fibres critiques
-            </Typography>
-            <Stack spacing={1.3}>
-              {routes
-                .filter((route) => route.fiberStatus !== FiberStatus.NORMAL)
-                .map((route) => (
-                  <Box key={route.id} sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#2a3349' }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" color="white" fontWeight={700}>
-                        {route.routeName}
-                      </Typography>
-                      <StatusBadge status={route.fiberStatus} />
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                      {route.source} to {route.destination}
-                    </Typography>
-                    <Typography variant="caption" color="#8fb3d1" display="block">
-                      Attenuation{' '}
-                      {route.attenuationDb && route.attenuationDb > 0
-                        ? `${route.attenuationDb.toFixed(1)} dB`
-                        : 'N/A'}{' '}
-                      | Last test {formatDateTime(route.lastTestTime)}
-                    </Typography>
-                  </Box>
-                ))}
-            </Stack>
-          </Paper>
+          <CriticalRoutesWidget routes={routeRows} />
         </Grid>
       </Grid>
 
@@ -297,35 +301,8 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-        <Typography variant="h6" color="white" mb={2}>
-          Matrice NQMS - Parametres critiques
-        </Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Domaine</TableCell>
-                <TableCell>Parametre</TableCell>
-                <TableCell>Valeurs</TableCell>
-                <TableCell>Widget</TableCell>
-                <TableCell>Criticite</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {criticalRows.map((row) => (
-                <TableRow key={`${row.domain}-${row.parameter}`} hover>
-                  <TableCell>{row.domain}</TableCell>
-                  <TableCell>{row.parameter}</TableCell>
-                  <TableCell>{row.values}</TableCell>
-                  <TableCell>{row.widgetType}</TableCell>
-                  <TableCell>{row.criticality}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+      <RTUCardsWidget />
+
     </Box>
   );
 };
