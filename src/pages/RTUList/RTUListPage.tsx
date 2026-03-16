@@ -34,7 +34,7 @@ const RTUListPage: React.FC = () => {
       {
         id: 1,
         name: 'RTU-Paris-001',
-        location: 'Paris 5e',
+        location: 'Paris 5th',
         ipAddress: '192.168.1.10',
         status: 'online',
         temperature: 28,
@@ -42,7 +42,7 @@ const RTUListPage: React.FC = () => {
       {
         id: 2,
         name: 'RTU-Lyon-005',
-        location: 'Lyon Centre',
+        location: 'Lyon Center',
         ipAddress: '192.168.1.23',
         status: 'online',
         temperature: 25,
@@ -58,7 +58,7 @@ const RTUListPage: React.FC = () => {
       {
         id: 4,
         name: 'RTU-Nice-002',
-        location: 'Nice Est',
+        location: 'Nice East',
         ipAddress: '192.168.1.67',
         status: 'offline',
         temperature: 42,
@@ -78,16 +78,16 @@ const RTUListPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" gutterBottom color="white">
-        Inventaire RTU
+        RTU Inventory
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Liste complete des equipements RTU du reseau.
+        Full list of RTU network equipment.
       </Typography>
 
       <Box className="glass-card" sx={{ p: 2, mb: 3 }}>
         <Box display="flex" gap={2}>
           <TextField
-            placeholder="Rechercher RTU..."
+            placeholder="Search RTU..."
             variant="outlined"
             size="small"
             value={searchQuery}
@@ -110,7 +110,7 @@ const RTUListPage: React.FC = () => {
             size="small"
             sx={{ minWidth: 150, color: 'white' }}
           >
-            <MenuItem value="all">Tous les statuts</MenuItem>
+            <MenuItem value="all">All statuses</MenuItem>
             <MenuItem value="online">Online</MenuItem>
             <MenuItem value="offline">Offline</MenuItem>
             <MenuItem value="warning">Warning</MenuItem>
@@ -123,10 +123,10 @@ const RTUListPage: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>NOM</TableCell>
-                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>LOCALISATION</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>NAME</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>LOCATION</TableCell>
                 <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>IP</TableCell>
-                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>STATUT</TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>STATUS</TableCell>
                 <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>TEMPERATURE</TableCell>
               </TableRow>
             </TableHead>
@@ -153,7 +153,7 @@ const RTUListPage: React.FC = () => {
         </TableContainer>
 
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 2, display: 'block' }}>
-          Total: {filteredRTUs.length} RTU affiches
+          Total: {filteredRTUs.length} RTUs displayed
         </Typography>
       </Box>
     </Box>

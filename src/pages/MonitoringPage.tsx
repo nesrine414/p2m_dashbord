@@ -166,10 +166,10 @@ const MonitoringPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>
-        Vue 2 - Reseau
+        View 2 - Network
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Topologie optique, attenuation et resultats OTDR.
+        Optical topology, attenuation, and OTDR results.
       </Typography>
 
       {loading && (
@@ -234,7 +234,7 @@ const MonitoringPage: React.FC = () => {
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
           <RouteOutlined sx={{ color: '#8fd3ff' }} />
           <Typography variant="h6" color="white">
-            Carte GPS temps reel
+            Real-time GPS map
           </Typography>
         </Stack>
         <RealtimeTunisiaMap />

@@ -74,10 +74,10 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
     <Box sx={{ mt: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" fontWeight={700} color="white">
-          Etat des RTU / OTDR
+          RTU / OTDR Status
         </Typography>
         <Chip
-          label={`${onlineCount}/${rtuCards.length} En ligne`}
+          label={`${onlineCount}/${rtuCards.length} Online`}
           sx={{ backgroundColor: '#00FF88', color: 'black', fontWeight: 'bold' }}
         />
       </Box>
@@ -135,14 +135,14 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
                 {rtu.temperature}C
               </Typography>
                 {rtu.temperature > 40 && (
-                  <Chip label="CRITIQUE" size="small" sx={{ backgroundColor: '#FF3366', color: 'white', fontSize: 9 }} />
+                  <Chip label="CRITICAL" size="small" sx={{ backgroundColor: '#FF3366', color: 'white', fontSize: 9 }} />
                 )}
               </Box>
 
               <Box mt={2}>
                 <Box display="flex" justifyContent="space-between" mb={0.5}>
                   <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                    Disponibilite OTDR
+                    OTDR Availability
                   </Typography>
                   <Typography variant="caption" fontWeight="bold" color="white">
                     {rtu.availabilityPercent.toFixed(1)}%
@@ -164,7 +164,7 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
               </Box>
 
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 2, display: 'block' }}>
-                Localisation: {rtu.location}
+                Location: {rtu.location}
               </Typography>
             </Box>
           </Grid>

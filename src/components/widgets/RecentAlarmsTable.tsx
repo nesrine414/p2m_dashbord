@@ -57,9 +57,9 @@ const getSeverityColor = (severity: AlarmRow['severity']) => {
 
 const getStatusChip = (status: AlarmRow['status']) => {
   const colors = {
-    active: { bg: '#FF3366', label: 'ACTIF' },
-    acknowledged: { bg: '#2196F3', label: 'ACQUITTE' },
-    resolved: { bg: '#4CAF50', label: 'RESOLU' },
+    active: { bg: '#FF3366', label: 'ACTIVE' },
+    acknowledged: { bg: '#2196F3', label: 'ACKNOWLEDGED' },
+    resolved: { bg: '#4CAF50', label: 'RESOLVED' },
   };
   const config = colors[status];
   return (
@@ -88,16 +88,16 @@ const RecentAlarmsTable: React.FC<RecentAlarmsTableProps> = ({ alarms }) => {
     <Box className="glass-card animate-fadeInUp" sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" fontWeight={700} color="white">
-          Alarmes critiques en cours
+          Active critical alarms
         </Typography>
         <Box display="flex" gap={1}>
           <Chip
-            label={`${criticalCount} Critiques`}
+            label={`${criticalCount} Critical`}
             size="small"
             sx={{ backgroundColor: '#FF3366', color: 'white', fontWeight: 'bold' }}
           />
           <Chip
-            label={`${majorCount} Majeures`}
+            label={`${majorCount} Major`}
             size="small"
             sx={{ backgroundColor: '#FF9800', color: 'white', fontWeight: 'bold' }}
           />
@@ -112,9 +112,9 @@ const RecentAlarmsTable: React.FC<RecentAlarmsTableProps> = ({ alarms }) => {
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>TYPE</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>RTU</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>ZONE</TableCell>
-              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>SEVERITE</TableCell>
-              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>STATUT</TableCell>
-              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>LOCALISATION</TableCell>
+              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>SEVERITY</TableCell>
+              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>STATUS</TableCell>
+              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>LOCATION</TableCell>
               <TableCell
                 align="center"
                 sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold', minWidth: 90 }}
@@ -178,7 +178,7 @@ const RecentAlarmsTable: React.FC<RecentAlarmsTableProps> = ({ alarms }) => {
           sx={{ color: '#00D9FF', cursor: 'pointer' }}
           onClick={() => navigate('/alarms')}
         >
-          Voir toutes les alarmes &gt;
+          View all alarms &gt;
         </Typography>
       </Box>
     </Box>

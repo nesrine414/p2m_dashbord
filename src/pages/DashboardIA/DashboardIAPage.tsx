@@ -66,10 +66,10 @@ const DashboardIAPage: React.FC = () => {
           <Psychology sx={{ fontSize: 40, color: '#9C27B0' }} />
           <Box>
             <Typography variant="h4" fontWeight="bold" color="white">
-              Dashboard Intelligence Artificielle
+              Artificial Intelligence Dashboard
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Predictions de pannes et analyse predictive du reseau
+              Failure predictions and predictive network analysis
             </Typography>
           </Box>
         </Box>
@@ -79,7 +79,7 @@ const DashboardIAPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Box className="glass-card" sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-              Score Sante Reseau Global
+              Overall network health score
             </Typography>
 
             <Box
@@ -116,7 +116,7 @@ const DashboardIAPage: React.FC = () => {
             </Box>
 
             <Chip
-              label="Bon etat (>80)"
+              label="Healthy (>80)"
               sx={{ backgroundColor: '#00FF88', color: 'black', fontWeight: 'bold', width: '100%' }}
             />
           </Box>
@@ -126,10 +126,10 @@ const DashboardIAPage: React.FC = () => {
           <Box className="glass-card" sx={{ p: 3, height: '100%' }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6" fontWeight={700} color="white">
-                Alertes Predictives
+                Predictive alerts
               </Typography>
               <Chip
-                label={`${predictions.length} RTU a risque`}
+                label={`${predictions.length} RTUs at risk`}
                 sx={{ backgroundColor: '#FF3366', color: 'white', fontWeight: 'bold' }}
               />
             </Box>
@@ -150,7 +150,7 @@ const DashboardIAPage: React.FC = () => {
                         {pred.rtuName}
                       </Typography>
                       <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                        Risque panne dans 48h
+                        Failure risk within 48h
                       </Typography>
                     </Box>
                     <Box textAlign="right">
@@ -177,7 +177,7 @@ const DashboardIAPage: React.FC = () => {
                       sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                     />
                     <Chip
-                      label={`Alarmes 24h: ${pred.features.nbAlarms24h}`}
+                      label={`Alarms (24h): ${pred.features.nbAlarms24h}`}
                       size="small"
                       sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                     />
@@ -198,7 +198,7 @@ const DashboardIAPage: React.FC = () => {
         <Grid size={{ xs: 12 }}>
           <Box className="glass-card" sx={{ p: 3 }}>
             <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-              Top 5 RTU Critiques
+              Top 5 critical RTUs
             </Typography>
 
             {topPredictions.map((pred, index) => (

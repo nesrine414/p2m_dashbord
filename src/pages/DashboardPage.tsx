@@ -10,7 +10,15 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { CheckCircleOutline, CrisisAlertOutlined, DeviceHubOutlined, RouterOutlined } from '@mui/icons-material';
+import {
+  AccessTime,
+  CheckCircleOutline,
+  CrisisAlertOutlined,
+  DeviceHubOutlined,
+  RouterOutlined,
+  Timeline,
+  TrendingDown,
+} from '@mui/icons-material';
 import {
   CartesianGrid,
   Legend,
@@ -144,13 +152,41 @@ const DashboardPage: React.FC = () => {
     [routes]
   );
 
+  const kpiMTTR = {
+    value: 2.4,
+    unit: 'h',
+    trend: -12.5,
+    target: 4.0,
+  };
+
+  const kpiMTBF = {
+    value: 120,
+    unit: 'h',
+    trend: 8.3,
+    target: 100,
+  };
+
+  const kpiLossRate = {
+    value: 5.2,
+    unit: '%',
+    trend: 2.1,
+    target: 5.0,
+  };
+
+  const kpiAvailability = {
+    value: 99.2,
+    unit: '%',
+    trend: 0.5,
+    target: 99.0,
+  };
+
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.7}>
-        Vue 1 - NOC Temps Reel
+        View 1 - NOC Real-Time
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={2}>
-        Supervision immediate des RTU, alarmes critiques et routes fibre.
+        Real-time monitoring of RTUs, critical alarms, and fiber routes.
       </Typography>
 
       {loading && (
@@ -186,45 +222,152 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="ALARMES CRITIQUES"
+            title="CRITICAL ALARMS"
             value={summary.activeCritical}
-            subtitle="Actives non resolues"
+            subtitle="Active, unresolved"
             icon={<CrisisAlertOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#cf3f4a"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="FIBRES BROKEN"
+            title="BROKEN FIBERS"
             value={summary.brokenFibers}
-            subtitle="Routes a corriger"
+            subtitle="Routes to fix"
             icon={<RouterOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#f08934"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="OTDR FAIL"
+            title="OTDR FAILURES"
             value={summary.testsFailed}
-            subtitle="Derniers tests"
+            subtitle="Latest tests"
             icon={<DeviceHubOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#3c7fff"
           />
         </Grid>
       </Grid>
 
+      <Grid container spacing={2.5} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <WidgetCard
+            title="MTTR (Repair Time)"
+            value={`${kpiMTTR.value}${kpiMTTR.unit}`}
+            subtitle={`Target: <${kpiMTTR.target}h`}
+            icon={<AccessTime sx={{ color: 'white', fontSize: 30 }} />}
+            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            color="#667eea"
+            trend={{ value: kpiMTTR.trend, isPositive: kpiMTTR.trend < 0 }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <WidgetCard
+            title="MTBF (Between Failures)"
+            value={`${kpiMTBF.value}${kpiMTBF.unit}`}
+            subtitle={`Target: >${kpiMTBF.target}h`}
+            icon={<Timeline sx={{ color: 'white', fontSize: 30 }} />}
+            gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
+            color="#11998e"
+            trend={{ value: kpiMTBF.trend, isPositive: kpiMTBF.trend >= 0 }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <WidgetCard
+            title="LOSS RATE (Optical Loss)"
+            value={`${kpiLossRate.value}${kpiLossRate.unit}`}
+            subtitle={`Target: <${kpiLossRate.target}%`}
+            icon={<TrendingDown sx={{ color: 'white', fontSize: 30 }} />}
+            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            color="#f093fb"
+            trend={{ value: kpiLossRate.trend, isPositive: kpiLossRate.trend < 0 }}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <WidgetCard
+            title="NETWORK AVAILABILITY"
+            value={`${kpiAvailability.value}${kpiAvailability.unit}`}
+            subtitle={`Target: >${kpiAvailability.target}%`}
+            icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
+            gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
+            color="#11998e"
+            trend={{ value: kpiAvailability.trend, isPositive: kpiAvailability.trend >= 0 }}
+          />
+        </Grid>
+      </Grid>
+
+      <Box className="glass-card" sx={{ p: 2.8, mb: 3 }}>
+        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
+          Performance indicators (KPIs)
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#667eea" gutterBottom>
+                MTTR - Mean Time To Repair
+              </Typography>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Average time to repair a failure. Target: &lt;4h
+              </Typography>
+              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
+                Formula: total resolution time / resolved alarms count
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#11998e" gutterBottom>
+                MTBF - Mean Time Between Failures
+              </Typography>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Average time between failures. Target: &gt;100h
+              </Typography>
+              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
+                Formula: total time / number of failures
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#f093fb" gutterBottom>
+                LOSS RATE - Optical loss rate
+              </Typography>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Average optical loss percentage. Target: &lt;5%
+              </Typography>
+              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
+                Formula: (measured attenuation - baseline) / baseline * 100
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#11998e" gutterBottom>
+                AVAILABILITY - Network availability
+              </Typography>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Percentage of time the network is operational. Target: &gt;99%
+              </Typography>
+              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
+                Formula: (uptime / total time) * 100
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} mb={2}>
           <Box>
             <Typography variant="h6" color="white">
-              Attenuation Trend (30j)
+              Attenuation Trend (30 days)
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Suivi des variations sur les routes principales.
+              Variation tracking on primary routes.
             </Typography>
           </Box>
           <Typography variant="caption" color="#8fb3d1">
-            Dernieres 4 semaines
+            Last 4 weeks
           </Typography>
         </Stack>
         <Box sx={{ width: '100%', height: 260 }}>
@@ -239,7 +382,7 @@ const DashboardPage: React.FC = () => {
                 y={18}
                 stroke="#ff4d6d"
                 strokeDasharray="6 6"
-                label={{ value: 'Seuil critique 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
+                label={{ value: 'Critical threshold 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
               />
               <Legend
                 iconType="circle"
@@ -266,17 +409,17 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#252f44', border: '1px solid #4e6480' }}>
             <Typography variant="h6" color="white" mb={1}>
-              Vue 2 - Reseau
+              View 2 - Network
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Topologie optique, attenuation par route et derniers tests OTDR.
+              Optical topology, per-route attenuation, and latest OTDR tests.
             </Typography>
             <Stack direction="row" spacing={1}>
               <Button component={RouterLink} to={ROUTE_PATHS.monitoring} variant="contained">
-                Ouvrir Monitoring
+                Open Monitoring
               </Button>
               <Button component={RouterLink} to={ROUTE_PATHS.rtu} variant="outlined">
-                Ouvrir RTU
+                Open RTU
               </Button>
             </Stack>
           </Paper>
@@ -284,17 +427,17 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#2b2f46', border: '1px solid #676c95' }}>
             <Typography variant="h6" color="white" mb={1}>
-              Vue 3 - Qualite & Historique
+              View 3 - Quality & History
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Tendances, KPI de qualite, rapports periodiques et suivi des incidents.
+              Trends, quality KPIs, periodic reports, and incident tracking.
             </Typography>
             <Stack direction="row" spacing={1}>
               <Button component={RouterLink} to={ROUTE_PATHS.reports} variant="contained" color="secondary">
-                Ouvrir Rapports
+                Open Reports
               </Button>
               <Button component={RouterLink} to={ROUTE_PATHS.aiDashboard} variant="outlined">
-                Ouvrir IA
+                Open AI
               </Button>
             </Stack>
           </Paper>

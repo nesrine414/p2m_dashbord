@@ -246,7 +246,7 @@ const RTUInventoryPage: React.FC = () => {
             RTU Inventory
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Sante RTU: status global, alimentation, communication, disponibilite OTDR.
+            RTU health: overall status, power, communication, OTDR availability.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<DownloadOutlined />} sx={{ borderRadius: 2 }}>

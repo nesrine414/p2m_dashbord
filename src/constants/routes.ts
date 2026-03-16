@@ -4,6 +4,9 @@ export const ROUTE_SEGMENTS = {
   alarms: 'alarms',
   reports: 'reports',
   aiDashboard: 'dashboard-ia',
+  profile: 'profile',
+  login: 'login',
+  register: 'register',
 } as const;
 
 export const ROUTE_PATHS = {
@@ -13,4 +16,7 @@ export const ROUTE_PATHS = {
   alarms: `/${ROUTE_SEGMENTS.alarms}`,
   reports: `/${ROUTE_SEGMENTS.reports}`,
   aiDashboard: `/${ROUTE_SEGMENTS.aiDashboard}`,
+  profile: `/${ROUTE_SEGMENTS.profile}`,
+  login: `/${ROUTE_SEGMENTS.login}`,
+  register: `/${ROUTE_SEGMENTS.register}`,
 } as const;

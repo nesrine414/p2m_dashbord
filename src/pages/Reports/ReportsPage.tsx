@@ -16,9 +16,9 @@ import {
 
 const ReportsPage: React.FC = () => {
   const kpis = [
-    { id: 'mttr', label: 'MTTR', value: '2.4h', note: 'Temps moyen de reparation' },
-    { id: 'mtbf', label: 'MTBF', value: '120h', note: 'Temps moyen entre pannes' },
-    { id: 'availability', label: 'Disponibilite', value: '99.2%', note: 'SLA reseau' },
+    { id: 'mttr', label: 'MTTR', value: '2.4h', note: 'Average repair time' },
+    { id: 'mtbf', label: 'MTBF', value: '120h', note: 'Average time between failures' },
+    { id: 'availability', label: 'Availability', value: '99.2%', note: 'Network SLA' },
   ];
 
   const nqmsParameters = [
@@ -26,71 +26,71 @@ const ReportsPage: React.FC = () => {
       domaine: 'RTU',
       parametre: 'RTU Status',
       valeurs: 'Online / Offline / Unreachable',
-      widget: 'Tuile / LED',
-      criticite: 'Critique',
+      widget: 'Tile / LED',
+      criticite: 'Critical',
     },
     {
       domaine: 'RTU',
       parametre: 'Power Supply',
       valeurs: 'Normal / Failure',
-      widget: 'Tuile',
-      criticite: 'Critique',
+      widget: 'Tile',
+      criticite: 'Critical',
     },
     {
       domaine: 'RTU',
       parametre: 'OTDR Availability',
       valeurs: 'Ready / Busy / Fault',
-      widget: 'Icone statut',
-      criticite: 'Critique',
+      widget: 'Status icon',
+      criticite: 'Critical',
     },
     {
-      domaine: 'Fibre',
+      domaine: 'Fiber',
       parametre: 'Fiber Status',
       valeurs: 'Normal / Degraded / Broken',
-      widget: 'Carte / Liste',
-      criticite: 'Critique',
+      widget: 'Map / List',
+      criticite: 'Critical',
     },
     {
-      domaine: 'Fibre',
+      domaine: 'Fiber',
       parametre: 'Route Status',
       valeurs: 'Active / Inactive / Skipped',
-      widget: 'Liste',
-      criticite: 'Critique',
+      widget: 'List',
+      criticite: 'Critical',
     },
     {
-      domaine: 'Fibre',
+      domaine: 'Fiber',
       parametre: 'Attenuation',
-      valeurs: 'dB seuil configurable',
-      widget: 'Jauge',
-      criticite: 'Critique',
+      valeurs: 'dB configurable threshold',
+      widget: 'Gauge',
+      criticite: 'Critical',
     },
     {
       domaine: 'OTDR',
       parametre: 'Test Result',
       valeurs: 'Pass / Fail',
-      widget: 'Tableau',
-      criticite: 'Critique',
+      widget: 'Table',
+      criticite: 'Critical',
     },
     {
-      domaine: 'Alarmes',
+      domaine: 'Alarms',
       parametre: 'Alarm Type',
       valeurs: 'Fiber Cut / High Loss / RTU Down',
-      widget: 'Liste',
-      criticite: 'Critique',
+      widget: 'List',
+      criticite: 'Critical',
     },
     {
       domaine: 'Performance',
       parametre: 'MTTR',
-      valeurs: 'Heures',
+      valeurs: 'Hours',
       widget: 'KPI',
-      criticite: 'Moyenne',
+      criticite: 'Medium',
     },
     {
       domaine: 'Performance',
       parametre: 'MTBF',
-      valeurs: 'Heures',
+      valeurs: 'Hours',
       widget: 'KPI',
-      criticite: 'Moyenne',
+      criticite: 'Medium',
     },
   ];
 
@@ -109,7 +109,7 @@ const ReportsPage: React.FC = () => {
   const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
   const buildMatrixCsv = () => {
-    const headers = ['Domaine', 'Parametre', 'Valeurs', 'Widget', 'Criticite'];
+    const headers = ['Domain', 'Parameter', 'Values', 'Widget', 'Criticality'];
     const rows = nqmsParameters.map((param) => [
       param.domaine,
       param.parametre,
@@ -157,7 +157,7 @@ const ReportsPage: React.FC = () => {
       .join('');
 
     return `<!doctype html>
-      <html lang="fr">
+      <html lang="en">
         <head>
           <meta charset="utf-8" />
           <title>Reports NQMS</title>
@@ -173,14 +173,14 @@ const ReportsPage: React.FC = () => {
         </head>
         <body>
           <h1>Reports & Documentation</h1>
-          <div class="meta">Export genere le ${new Date().toLocaleString()}</div>
+          <div class="meta">Export generated on ${new Date().toLocaleString()}</div>
 
-          <h2>KPIs de performance</h2>
+          <h2>Performance KPIs</h2>
           <table>
             <thead>
               <tr>
                 <th>KPI</th>
-                <th>Valeur</th>
+                <th>Value</th>
                 <th>Note</th>
               </tr>
             </thead>
@@ -189,15 +189,15 @@ const ReportsPage: React.FC = () => {
             </tbody>
           </table>
 
-          <h2>Matrice NQMS - Parametres critiques</h2>
+          <h2>NQMS Matrix - Critical Parameters</h2>
           <table>
             <thead>
               <tr>
-                <th>Domaine</th>
-                <th>Parametre</th>
-                <th>Valeurs</th>
+                <th>Domain</th>
+                <th>Parameter</th>
+                <th>Values</th>
                 <th>Widget</th>
-                <th>Criticite</th>
+                <th>Criticality</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +241,7 @@ const ReportsPage: React.FC = () => {
         Reports & Documentation
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        KPIs de performance, rapports periodiques et documentation technique.
+        Performance KPIs, periodic reports, and technical documentation.
       </Typography>
 
       <Grid container spacing={2.5} mb={3}>
@@ -264,18 +264,18 @@ const ReportsPage: React.FC = () => {
 
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          Matrice NQMS - Parametres critiques
+          NQMS Matrix - Critical Parameters
         </Typography>
 
         <TableContainer sx={{ mt: 2 }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Domaine</TableCell>
-                <TableCell>Parametre</TableCell>
-                <TableCell>Valeurs</TableCell>
+                <TableCell>Domain</TableCell>
+                <TableCell>Parameter</TableCell>
+                <TableCell>Values</TableCell>
                 <TableCell>Widget</TableCell>
-                <TableCell>Criticite</TableCell>
+                <TableCell>Criticality</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -292,10 +292,10 @@ const ReportsPage: React.FC = () => {
                         py: 0.5,
                         borderRadius: '8px',
                         backgroundColor:
-                          param.criticite === 'Critique'
+                          param.criticite === 'Critical'
                             ? 'rgba(255,51,102,0.2)'
                             : 'rgba(255,184,0,0.2)',
-                        color: param.criticite === 'Critique' ? '#FF3366' : '#FFB800',
+                        color: param.criticite === 'Critical' ? '#FF3366' : '#FFB800',
                         fontWeight: 'bold',
                         fontSize: 12,
                         width: 'fit-content',
@@ -313,10 +313,10 @@ const ReportsPage: React.FC = () => {
 
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          Generer rapports
+          Generate reports
         </Typography>
         <Typography variant="body2" color="text.secondary" mb={2}>
-          Export rapide en PDF ou Excel, ou creation d un rapport personnalise.
+          Quick export to PDF or Excel, or create a custom report.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button variant="contained" onClick={handleExportPdf}>
@@ -326,7 +326,7 @@ const ReportsPage: React.FC = () => {
             Excel
           </Button>
           <Button variant="outlined" onClick={handleExportCustom}>
-            Personnalise
+            Custom
           </Button>
         </Stack>
       </Paper>

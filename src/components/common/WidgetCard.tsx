@@ -7,6 +7,11 @@ interface WidgetCardProps {
   subtitle?: string;
   icon?: React.ReactNode;
   color?: string;
+  gradient?: string;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
 }
 
 const WidgetCard: React.FC<WidgetCardProps> = ({
@@ -15,7 +20,14 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
   subtitle,
   icon,
   color = '#2196f3',
+  gradient,
+  trend,
 }) => {
+  const hasGradient = Boolean(gradient);
+  const trendValue = trend ? trend.value : 0;
+  const trendPrefix = trendValue >= 0 ? '+' : '';
+  const trendLabel = trend ? `${trendPrefix}${trendValue}%` : '';
+
   return (
     <Card
       sx={{
@@ -23,6 +35,9 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
         position: 'relative',
         borderRadius: 3,
         overflow: 'hidden',
+        background: gradient ?? undefined,
+        color: hasGradient ? 'white' : 'inherit',
+        border: hasGradient ? '1px solid rgba(255, 255, 255, 0.18)' : undefined,
         '&::after': {
           content: '""',
           position: 'absolute',
@@ -40,15 +55,43 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
       <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.4 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ pr: 1.6 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+            <Typography
+              variant="body2"
+              color={hasGradient ? 'rgba(255, 255, 255, 0.75)' : 'text.secondary'}
+              gutterBottom
+              sx={{ fontWeight: 600 }}
+            >
               {title}
             </Typography>
-            <Typography variant="h3" component="div" fontWeight={700} sx={{ lineHeight: 1.1 }}>
+            <Typography
+              variant="h3"
+              component="div"
+              fontWeight={700}
+              sx={{ lineHeight: 1.1, color: hasGradient ? 'white' : 'inherit' }}
+            >
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" color="text.secondary" mt={1.2} display="block">
+              <Typography
+                variant="caption"
+                color={hasGradient ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}
+                mt={1.2}
+                display="block"
+              >
                 {subtitle}
+              </Typography>
+            )}
+            {trend && (
+              <Typography
+                variant="caption"
+                mt={0.8}
+                display="block"
+                sx={{
+                  fontWeight: 600,
+                  color: trend.isPositive ? '#8deab4' : '#ffb3be',
+                }}
+              >
+                Trend: {trendLabel}
               </Typography>
             )}
           </Box>

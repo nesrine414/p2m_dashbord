@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { User } from '../models';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -27,20 +28,33 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       phone?: string;
     };
 
-    if (!username || !password || !email) {
-      res.status(400).json({ error: 'username, password and email are required' });
+    if (!password || !email) {
+      res.status(400).json({ error: 'password and email are required' });
       return;
     }
 
-    const existing = await User.findOne({ where: { username } });
-    if (existing) {
+    const baseUsername = (username || email.split('@')[0] || phone || '').trim();
+    if (!baseUsername) {
+      res.status(400).json({ error: 'username is required (or derivable from email/phone)' });
+      return;
+    }
+
+    let finalUsername = baseUsername;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await User.findOne({ where: { username: finalUsername } });
+      if (!existing) break;
+      finalUsername = `${baseUsername}${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const existingFinal = await User.findOne({ where: { username: finalUsername } });
+    if (existingFinal) {
       res.status(409).json({ error: 'username already exists' });
       return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const createdUser = await User.create({
-      username,
+      username: finalUsername,
       password: hashedPassword,
       email,
       role: role || 'user',
@@ -76,14 +90,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { username, password } = req.body as { username?: string; password?: string };
+    const { username, email, phone, password } = req.body as {
+      username?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    };
 
-    if (!username || !password) {
-      res.status(400).json({ error: 'username and password are required' });
+    const identifier = (username || email || phone || '').trim();
+
+    if (!identifier || !password) {
+      res.status(400).json({ error: 'email/phone (or username) and password are required' });
       return;
     }
 
-    const user = await User.findOne({ where: { username } });
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [{ username: identifier }, { email: identifier }, { phone: identifier }],
+      },
+    });
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;

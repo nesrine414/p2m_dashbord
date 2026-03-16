@@ -46,7 +46,7 @@ const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) =
   return (
     <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
       <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-        Routes fibres critiques
+        Critical fiber routes
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>

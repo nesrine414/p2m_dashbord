@@ -127,10 +127,10 @@ const AlarmsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={800} color="white">
-            Alarmes & Evenements
+            Alarms & Events
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Type, severite, statut, horodatage et localisation des defauts.
+            Type, severity, status, timestamp, and fault location.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }}>

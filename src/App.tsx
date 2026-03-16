@@ -7,9 +7,13 @@ import DashboardPage from './pages/DashboardPage';
 import MonitoringPage from './pages/MonitoringPage';
 import AlarmsPage from './pages/AlarmsPage';
 import ReportsPage from './pages/Reports/ReportsPage';
-import DashboardIAPage from './pages/DashboardIA/DashboardIAPage';
 import RTUListPage from './pages/RTUList/RTUListPage';
+import AIDashboardPage from './pages/AIDashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import { ROUTE_PATHS, ROUTE_SEGMENTS } from './constants/routes';
+import RequireAuth from './components/auth/RequireAuth';
 
 const darkTheme = createTheme({
   shape: {
@@ -146,14 +150,24 @@ function App() {
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          <Route path={ROUTE_PATHS.dashboard} element={<MainLayout />}>
+          <Route path={ROUTE_PATHS.login} element={<LoginPage />} />
+          <Route path={ROUTE_PATHS.register} element={<RegisterPage />} />
+          <Route
+            path={ROUTE_PATHS.dashboard}
+            element={
+              <RequireAuth>
+                <MainLayout />
+              </RequireAuth>
+            }
+          >
             <Route index element={<DashboardPage />} />
             <Route path={ROUTE_SEGMENTS.rtu} element={<RTUListPage />} />
             <Route path={ROUTE_SEGMENTS.monitoring} element={<MonitoringPage />} />
             <Route path={ROUTE_SEGMENTS.alarms} element={<AlarmsPage />} />
             <Route path={`${ROUTE_SEGMENTS.alarms}/:alarmId`} element={<AlarmsPage />} />
             <Route path={ROUTE_SEGMENTS.reports} element={<ReportsPage />} />
-            <Route path={ROUTE_SEGMENTS.aiDashboard} element={<DashboardIAPage />} />
+            <Route path={ROUTE_SEGMENTS.aiDashboard} element={<AIDashboardPage />} />
+            <Route path={ROUTE_SEGMENTS.profile} element={<ProfilePage />} />
             <Route path="*" element={<Navigate to={ROUTE_PATHS.dashboard} replace />} />
           </Route>
         </Routes>
