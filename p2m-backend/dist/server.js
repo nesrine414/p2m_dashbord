@@ -11,6 +11,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const database_1 = require("./config/database");
 require("./models");
 const models_1 = require("./models");
+const demoData_1 = require("./data/demoData");
 const routes_1 = __importDefault(require("./routes"));
 const websocket_1 = require("./utils/websocket");
 dotenv_1.default.config();
@@ -25,7 +26,7 @@ app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.get('/', (_req, res) => {
     res.json({
-        message: '🚀 NQMS Backend API - Running',
+        message: 'NQMS Backend API - Running',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
     });
@@ -39,7 +40,7 @@ app.get('/health', (_req, res) => {
 });
 app.use('/api', routes_1.default);
 app.use((err, _req, res, _next) => {
-    console.error('❌ Unhandled error:', err);
+    console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
 });
 const seedDefaultData = async () => {
@@ -54,27 +55,39 @@ const seedDefaultData = async () => {
             firstName: 'System',
             lastName: 'Admin',
         });
-        console.log('🌱 Seeded default admin user (admin / Admin@1234)');
+        console.log('Seeded default admin user (admin / Admin@1234)');
     }
     const rtuCount = await models_1.RTU.count();
-    if (rtuCount === 0) {
-        await models_1.RTU.bulkCreate([
-            {
-                name: 'RTU-PAR-001',
-                status: 'online',
-                ipAddress: '10.42.1.11',
-                serialNumber: 'NQMS-RTU-0001',
-                locationAddress: 'Paris North',
-            },
-            {
-                name: 'RTU-MRS-003',
-                status: 'offline',
-                ipAddress: '10.44.6.5',
-                serialNumber: 'NQMS-RTU-0002',
-                locationAddress: 'Marseille West',
-            },
-        ]);
-        console.log('🌱 Seeded sample RTUs');
+    if (rtuCount < demoData_1.demoRtus.length) {
+        await models_1.RTU.bulkCreate(demoData_1.demoRtus.map((rtu) => ({
+            ...rtu,
+            lastSeen: new Date(rtu.lastSeen),
+        })), { ignoreDuplicates: true });
+        console.log('Seeded Tunisia RTU demo inventory');
+    }
+    const fiberRouteCount = await models_1.FiberRoute.count();
+    if (fiberRouteCount < demoData_1.demoFiberRoutes.length) {
+        await models_1.FiberRoute.bulkCreate(demoData_1.demoFiberRoutes.map(({ path: _path, ...route }) => ({
+            ...route,
+            lastTestTime: new Date(route.lastTestTime),
+        })), { ignoreDuplicates: true });
+        console.log('Seeded Tunisia fiber route demo data');
+    }
+    const alarmCount = await models_1.Alarm.count();
+    if (alarmCount === 0) {
+        await models_1.Alarm.bulkCreate(demoData_1.demoAlarms.map((alarm) => ({
+            ...alarm,
+            occurredAt: new Date(alarm.occurredAt),
+        })));
+        console.log('Seeded alarm demo data');
+    }
+    const otdrCount = await models_1.OtdrTestResult.count();
+    if (otdrCount === 0) {
+        await models_1.OtdrTestResult.bulkCreate(demoData_1.demoOtdrTests.map((test) => ({
+            ...test,
+            testedAt: new Date(test.testedAt),
+        })));
+        console.log('Seeded OTDR demo data');
     }
 };
 const startServer = async () => {
@@ -85,14 +98,14 @@ const startServer = async () => {
         }
         (0, websocket_1.initWebSocket)(server);
         server.listen(PORT, () => {
-            console.log(`\n🚀 Server started on http://localhost:${PORT}`);
-            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`✅ CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-            console.log(`🔌 WebSocket ready on ws://localhost:${PORT}\n`);
+            console.log(`\nServer started on http://localhost:${PORT}`);
+            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+            console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
         });
     }
     catch (error) {
-        console.error('❌ Failed to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 };

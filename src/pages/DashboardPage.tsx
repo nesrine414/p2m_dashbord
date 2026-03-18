@@ -35,6 +35,7 @@ import WidgetCard from '../components/common/WidgetCard';
 import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
 import RTUCardsWidget from '../components/widgets/RTUCardsWidget';
+import { getRTUs } from '../services/api';
 import { attenuationSeries } from '../data/mockData';
 import { ROUTE_PATHS } from '../constants/routes';
 import {
@@ -53,6 +54,7 @@ const DashboardPage: React.FC = () => {
   const [criticalAlarms, setCriticalAlarms] = useState<BackendAlarm[]>([]);
   const [routes, setRoutes] = useState<BackendFiberRoute[]>([]);
   const [otdrTests, setOtdrTests] = useState<BackendOtdrTest[]>([]);
+  const [rtus, setRtus] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,11 +66,12 @@ const DashboardPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const [statsData, alarmsData, topologyData, otdrData] = await Promise.all([
+        const [statsData, alarmsData, topologyData, otdrData, rtuData] = await Promise.all([
           getDashboardStats(),
           getAlarms({ severity: 'critical', page: 1, pageSize: 50 }),
           getTopology(),
           getRecentOtdrTests(),
+          getRTUs(),
         ]);
 
         if (!active) {
@@ -79,6 +82,7 @@ const DashboardPage: React.FC = () => {
         setCriticalAlarms(alarmsData.data);
         setRoutes(topologyData.routes);
         setOtdrTests(otdrData.data);
+        setRtus(rtuData);
       } catch (apiError) {
         if (!active) {
           return;
@@ -444,7 +448,7 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <RTUCardsWidget />
+      <RTUCardsWidget rtus={rtus} />
 
     </Box>
   );

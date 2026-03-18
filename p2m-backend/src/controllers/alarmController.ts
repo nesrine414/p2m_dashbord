@@ -1,3 +1,88 @@
+// Mark alarm as in progress
+export const inProgressAlarm = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    const id = Number(req.params.id);
+    const alarm = await Alarm.findByPk(id);
+
+    if (!alarm) {
+      res.status(404).json({ error: 'Alarm not found' });
+      return;
+    }
+
+    await alarm.update({
+      lifecycleStatus: 'in_progress',
+      owner: (req.body as { owner?: string }).owner || alarm.owner,
+    });
+
+    emitEvent('alarm_updated', alarm);
+    res.json(alarm);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to mark alarm in progress' });
+  }
+};
+
+// Mark alarm as resolved
+export const resolvedAlarm = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    const id = Number(req.params.id);
+    const alarm = await Alarm.findByPk(id);
+
+    if (!alarm) {
+      res.status(404).json({ error: 'Alarm not found' });
+      return;
+    }
+
+    await alarm.update({
+      lifecycleStatus: 'resolved',
+      resolvedAt: new Date(),
+      resolutionComment: (req.body as { comment?: string }).comment || undefined,
+      owner: (req.body as { owner?: string }).owner || alarm.owner,
+    });
+
+    emitEvent('alarm_updated', alarm);
+    res.json(alarm);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to resolve alarm' });
+  }
+};
+
+// Mark alarm as closed (archived)
+export const closeAlarm = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!databaseState.connected) {
+      res.status(503).json({ error: 'Database not connected' });
+      return;
+    }
+
+    const id = Number(req.params.id);
+    const alarm = await Alarm.findByPk(id);
+
+    if (!alarm) {
+      res.status(404).json({ error: 'Alarm not found' });
+      return;
+    }
+
+    await alarm.update({
+      lifecycleStatus: 'closed',
+      owner: (req.body as { owner?: string }).owner || alarm.owner,
+    });
+
+    emitEvent('alarm_updated', alarm);
+    res.json(alarm);
+  } catch (error) {
+    res.status(400).json({ error: 'Failed to close alarm' });
+  }
+};
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
@@ -185,7 +270,7 @@ export const resolveAlarm = async (req: Request, res: Response): Promise<void> =
     }
 
     await alarm.update({
-      lifecycleStatus: 'cleared',
+      lifecycleStatus: 'closed',
       resolvedAt: new Date(),
       owner: (req.body as { owner?: string }).owner || alarm.owner,
     });

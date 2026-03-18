@@ -78,7 +78,7 @@ const AIDashboardPage: React.FC = () => {
               Global Health Score: {globalHealthScore}/100
             </Typography>
             <Typography variant="body2" color="#aac7e5" mt={0.7}>
-              Risk remains controlled, but Paris East and Bordeaux Hub require preventive intervention in the next 24 hours.
+              Risk remains controlled, but Sfax North and Sousse Hub require preventive intervention in the next 24 hours.
             </Typography>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>

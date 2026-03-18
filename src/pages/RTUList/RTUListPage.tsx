@@ -17,7 +17,7 @@ import { Search } from '@mui/icons-material';
 import StatusBadge from '../../components/common/StatusBadge';
 
 interface RTU {
-  id: number;
+  id: string;
   name: string;
   location: string;
   ipAddress: string;
@@ -26,54 +26,23 @@ interface RTU {
 }
 
 const RTUListPage: React.FC = () => {
-  const [statusFilter, setStatusFilter] = useState<'all' | RTU['status']>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | RTU['status']>('all');
 
-  const rtus = useMemo<RTU[]>(
-    () => [
-      {
-        id: 1,
-        name: 'RTU-Paris-001',
-        location: 'Paris 5th',
-        ipAddress: '192.168.1.10',
-        status: 'online',
-        temperature: 28,
-      },
-      {
-        id: 2,
-        name: 'RTU-Lyon-005',
-        location: 'Lyon Center',
-        ipAddress: '192.168.1.23',
-        status: 'online',
-        temperature: 25,
-      },
-      {
-        id: 3,
-        name: 'RTU-Marseille-003',
-        location: 'Marseille West',
-        ipAddress: '192.168.1.45',
-        status: 'warning',
-        temperature: 38,
-      },
-      {
-        id: 4,
-        name: 'RTU-Nice-002',
-        location: 'Nice East',
-        ipAddress: '192.168.1.67',
-        status: 'offline',
-        temperature: 42,
-      },
-    ],
-    []
+  // Demo data removed. This page is now a placeholder.
+  const rtus: RTU[] = [];
+
+  const filteredRTUs = useMemo(
+    () =>
+      rtus.filter(
+        (rtu) =>
+          (statusFilter === 'all' || rtu.status === statusFilter) &&
+          (rtu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            rtu.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            rtu.ipAddress.toLowerCase().includes(searchQuery.toLowerCase()))
+      ),
+    [rtus, searchQuery, statusFilter]
   );
-
-  const filteredRTUs = rtus.filter((rtu) => {
-    const matchesStatus = statusFilter === 'all' || rtu.status === statusFilter;
-    const matchesSearch =
-      rtu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rtu.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
 
   return (
     <Box>

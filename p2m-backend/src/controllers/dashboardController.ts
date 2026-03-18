@@ -34,13 +34,13 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
       const rtuWarning = demoRtus.filter((item) => item.status === 'warning').length;
       const rtuUnreachable = demoRtus.filter((item) => item.status === 'unreachable').length;
       const criticalAlarms = demoAlarms.filter(
-        (item) => item.severity === 'critical' && item.lifecycleStatus !== 'cleared'
+        (item) => item.severity === 'critical' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
       ).length;
       const majorAlarms = demoAlarms.filter(
-        (item) => item.severity === 'major' && item.lifecycleStatus !== 'cleared'
+        (item) => item.severity === 'major' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
       ).length;
       const minorAlarms = demoAlarms.filter(
-        (item) => item.severity === 'minor' && item.lifecycleStatus !== 'cleared'
+        (item) => item.severity === 'minor' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
       ).length;
       const rtuTotal = demoRtus.length;
       const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;

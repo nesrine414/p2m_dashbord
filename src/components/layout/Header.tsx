@@ -39,14 +39,14 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
         id: 'n-1',
         type: 'alarm',
         title: 'New critical alarm',
-        message: 'RTU-PAR-014 - Fiber Cut',
+        message: 'RTU-TUN-014 - Fiber Cut',
         time: '5 min ago',
       },
       {
         id: 'n-2',
         type: 'ai',
         title: 'AI prediction',
-        message: 'RTU-LYO-005 at 78% risk in 48h',
+        message: 'RTU-TUN-005 at 78% risk in 48h',
         time: '12 min ago',
       },
       {

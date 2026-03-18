@@ -34,7 +34,7 @@ const DashboardIAPage: React.FC = () => {
     {
       id: 1,
       rtuId: 23,
-      rtuName: 'RTU-Paris-001',
+      rtuName: 'RTU-Tunisia-001',
       probability: 0.78,
       riskLevel: 'high',
       features: { attenuationDb: 15.3, nbAlarms24h: 2, uptimePercent: 96.5 },
@@ -42,7 +42,7 @@ const DashboardIAPage: React.FC = () => {
     {
       id: 2,
       rtuId: 45,
-      rtuName: 'RTU-Lyon-005',
+      rtuName: 'RTU-Tunisia-002',
       probability: 0.65,
       riskLevel: 'medium',
       features: { attenuationDb: 13.8, nbAlarms24h: 1, uptimePercent: 98.2 },
@@ -50,7 +50,7 @@ const DashboardIAPage: React.FC = () => {
     {
       id: 3,
       rtuId: 12,
-      rtuName: 'RTU-Marseille-003',
+      rtuName: 'RTU-Tunisia-003',
       probability: 0.82,
       riskLevel: 'high',
       features: { attenuationDb: 16.7, nbAlarms24h: 3, uptimePercent: 94.1 },

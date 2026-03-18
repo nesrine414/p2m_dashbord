@@ -7,7 +7,7 @@ interface AlarmAttributes {
   routeId?: number;
   alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   severity: 'critical' | 'major' | 'minor' | 'info';
-  lifecycleStatus: 'active' | 'acknowledged' | 'cleared';
+  lifecycleStatus: 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
   message: string;
   location?: string;
   localizationKm?: string;
@@ -15,6 +15,7 @@ interface AlarmAttributes {
   occurredAt: Date;
   acknowledgedAt?: Date;
   resolvedAt?: Date;
+  resolutionComment?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -27,7 +28,7 @@ class Alarm extends Model<AlarmAttributes, AlarmCreationAttributes> implements A
   declare routeId?: number;
   declare alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   declare severity: 'critical' | 'major' | 'minor' | 'info';
-  declare lifecycleStatus: 'active' | 'acknowledged' | 'cleared';
+  declare lifecycleStatus: 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
   declare message: string;
   declare location?: string;
   declare localizationKm?: string;
@@ -35,6 +36,7 @@ class Alarm extends Model<AlarmAttributes, AlarmCreationAttributes> implements A
   declare occurredAt: Date;
   declare acknowledgedAt?: Date;
   declare resolvedAt?: Date;
+  declare resolutionComment?: string;
   declare readonly created_at: Date;
   declare readonly updated_at: Date;
 }
@@ -66,11 +68,16 @@ Alarm.init(
       allowNull: false,
     },
     lifecycleStatus: {
-      type: DataTypes.ENUM('active', 'acknowledged', 'cleared'),
+      type: DataTypes.ENUM('active', 'acknowledged', 'in_progress', 'resolved', 'closed'),
       allowNull: false,
       defaultValue: 'active',
       field: 'lifecycle_status',
     },
+        resolutionComment: {
+          type: DataTypes.STRING(400),
+          allowNull: true,
+          field: 'resolution_comment',
+        },
     message: {
       type: DataTypes.STRING(400),
       allowNull: false,

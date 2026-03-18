@@ -145,7 +145,7 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
                     OTDR Availability
                   </Typography>
                   <Typography variant="caption" fontWeight="bold" color="white">
-                    {rtu.availabilityPercent.toFixed(1)}%
+                    {typeof rtu.availabilityPercent === 'number' && !isNaN(rtu.availabilityPercent) ? rtu.availabilityPercent.toFixed(1) : 'N/A'}%
                   </Typography>
                 </Box>
                 <LinearProgress

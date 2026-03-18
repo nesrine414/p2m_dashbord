@@ -24,6 +24,8 @@ apiClient.interceptors.request.use((config) => {
 export interface BackendRTU {
   id: number;
   name: string;
+  locationLatitude?: number | string | null;
+  locationLongitude?: number | string | null;
   locationAddress?: string | null;
   ipAddress?: string | null;
   serialNumber?: string | null;
@@ -54,6 +56,7 @@ export interface BackendFiberRoute {
   destination: string;
   fiberStatus: 'normal' | 'degraded' | 'broken';
   routeStatus: 'active' | 'inactive' | 'skipped';
+  path?: Array<[number, number]> | null;
   lengthKm?: number | null;
   attenuationDb?: number | null;
   reflectionEvents: boolean;

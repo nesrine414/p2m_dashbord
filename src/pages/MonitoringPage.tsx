@@ -21,9 +21,11 @@ import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
   BackendAlarm,
   BackendFiberRoute,
+  BackendRTU,
   BackendOtdrTest,
   getAlarms,
   getRecentOtdrTests,
+  getRTUs,
   getTopology,
 } from '../services/api';
 import { FiberStatus, TestResult } from '../types';
@@ -83,6 +85,7 @@ const MonitoringPage: React.FC = () => {
   const [routes, setRoutes] = useState<BackendFiberRoute[]>([]);
   const [otdrTests, setOtdrTests] = useState<BackendOtdrTest[]>([]);
   const [alarms, setAlarms] = useState<BackendAlarm[]>([]);
+  const [rtus, setRtus] = useState<BackendRTU[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,10 +97,11 @@ const MonitoringPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const [topologyResponse, otdrResponse, alarmResponse] = await Promise.all([
+        const [topologyResponse, otdrResponse, alarmResponse, rtuResponse] = await Promise.all([
           getTopology(),
           getRecentOtdrTests(),
           getAlarms({ page: 1, pageSize: 20 }),
+          getRTUs(),
         ]);
 
         if (!active) {
@@ -107,6 +111,7 @@ const MonitoringPage: React.FC = () => {
         setRoutes(topologyResponse.routes);
         setOtdrTests(otdrResponse.data);
         setAlarms(alarmResponse.data);
+        setRtus(rtuResponse);
       } catch (apiError) {
         if (!active) {
           return;
@@ -237,7 +242,7 @@ const MonitoringPage: React.FC = () => {
             Real-time GPS map
           </Typography>
         </Stack>
-        <RealtimeTunisiaMap />
+        <RealtimeTunisiaMap routes={routes} rtus={rtus} enableEditor />
       </Paper>
 
       <Grid container spacing={3} mb={3}>

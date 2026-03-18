@@ -11,6 +11,7 @@ interface RTUAttributes {
   serialNumber?: string;
   status: 'online' | 'offline' | 'warning' | 'unreachable';
   temperature?: number;
+  attenuationDb?: number; // Added property
   installationDate?: Date;
   lastSeen?: Date;
   userId?: number;
@@ -30,6 +31,7 @@ class RTU extends Model<RTUAttributes, RTUCreationAttributes> implements RTUAttr
   declare serialNumber?: string;
   declare status: 'online' | 'offline' | 'warning' | 'unreachable';
   declare temperature?: number;
+  declare attenuationDb?: number; // Added property
   declare installationDate?: Date;
   declare lastSeen?: Date;
   declare userId?: number;
@@ -83,6 +85,11 @@ RTU.init(
     temperature: {
       type: DataTypes.FLOAT,
       allowNull: true,
+    },
+    attenuationDb: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      field: 'attenuation_db',
     },
     installationDate: {
       type: DataTypes.DATE,
