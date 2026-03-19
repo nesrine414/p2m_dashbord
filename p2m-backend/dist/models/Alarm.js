@@ -33,10 +33,15 @@ Alarm.init({
         allowNull: false,
     },
     lifecycleStatus: {
-        type: sequelize_1.DataTypes.ENUM('active', 'acknowledged', 'cleared'),
+        type: sequelize_1.DataTypes.ENUM('active', 'acknowledged', 'in_progress', 'resolved', 'closed'),
         allowNull: false,
         defaultValue: 'active',
         field: 'lifecycle_status',
+    },
+    resolutionComment: {
+        type: sequelize_1.DataTypes.STRING(400),
+        allowNull: true,
+        field: 'resolution_comment',
     },
     message: {
         type: sequelize_1.DataTypes.STRING(400),

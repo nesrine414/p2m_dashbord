@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   Avatar,
   Box,
@@ -106,7 +106,7 @@ const ProfilePage: React.FC = () => {
                   {fullName || 'Technician'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {profile.zone || 'Zone: (e.g. Sousse, Monastir)'}
+                  {profile.zone || 'Zone: e.g. Sousse or Monastir'}
                 </Typography>
               </Box>
             </Stack>

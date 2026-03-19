@@ -8,7 +8,7 @@ import MonitoringPage from './pages/MonitoringPage';
 import AlarmsPage from './pages/AlarmsPage';
 import ReportsPage from './pages/Reports/ReportsPage';
 import RTUListPage from './pages/RTUList/RTUListPage';
-import AIDashboardPage from './pages/AIDashboardPage';
+import AIDashboardPage from './pages/DashboardIA/DashboardIAPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   Alert,
   Box,
@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
                 Sign in
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Sign in with email or phone number.
+                Sign in with your email or phone number.
               </Typography>
             </Box>
 

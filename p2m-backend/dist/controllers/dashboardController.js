@@ -30,9 +30,9 @@ const getDashboardStats = async (_req, res) => {
             const rtuOffline = demoData_1.demoRtus.filter((item) => item.status === 'offline').length;
             const rtuWarning = demoData_1.demoRtus.filter((item) => item.status === 'warning').length;
             const rtuUnreachable = demoData_1.demoRtus.filter((item) => item.status === 'unreachable').length;
-            const criticalAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'critical' && item.lifecycleStatus !== 'cleared').length;
-            const majorAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'major' && item.lifecycleStatus !== 'cleared').length;
-            const minorAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'minor' && item.lifecycleStatus !== 'cleared').length;
+            const criticalAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'critical' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved').length;
+            const majorAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'major' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved').length;
+            const minorAlarms = demoData_1.demoAlarms.filter((item) => item.severity === 'minor' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved').length;
             const rtuTotal = demoData_1.demoRtus.length;
             const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
             res.json({

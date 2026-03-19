@@ -14,6 +14,7 @@ const models_1 = require("./models");
 const demoData_1 = require("./data/demoData");
 const routes_1 = __importDefault(require("./routes"));
 const websocket_1 = require("./utils/websocket");
+const cronJobs_1 = require("./services/cronJobs");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
@@ -43,6 +44,54 @@ app.use((err, _req, res, _next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
 });
+const isHealthyBackendRunning = async (port) => {
+    return new Promise((resolve) => {
+        const request = http_1.default.get({
+            hostname: '127.0.0.1',
+            port,
+            path: '/health',
+            timeout: 1500,
+        }, (response) => {
+            const chunks = [];
+            response.on('data', (chunk) => {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            });
+            response.on('end', () => {
+                if (response.statusCode !== 200) {
+                    resolve(false);
+                    return;
+                }
+                try {
+                    const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+                    resolve(body.status === 'OK');
+                }
+                catch {
+                    resolve(false);
+                }
+            });
+        });
+        request.on('timeout', () => {
+            request.destroy();
+            resolve(false);
+        });
+        request.on('error', () => {
+            resolve(false);
+        });
+    });
+};
+const listenOnPort = async () => {
+    await new Promise((resolve, reject) => {
+        const onError = (error) => {
+            server.off('error', onError);
+            reject(error);
+        };
+        server.once('error', onError);
+        server.listen(PORT, () => {
+            server.off('error', onError);
+            resolve();
+        });
+    });
+};
 const seedDefaultData = async () => {
     const userCount = await models_1.User.count();
     if (userCount === 0) {
@@ -57,14 +106,24 @@ const seedDefaultData = async () => {
         });
         console.log('Seeded default admin user (admin / Admin@1234)');
     }
-    const rtuCount = await models_1.RTU.count();
-    if (rtuCount < demoData_1.demoRtus.length) {
-        await models_1.RTU.bulkCreate(demoData_1.demoRtus.map((rtu) => ({
-            ...rtu,
+    for (const rtu of demoData_1.demoRtus) {
+        await models_1.RTU.upsert({
+            id: rtu.id,
+            name: rtu.name,
+            locationLatitude: rtu.locationLatitude,
+            locationLongitude: rtu.locationLongitude,
+            locationAddress: rtu.locationAddress,
+            ipAddress: rtu.ipAddress,
+            serialNumber: rtu.serialNumber,
+            status: rtu.status,
+            temperature: rtu.temperature,
+            attenuationDb: undefined,
+            installationDate: undefined,
             lastSeen: new Date(rtu.lastSeen),
-        })), { ignoreDuplicates: true });
-        console.log('Seeded Tunisia RTU demo inventory');
+            userId: undefined,
+        });
     }
+    console.log('Synced Tunisia RTU demo inventory');
     const fiberRouteCount = await models_1.FiberRoute.count();
     if (fiberRouteCount < demoData_1.demoFiberRoutes.length) {
         await models_1.FiberRoute.bulkCreate(demoData_1.demoFiberRoutes.map(({ path: _path, ...route }) => ({
@@ -96,15 +155,25 @@ const startServer = async () => {
         if (dbConnected) {
             await seedDefaultData();
         }
+        await listenOnPort();
         (0, websocket_1.initWebSocket)(server);
-        server.listen(PORT, () => {
-            console.log(`\nServer started on http://localhost:${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-            console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
-        });
+        (0, cronJobs_1.startAlarmDetection)();
+        console.log(`\nServer started on http://localhost:${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+        console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
     }
     catch (error) {
+        const listenError = error;
+        if (listenError.code === 'EADDRINUSE') {
+            const alreadyRunning = await isHealthyBackendRunning(PORT);
+            if (alreadyRunning) {
+                console.warn(`Backend is already running on http://localhost:${PORT}; skipping duplicate startup.`);
+                process.exit(0);
+            }
+            console.error(`Port ${PORT} is already in use. Stop the existing process or change the PORT value.`);
+            process.exit(1);
+        }
         console.error('Failed to start server:', error);
         process.exit(1);
     }

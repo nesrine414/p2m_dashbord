@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Box, Chip, Grid, LinearProgress, Typography } from '@mui/material';
 import { Cancel, CheckCircle, Thermostat, Warning } from '@mui/icons-material';
-import { rtuInventoryRecords } from '../../data/mockData';
-import { OtdrAvailabilityStatus, RTUStatus } from '../../types';
+import { RTUStatus } from '../../types';
 
 export interface RTUCard {
   id: number;
@@ -14,34 +13,8 @@ export interface RTUCard {
 }
 
 interface RTUCardsWidgetProps {
-  rtus?: RTUCard[];
+  rtus: RTUCard[];
 }
-
-const availabilityFromStatus = (status: OtdrAvailabilityStatus, uptimePercent: number) => {
-  if (uptimePercent > 0) {
-    return Math.min(100, Math.max(0, uptimePercent));
-  }
-  switch (status) {
-    case OtdrAvailabilityStatus.READY:
-      return 99;
-    case OtdrAvailabilityStatus.BUSY:
-      return 72;
-    case OtdrAvailabilityStatus.FAULT:
-      return 12;
-    default:
-      return 0;
-  }
-};
-
-const toFallbackRtus = (): RTUCard[] =>
-  rtuInventoryRecords.slice(0, 5).map((rtu) => ({
-    id: rtu.id,
-    name: rtu.name,
-    location: rtu.zone,
-    status: rtu.status,
-    temperature: rtu.temperature,
-    availabilityPercent: availabilityFromStatus(rtu.otdrAvailability, rtu.uptimePercent),
-  }));
 
 const getStatusIcon = (status: RTUStatus) => {
   switch (status) {
@@ -61,14 +34,20 @@ const getTempColor = (temp: number) => {
 };
 
 const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
-  const rtuCards = useMemo(() => {
-    if (rtus && rtus.length > 0) {
-      return rtus;
-    }
-    return toFallbackRtus();
-  }, [rtus]);
+  if (!rtus || rtus.length === 0) {
+    return (
+      <Box className="glass-card" sx={{ mt: 3, p: 3 }}>
+        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
+          RTU / OTDR Status
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No RTU data available yet.
+        </Typography>
+      </Box>
+    );
+  }
 
-  const onlineCount = rtuCards.filter((rtu) => rtu.status === RTUStatus.ONLINE).length;
+  const onlineCount = rtus.filter((rtu) => rtu.status === RTUStatus.ONLINE).length;
 
   return (
     <Box sx={{ mt: 3 }}>
@@ -77,13 +56,13 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
           RTU / OTDR Status
         </Typography>
         <Chip
-          label={`${onlineCount}/${rtuCards.length} Online`}
+          label={`${onlineCount}/${rtus.length} Online`}
           sx={{ backgroundColor: '#00FF88', color: 'black', fontWeight: 'bold' }}
         />
       </Box>
 
       <Grid container spacing={2}>
-        {rtuCards.map((rtu) => (
+        {rtus.map((rtu) => (
           <Grid key={rtu.id} size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
             <Box
               className="glass-card"

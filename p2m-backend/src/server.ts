@@ -49,6 +49,64 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+const isHealthyBackendRunning = async (port: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const request = http.get(
+      {
+        hostname: '127.0.0.1',
+        port,
+        path: '/health',
+        timeout: 1500,
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+
+        response.on('data', (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+
+        response.on('end', () => {
+          if (response.statusCode !== 200) {
+            resolve(false);
+            return;
+          }
+
+          try {
+            const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { status?: string };
+            resolve(body.status === 'OK');
+          } catch {
+            resolve(false);
+          }
+        });
+      }
+    );
+
+    request.on('timeout', () => {
+      request.destroy();
+      resolve(false);
+    });
+
+    request.on('error', () => {
+      resolve(false);
+    });
+  });
+};
+
+const listenOnPort = async (): Promise<void> => {
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: NodeJS.ErrnoException) => {
+      server.off('error', onError);
+      reject(error);
+    };
+
+    server.once('error', onError);
+    server.listen(PORT, () => {
+      server.off('error', onError);
+      resolve();
+    });
+  });
+};
+
 const seedDefaultData = async (): Promise<void> => {
   const userCount = await User.count();
   if (userCount === 0) {
@@ -64,17 +122,24 @@ const seedDefaultData = async (): Promise<void> => {
     console.log('Seeded default admin user (admin / Admin@1234)');
   }
 
-  const rtuCount = await RTU.count();
-  if (rtuCount < demoRtus.length) {
-    await RTU.bulkCreate(
-      demoRtus.map((rtu) => ({
-        ...rtu,
-        lastSeen: new Date(rtu.lastSeen),
-      })),
-      { ignoreDuplicates: true }
-    );
-    console.log('Seeded Tunisia RTU demo inventory');
+  for (const rtu of demoRtus) {
+    await RTU.upsert({
+      id: rtu.id,
+      name: rtu.name,
+      locationLatitude: rtu.locationLatitude,
+      locationLongitude: rtu.locationLongitude,
+      locationAddress: rtu.locationAddress,
+      ipAddress: rtu.ipAddress,
+      serialNumber: rtu.serialNumber,
+      status: rtu.status,
+      temperature: rtu.temperature,
+      attenuationDb: undefined,
+      installationDate: undefined,
+      lastSeen: new Date(rtu.lastSeen),
+      userId: undefined,
+    });
   }
+  console.log('Synced Tunisia RTU demo inventory');
 
   const fiberRouteCount = await FiberRoute.count();
   if (fiberRouteCount < demoFiberRoutes.length) {
@@ -118,16 +183,30 @@ const startServer = async (): Promise<void> => {
       await seedDefaultData();
     }
 
+    await listenOnPort();
+
     initWebSocket(server);
     startAlarmDetection();
 
-    server.listen(PORT, () => {
-      console.log(`\nServer started on http://localhost:${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-      console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
-    });
+    console.log(`\nServer started on http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
   } catch (error) {
+    const listenError = error as NodeJS.ErrnoException;
+
+    if (listenError.code === 'EADDRINUSE') {
+      const alreadyRunning = await isHealthyBackendRunning(PORT);
+
+      if (alreadyRunning) {
+        console.warn(`Backend is already running on http://localhost:${PORT}; skipping duplicate startup.`);
+        process.exit(0);
+      }
+
+      console.error(`Port ${PORT} is already in use. Stop the existing process or change the PORT value.`);
+      process.exit(1);
+    }
+
     console.error('Failed to start server:', error);
     process.exit(1);
   }

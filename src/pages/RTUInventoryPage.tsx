@@ -32,11 +32,27 @@ import {
   PowerSupplyStatus,
   RTUStatus,
 } from '../types';
-import type { RtuInventoryRecord } from '../data/mockData';
 import { getAlarms, getRTUs } from '../services/api';
 
 const PIE_COLORS = ['#4caf50', '#ff9800', '#ef4444', '#b43bf2'];
 const VENDORS = ['EXFO', 'Viavi', 'Yokogawa', 'Anritsu'];
+
+interface RtuInventoryRecord {
+  id: number;
+  name: string;
+  zone: string;
+  vendor: string;
+  ipAddress: string;
+  status: RTUStatus;
+  powerSupply: PowerSupplyStatus;
+  communication: CommunicationStatus;
+  otdrAvailability: OtdrAvailabilityStatus;
+  temperature: number;
+  uptimePercent: number;
+  opticalBudgetDb: number;
+  activeAlarms: number;
+  lastSeen: string;
+}
 
 const getTemperatureColor = (temperature: number): 'success' | 'warning' | 'error' => {
   if (temperature >= 40) {

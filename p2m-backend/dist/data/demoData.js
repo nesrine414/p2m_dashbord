@@ -443,7 +443,7 @@ exports.demoAlarms = [
         rtuId: 2,
         routeId: 5,
         severity: 'info',
-        lifecycleStatus: 'cleared',
+        lifecycleStatus: 'resolved',
         alarmType: 'Maintenance',
         message: 'Scheduled OTDR calibration completed on the Telecom Ghazala feeder.',
         location: 'Telecom Ghazala',

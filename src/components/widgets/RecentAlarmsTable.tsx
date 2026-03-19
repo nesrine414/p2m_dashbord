@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { alarmRecords } from '../../data/mockData';
 
 export interface AlarmRow {
   id: number;
@@ -27,20 +26,8 @@ export interface AlarmRow {
 }
 
 interface RecentAlarmsTableProps {
-  alarms?: AlarmRow[];
+  alarms: AlarmRow[];
 }
-
-const toFallbackAlarms = (): AlarmRow[] =>
-  alarmRecords.slice(0, 4).map((alarm) => ({
-    id: alarm.id,
-    type: alarm.alarmType,
-    rtu: alarm.rtuName,
-    zone: alarm.zone,
-    severity: alarm.severity,
-    status: alarm.lifecycleStatus === 'cleared' ? 'resolved' : alarm.lifecycleStatus,
-    timestamp: alarm.occurredAt,
-    location: alarm.localizationKm,
-  }));
 
 const getSeverityColor = (severity: AlarmRow['severity']) => {
   switch (severity) {
@@ -73,13 +60,20 @@ const getStatusChip = (status: AlarmRow['status']) => {
 
 const RecentAlarmsTable: React.FC<RecentAlarmsTableProps> = ({ alarms }) => {
   const navigate = useNavigate();
+  const tableAlarms = useMemo(() => alarms, [alarms]);
 
-  const tableAlarms = useMemo(() => {
-    if (alarms && alarms.length > 0) {
-      return alarms;
-    }
-    return toFallbackAlarms();
-  }, [alarms]);
+  if (!tableAlarms || tableAlarms.length === 0) {
+    return (
+      <Box className="glass-card animate-fadeInUp" sx={{ p: 3 }}>
+        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
+          Active critical alarms
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No alarm data available yet.
+        </Typography>
+      </Box>
+    );
+  }
 
   const criticalCount = tableAlarms.filter((alarm) => alarm.severity === 'critical').length;
   const majorCount = tableAlarms.filter((alarm) => alarm.severity === 'major').length;

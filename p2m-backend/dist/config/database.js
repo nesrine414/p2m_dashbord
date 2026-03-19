@@ -7,9 +7,15 @@ exports.connectDatabase = exports.databaseState = void 0;
 const sequelize_1 = require("sequelize");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const sequelize = new sequelize_1.Sequelize(process.env.DB_NAME || 'p2m_dashboard', process.env.DB_USER || 'postgres', process.env.DB_PASSWORD || '', {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 5432),
+const databaseName = process.env.DB_NAME || 'p2m_dashboard';
+const databaseUser = process.env.DB_USER || 'postgres';
+const databasePassword = process.env.DB_PASSWORD || '';
+const databaseHost = process.env.DB_HOST || 'localhost';
+const databasePort = Number(process.env.DB_PORT || 5432);
+const hasDatabasePassword = databasePassword.trim().length > 0;
+const sequelize = new sequelize_1.Sequelize(databaseName, databaseUser, databasePassword, {
+    host: databaseHost,
+    port: databasePort,
     dialect: 'postgres',
     logging: false,
     pool: {
@@ -24,6 +30,13 @@ exports.databaseState = {
     lastError: null,
 };
 const connectDatabase = async () => {
+    if (!hasDatabasePassword) {
+        exports.databaseState.connected = false;
+        exports.databaseState.lastError = 'DB_PASSWORD is missing or empty';
+        console.warn('⚠️ PostgreSQL config is incomplete, starting API in degraded mode');
+        console.warn(`   Reason: ${exports.databaseState.lastError}`);
+        return false;
+    }
     try {
         await sequelize.authenticate();
         exports.databaseState.connected = true;

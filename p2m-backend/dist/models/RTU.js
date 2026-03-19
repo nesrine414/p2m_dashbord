@@ -53,6 +53,11 @@ RTU.init({
         type: sequelize_1.DataTypes.FLOAT,
         allowNull: true,
     },
+    attenuationDb: {
+        type: sequelize_1.DataTypes.FLOAT,
+        allowNull: true,
+        field: 'attenuation_db',
+    },
     installationDate: {
         type: sequelize_1.DataTypes.DATE,
         allowNull: true,

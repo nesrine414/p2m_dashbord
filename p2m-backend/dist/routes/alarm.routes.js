@@ -9,4 +9,7 @@ router.get('/:id', alarmController_1.getAlarmById);
 router.post('/', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.createAlarm);
 router.patch('/:id/acknowledge', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.acknowledgeAlarm);
 router.patch('/:id/resolve', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.resolveAlarm);
+router.patch('/:id/in-progress', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.inProgressAlarm);
+router.patch('/:id/resolved', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.resolvedAlarm);
+router.patch('/:id/close', auth_middleware_1.authMiddleware, (0, auth_middleware_1.requireRole)(['admin', 'user']), alarmController_1.closeAlarm);
 exports.default = router;

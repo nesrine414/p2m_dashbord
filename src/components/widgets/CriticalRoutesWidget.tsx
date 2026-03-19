@@ -1,7 +1,5 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Box, Chip, Typography } from '@mui/material';
-import { fiberRouteRecords } from '../../data/mockData';
-import { FiberStatus } from '../../types';
 
 export interface CriticalRoute {
   id: number;
@@ -14,34 +12,26 @@ export interface CriticalRoute {
 }
 
 interface CriticalRoutesWidgetProps {
-  routes?: CriticalRoute[];
+  routes: CriticalRoute[];
 }
 
 const getStatusColor = (status: CriticalRoute['status']) => (status === 'broken' ? '#FF3366' : '#FFB800');
 
 const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Broken' : 'Degraded');
 
-const toFallbackRoutes = (): CriticalRoute[] =>
-  fiberRouteRecords
-    .filter((route) => route.fiberStatus !== FiberStatus.NORMAL)
-    .slice(0, 3)
-    .map((route) => ({
-      id: route.id,
-      name: route.routeName,
-      from: route.source,
-      to: route.destination,
-      status: route.fiberStatus === FiberStatus.BROKEN ? 'broken' : 'degraded',
-      attenuation: route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb} dB` : 'N/A',
-      lastTest: route.lastTestTime,
-    }));
-
 const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) => {
-  const routesList = useMemo(() => {
-    if (routes && routes.length > 0) {
-      return routes;
-    }
-    return toFallbackRoutes();
-  }, [routes]);
+  if (!routes || routes.length === 0) {
+    return (
+      <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
+        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
+          Critical fiber routes
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No route data available yet.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
@@ -50,7 +40,7 @@ const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) =
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-        {routesList.map((route) => (
+        {routes.map((route) => (
           <Box
             key={route.id}
             sx={{

@@ -1,6 +1,83 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActiveCriticalAlarms = exports.resolveAlarm = exports.acknowledgeAlarm = exports.createAlarm = exports.getAlarmById = exports.getAlarms = void 0;
+exports.getActiveCriticalAlarms = exports.resolveAlarm = exports.acknowledgeAlarm = exports.createAlarm = exports.getAlarmById = exports.getAlarms = exports.closeAlarm = exports.resolvedAlarm = exports.inProgressAlarm = void 0;
+// Mark alarm as in progress
+const inProgressAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'in_progress',
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to mark alarm in progress' });
+    }
+};
+exports.inProgressAlarm = inProgressAlarm;
+// Mark alarm as resolved
+const resolvedAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'resolved',
+            resolvedAt: new Date(),
+            resolutionComment: req.body.comment || undefined,
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to resolve alarm' });
+    }
+};
+exports.resolvedAlarm = resolvedAlarm;
+// Mark alarm as closed (archived)
+const closeAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'closed',
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to close alarm' });
+    }
+};
+exports.closeAlarm = closeAlarm;
 const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
@@ -170,7 +247,7 @@ const resolveAlarm = async (req, res) => {
             return;
         }
         await alarm.update({
-            lifecycleStatus: 'cleared',
+            lifecycleStatus: 'closed',
             resolvedAt: new Date(),
             owner: req.body.owner || alarm.owner,
         });
