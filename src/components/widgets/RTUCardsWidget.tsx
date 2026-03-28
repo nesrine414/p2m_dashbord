@@ -38,10 +38,10 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
     return (
       <Box className="glass-card" sx={{ mt: 3, p: 3 }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          RTU / OTDR Status
+          Statut RTU / OTDR
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          No RTU data available yet.
+          Aucune donnée RTU disponible pour le moment.
         </Typography>
       </Box>
     );
@@ -53,10 +53,10 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
     <Box sx={{ mt: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" fontWeight={700} color="white">
-          RTU / OTDR Status
+          Statut RTU / OTDR
         </Typography>
         <Chip
-          label={`${onlineCount}/${rtus.length} Online`}
+          label={`${onlineCount}/${rtus.length} En ligne`}
           sx={{ backgroundColor: '#00FF88', color: 'black', fontWeight: 'bold' }}
         />
       </Box>
@@ -91,7 +91,7 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
               </Typography>
               {(rtu.status === RTUStatus.OFFLINE || rtu.status === RTUStatus.UNREACHABLE) && (
                 <Chip
-                  label="OFFLINE"
+                  label="HORS LIGNE"
                   size="small"
                   sx={{
                     backgroundColor: '#FF3366',
@@ -106,25 +106,25 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <Thermostat sx={{ fontSize: 20, color: getTempColor(rtu.temperature) }} />
                 <Typography variant="body2" color="white">
-                  Temperature
+                  Température
                 </Typography>
               </Box>
               <Box display="flex" alignItems="baseline" gap={1}>
-              <Typography variant="h4" fontWeight="bold" sx={{ color: getTempColor(rtu.temperature) }}>
-                {rtu.temperature}C
-              </Typography>
+                <Typography variant="h4" fontWeight="bold" sx={{ color: getTempColor(rtu.temperature) }}>
+                  {rtu.temperature}C
+                </Typography>
                 {rtu.temperature > 40 && (
-                  <Chip label="CRITICAL" size="small" sx={{ backgroundColor: '#FF3366', color: 'white', fontSize: 9 }} />
+                  <Chip label="CRITIQUE" size="small" sx={{ backgroundColor: '#FF3366', color: 'white', fontSize: 9 }} />
                 )}
               </Box>
 
               <Box mt={2}>
                 <Box display="flex" justifyContent="space-between" mb={0.5}>
                   <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                    OTDR Availability
+                    Disponibilité OTDR
                   </Typography>
                   <Typography variant="caption" fontWeight="bold" color="white">
-                    {typeof rtu.availabilityPercent === 'number' && !isNaN(rtu.availabilityPercent) ? rtu.availabilityPercent.toFixed(1) : 'N/A'}%
+                    {typeof rtu.availabilityPercent === 'number' && !isNaN(rtu.availabilityPercent) ? rtu.availabilityPercent.toFixed(1) : 'N/D'}%
                   </Typography>
                 </Box>
                 <LinearProgress
@@ -143,7 +143,7 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
               </Box>
 
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 2, display: 'block' }}>
-                Location: {rtu.location}
+                Localisation: {rtu.location}
               </Typography>
             </Box>
           </Grid>

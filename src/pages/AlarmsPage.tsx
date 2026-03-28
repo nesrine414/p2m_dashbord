@@ -55,7 +55,7 @@ const AlarmsPage: React.FC = () => {
         if (!active) {
           return;
         }
-        setError('Unable to load alarm data from backend.');
+        setError("Impossible de charger les données d'alarmes depuis le backend.");
       } finally {
         if (active) {
           setLoading(false);
@@ -127,14 +127,14 @@ const AlarmsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={800} color="white">
-            Alarms & Events
+            Alarmes et événements
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Type, severity, status, timestamp, and fault location.
+            Type, sévérité, statut, horodatage et localisation du défaut.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }}>
-          Create Incident Bridge
+          Créer un incident
         </Button>
       </Stack>
 
@@ -142,7 +142,7 @@ const AlarmsPage: React.FC = () => {
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Loading alarms from backend...
+        setError("Impossible de charger les données d'alarmes depuis le backend.");
           </Typography>
         </Stack>
       )}
@@ -157,7 +157,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
             <Typography variant="caption" color="text.secondary">
-              Critical
+              Critiques
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#ff8d9a">
               {summary.critical}
@@ -167,7 +167,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#403327', border: '1px solid #8a6a45' }}>
             <Typography variant="caption" color="text.secondary">
-              Major
+              Majeures
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#ffc47f">
               {summary.major}
@@ -177,7 +177,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#303b2a', border: '1px solid #5a7350' }}>
             <Typography variant="caption" color="text.secondary">
-              Minor
+              Mineures
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#c3eca1">
               {summary.minor}
@@ -187,7 +187,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#3a2f43', border: '1px solid #746088' }}>
             <Typography variant="caption" color="text.secondary">
-              Active
+              Actives
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#d6a7ff">
               {summary.active}
@@ -197,7 +197,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2e3948', border: '1px solid #516782' }}>
             <Typography variant="caption" color="text.secondary">
-              Acknowledged
+              Pris en compte
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#9cc6ff">
               {summary.acknowledged}
@@ -207,7 +207,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2a373a', border: '1px solid #587a7f' }}>
             <Typography variant="caption" color="text.secondary">
-              Cleared
+              Clôturées
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#8ae8ef">
               {summary.cleared}
@@ -219,25 +219,25 @@ const AlarmsPage: React.FC = () => {
       <Stack direction="row" spacing={1} mb={1.4} flexWrap="wrap" useFlexGap>
         <Chip
           clickable
-          label="All severities"
+          label="Toutes les sévérités"
           color={severityFilter === 'all' ? 'primary' : 'default'}
           onClick={() => setSeverityFilter('all')}
         />
         <Chip
           clickable
-          label="Critical"
+          label="Critiques"
           color={severityFilter === AlarmSeverity.CRITICAL ? 'error' : 'default'}
           onClick={() => setSeverityFilter(AlarmSeverity.CRITICAL)}
         />
         <Chip
           clickable
-          label="Major"
+          label="Majeures"
           color={severityFilter === AlarmSeverity.MAJOR ? 'warning' : 'default'}
           onClick={() => setSeverityFilter(AlarmSeverity.MAJOR)}
         />
         <Chip
           clickable
-          label="Minor"
+          label="Mineures"
           color={severityFilter === AlarmSeverity.MINOR ? 'success' : 'default'}
           onClick={() => setSeverityFilter(AlarmSeverity.MINOR)}
         />
@@ -246,25 +246,25 @@ const AlarmsPage: React.FC = () => {
       <Stack direction="row" spacing={1} mb={2.4} flexWrap="wrap" useFlexGap>
         <Chip
           clickable
-          label="All status"
+          label="Tous les statuts"
           color={statusFilter === 'all' ? 'primary' : 'default'}
           onClick={() => setStatusFilter('all')}
         />
         <Chip
           clickable
-          label="Active"
+          label="Actives"
           color={statusFilter === AlarmLifecycleStatus.ACTIVE ? 'warning' : 'default'}
           onClick={() => setStatusFilter(AlarmLifecycleStatus.ACTIVE)}
         />
         <Chip
           clickable
-          label="Acknowledged"
+          label="Pris en compte"
           color={statusFilter === AlarmLifecycleStatus.ACKNOWLEDGED ? 'info' : 'default'}
           onClick={() => setStatusFilter(AlarmLifecycleStatus.ACKNOWLEDGED)}
         />
         <Chip
           clickable
-          label="Cleared"
+          label="Clôturées"
           color={statusFilter === AlarmLifecycleStatus.CLEARED ? 'success' : 'default'}
           onClick={() => setStatusFilter(AlarmLifecycleStatus.CLEARED)}
         />
@@ -274,7 +274,7 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
-              Active Alarm Queue
+              File active des alarmes
             </Typography>
             <TableContainer>
               <Table size="small">
@@ -282,12 +282,12 @@ const AlarmsPage: React.FC = () => {
                   <TableRow>
                     <TableCell>ID</TableCell>
                     <TableCell>Type</TableCell>
-                    <TableCell>Severity</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>Sévérité</TableCell>
+                    <TableCell>Statut</TableCell>
                     <TableCell>Message</TableCell>
                     <TableCell>RTU</TableCell>
-                    <TableCell>Occurred At</TableCell>
-                    <TableCell>Localization</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Localisation</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -303,16 +303,16 @@ const AlarmsPage: React.FC = () => {
                         <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
                       </TableCell>
                       <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
-                      <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/A'}`}</TableCell>
+                      <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
                       <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
-                      <TableCell>{alarm.localizationKm || 'N/A'}</TableCell>
+                      <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1}>
                           <Button size="small" variant="outlined" disabled>
-                            Ack
+                            Pris en compte
                           </Button>
                           <Button size="small" variant="contained" disabled>
-                            Resolve
+                            Résoudre
                           </Button>
                         </Stack>
                       </TableCell>
@@ -328,7 +328,7 @@ const AlarmsPage: React.FC = () => {
           <Stack spacing={3}>
             <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={2}>
-                Severity Heatmap by Zone
+                Répartition de sévérité par zone
               </Typography>
               <Box sx={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -346,20 +346,20 @@ const AlarmsPage: React.FC = () => {
             </Paper>
             <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={1.4}>
-                Playbook
+                Procédure
               </Typography>
               <Stack spacing={1.2}>
                 <Typography variant="body2" color="text.secondary">
-                  1. Verify localization and isolate impacted segment.
+                  1. Vérifiez la localisation et isolez le segment impacté.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  2. Run OTDR manual test with 1550 nm and compare reference trace.
+                  2. Lancez un test OTDR manuel à 1550 nm et comparez la trace de référence.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  3. Acknowledge alarm in NOC and assign owner.
+                  3. Prenez en compte l'alarme au NOC et désignez un responsable.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  4. Mark cleared only after optical budget returns below threshold.
+                  4. Marquez l'alarme comme clôturée uniquement lorsque le budget optique repasse sous le seuil.
                 </Typography>
               </Stack>
             </Paper>

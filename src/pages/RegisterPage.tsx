@@ -20,12 +20,12 @@ const buildUsername = (email: string, phone: string): string => {
   return digits || `user${Math.floor(Math.random() * 10000)}`;
 };
 
-const RegisterPage: React.FC = () => {
+const InscriptionPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
-  const [region, setRegion] = React.useState('');
+  const [region, setRégion] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -97,7 +97,7 @@ const RegisterPage: React.FC = () => {
           <Stack spacing={2}>
             <Box>
               <Typography variant="h4" sx={{ mb: 0.5 }}>
-                Register
+                Inscription
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Crée un compte technicien.
@@ -126,9 +126,9 @@ const RegisterPage: React.FC = () => {
                 </Stack>
 
                 <TextField
-                  label="Region"
+                  label="Région"
                   value={region}
-                  onChange={(e) => setRegion(e.target.value)}
+                  onChange={(e) => setRégion(e.target.value)}
                   fullWidth
                   placeholder="Sousse, Monastir..."
                 />
@@ -142,7 +142,7 @@ const RegisterPage: React.FC = () => {
                     autoComplete="email"
                   />
                   <TextField
-                    label="Numéro téléphone"
+                    label="Numéro de téléphone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     fullWidth
@@ -160,7 +160,7 @@ const RegisterPage: React.FC = () => {
                 />
 
                 <Button type="submit" variant="contained" disabled={loading}>
-                  {loading ? 'Création...' : 'Register'}
+                  {loading ? 'Création...' : 'Inscription'}
                 </Button>
               </Stack>
             </Box>
@@ -168,7 +168,7 @@ const RegisterPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               Déjà un compte ?{' '}
               <Button component={RouterLink} to={ROUTE_PATHS.login} variant="text" sx={{ p: 0, minWidth: 'auto' }}>
-                Login
+                Connexion
               </Button>
             </Typography>
           </Stack>
@@ -178,5 +178,5 @@ const RegisterPage: React.FC = () => {
   );
 };
 
-export default RegisterPage;
+export default InscriptionPage;
 

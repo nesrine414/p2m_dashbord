@@ -69,13 +69,13 @@ const getRiskColor = (level: RiskLevel): string => {
 const getRiskLabel = (level: RiskLevel): string => {
   switch (level) {
     case 'critical':
-      return 'Critical';
+      return 'Critique';
     case 'high':
-      return 'High';
+      return 'Élevé';
     case 'medium':
-      return 'Watch';
+      return 'Surveillance';
     default:
-      return 'Low';
+      return 'Faible';
   }
 };
 
@@ -104,11 +104,11 @@ const getStatusPenalty = (status: BackendRTU['status']): number => {
 const getStatusLabel = (status: BackendRTU['status']): string => {
   switch (status) {
     case RTUStatus.OFFLINE:
-      return 'RTU offline';
+      return 'RTU hors ligne';
     case RTUStatus.UNREACHABLE:
-      return 'RTU unreachable';
+      return 'RTU injoignable';
     case RTUStatus.WARNING:
-      return 'RTU warning state';
+      return 'RTU en avertissement';
     default:
       return 'RTU stable';
   }
@@ -152,7 +152,7 @@ const DashboardIAPage: React.FC = () => {
         if (!active) {
           return;
         }
-        setError('Unable to load AI dashboard telemetry from the backend.');
+        setError('Impossible de charger la télémétrie du tableau de bord IA depuis le backend.');
       } finally {
         if (active) {
           setLoading(false);
@@ -218,7 +218,7 @@ const DashboardIAPage: React.FC = () => {
           summary.brokenRoutes > 0 ? Math.min(0.14, summary.brokenRoutes * 0.025) : 0;
         const testPenalty = summary.failedTests > 0 ? Math.min(0.12, summary.failedTests * 0.02) : 0;
         const attenuationPenalty =
-          summary.avgAttenuation > 18 ? Math.min(0.12, (summary.avgAttenuation - 18) * 0.02) : 0;
+          (summary.avgAttenuation ?? 0) > 18 ? Math.min(0.12, ((summary.avgAttenuation ?? 0) - 18) * 0.02) : 0;
         const jitter = ((rtu.id % 7) + 1) * 0.008;
 
         const probability = clamp(
@@ -239,28 +239,28 @@ const DashboardIAPage: React.FC = () => {
         const driverCandidates = [
           { label: getStatusLabel(rtu.status), impact: statusPenalty },
           {
-            label: temperature > 37 ? `Temperature at ${temperature}C` : 'Temperature within range',
+            label: temperature > 37 ? `Température à ${temperature}C` : 'Température dans la plage normale',
             impact: temperaturePenalty,
           },
           {
             label:
               activeAlarmCount > 0
-                ? `${activeAlarmCount} active alarm${activeAlarmCount > 1 ? 's' : ''}`
-                : 'No active alarms',
+                ? `${activeAlarmCount} alarme active${activeAlarmCount > 1 ? 's' : ''}`
+                : 'No alarme actives',
             impact: alarmPenalty,
           },
           {
             label:
               summary.brokenRoutes > 0
-                ? `${summary.brokenRoutes} broken fiber route${summary.brokenRoutes > 1 ? 's' : ''}`
-                : 'Fiber routes stable',
+                ? `${summary.brokenRoutes} route fibre cassée${summary.brokenRoutes > 1 ? 's' : ''}`
+                : 'Routes fibre stables',
             impact: routePenalty,
           },
           {
             label:
               summary.failedTests > 0
-                ? `${summary.failedTests} recent OTDR failure${summary.failedTests > 1 ? 's' : ''}`
-                : 'OTDR tests passing',
+                ? `${summary.failedTests} échec OTDR récent${summary.failedTests > 1 ? 's' : ''}`
+                : 'Tests OTDR conformes',
             impact: testPenalty,
           },
         ];
@@ -269,13 +269,13 @@ const DashboardIAPage: React.FC = () => {
         const primaryDriver =
           primaryDriverCandidate && primaryDriverCandidate.impact > 0
             ? primaryDriverCandidate.label
-            : 'Stable telemetry baseline';
+            : 'Base de télémétrie stable';
 
         return {
           id: rtu.id,
           rtuId: rtu.id,
           rtuName: rtu.name,
-          location: rtu.locationAddress || 'Unknown location',
+          location: rtu.locationAddress || 'Localisation inconnue',
           probability,
           riskLevel,
           features: {
@@ -311,7 +311,7 @@ const DashboardIAPage: React.FC = () => {
   }, [predictions, stats?.availability, summary.brokenRoutes, summary.degradedRoutes, summary.failedTests]);
 
   const scoreLabel =
-    globalScore >= 85 ? 'Healthy' : globalScore >= 70 ? 'Stable' : globalScore >= 50 ? 'Watch' : 'Critical';
+    globalScore >= 85 ? 'Sain' : globalScore >= 70 ? 'Stable' : globalScore >= 50 ? 'Surveillance' : 'Critique';
 
   const scoreColor =
     globalScore >= 85 ? '#7EE081' : globalScore >= 70 ? '#7CCBFF' : globalScore >= 50 ? '#F7C948' : '#FF4D6D';
@@ -323,15 +323,15 @@ const DashboardIAPage: React.FC = () => {
           <Psychology sx={{ fontSize: 40, color: '#9C27B0' }} />
           <Box>
             <Typography variant="h4" fontWeight="bold" color="white">
-              Artificial Intelligence Dashboard
+              Tableau de bord IA
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-              Live risk scoring derived from RTUs, alarms, topology, and OTDR telemetry
+              Score de risque en direct calculé à partir des RTU, des alarmes, de la topologie et de la télémétrie OTDR
             </Typography>
           </Box>
           <Chip
             icon={<TrendingUpOutlined />}
-            label={`${predictions.length} RTUs scored`}
+            label={`${predictions.length} RTU évaluées`}
             sx={{ backgroundColor: 'rgba(124, 203, 255, 0.16)', color: 'white', fontWeight: 'bold' }}
           />
         </Box>
@@ -341,7 +341,7 @@ const DashboardIAPage: React.FC = () => {
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Loading AI telemetry...
+            Chargement de la télémétrie IA...
           </Typography>
         </Stack>
       )}
@@ -354,13 +354,13 @@ const DashboardIAPage: React.FC = () => {
 
       {stats?.degradedMode && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Backend is running in degraded mode, so these AI insights are inferred from the Tunisia demo telemetry.
+          Le backend fonctionne en mode dégradé ; ces analyses IA sont déduites de la télémétrie de démonstration tunisienne.
         </Alert>
       )}
 
       {!stats?.degradedMode && !error && stats && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Live backend telemetry is connected and feeding this AI dashboard.
+          La télémétrie en direct du backend est connectée et alimente ce tableau de bord IA.
         </Alert>
       )}
 
@@ -368,7 +368,7 @@ const DashboardIAPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, textAlign: 'center', height: '100%' }}>
             <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-              Overall network health score
+              Score global de santé du réseau
             </Typography>
 
             <Box
@@ -410,9 +410,9 @@ const DashboardIAPage: React.FC = () => {
             />
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" justifyContent="center" mt={2}>
-              <Chip label={`RTUs ${rtus.length}`} size="small" sx={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'white' }} />
+              <Chip label={`RTU ${rtus.length}`} size="small" sx={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'white' }} />
               <Chip
-                label={`Alarms ${summary.activeAlarms}`}
+                label={`Alarmes ${summary.activeAlarms}`}
                 size="small"
                 sx={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'white' }}
               />
@@ -431,18 +431,18 @@ const DashboardIAPage: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1.25}>
                 <InsightsOutlined sx={{ color: '#7CCBFF' }} />
                 <Typography variant="h6" fontWeight={700} color="white">
-                  Predictive alerts
+                  Alertes prédictives
                 </Typography>
               </Box>
               <Chip
-                label={`${topPredictions.length}/${predictions.length || 0} high-priority`}
+                label={`${topPredictions.length}/${predictions.length || 0} haute priorité`}
                 sx={{ backgroundColor: 'rgba(255, 77, 109, 0.16)', color: 'white', fontWeight: 'bold' }}
               />
             </Box>
 
             {topPredictions.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
-                No live RTU data available yet.
+                Aucune donnée RTU en direct pour le moment.
               </Typography>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -482,22 +482,22 @@ const DashboardIAPage: React.FC = () => {
                     </Box>
 
                     <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.72)', mt: 1 }}>
-                      Primary driver: {prediction.primaryDriver}
+                      Facteur principal : {prediction.primaryDriver}
                     </Typography>
 
                     <Box mt={2} display="flex" gap={1} flexWrap="wrap">
                       <Chip
-                        label={`Attenuation: ${prediction.features.attenuationDb.toFixed(1)} dB`}
+                        label={`Atténuation : ${(prediction.features.attenuationDb ?? 0).toFixed(1)} dB`}
                         size="small"
                         sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                       />
                       <Chip
-                        label={`Alarms: ${prediction.features.nbAlarms24h}`}
+                        label={`Alarmes : ${prediction.features.nbAlarms24h}`}
                         size="small"
                         sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                       />
                       <Chip
-                        label={`Uptime: ${prediction.features.uptimePercent.toFixed(1)}%`}
+                        label={`Disponibilité : ${(prediction.features.uptimePercent ?? 0).toFixed(1)}%`}
                         size="small"
                         sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
                       />
@@ -521,13 +521,13 @@ const DashboardIAPage: React.FC = () => {
             <Box display="flex" alignItems="center" gap={1.25} mb={2}>
               <ShieldOutlined sx={{ color: '#7EE081' }} />
               <Typography variant="h6" fontWeight={700} color="white">
-                Top critical RTUs
+                RTU critiques principales
               </Typography>
             </Box>
 
             {predictions.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
-                No RTU telemetry available yet.
+                Aucune télémétrie RTU disponible pour le moment.
               </Typography>
             ) : (
               topPredictions.map((prediction, index) => (
@@ -563,3 +563,5 @@ const DashboardIAPage: React.FC = () => {
 };
 
 export default DashboardIAPage;
+
+

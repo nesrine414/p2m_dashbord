@@ -47,7 +47,7 @@ interface LiveEventItem {
 
 const formatDateTime = (value?: string | null): string => {
   if (!value) {
-    return 'N/A';
+    return 'N/D';
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -116,7 +116,7 @@ const MonitoringPage: React.FC = () => {
         if (!active) {
           return;
         }
-        setError('Unable to load monitoring data from backend.');
+        setError('Impossible de charger les données de supervision depuis le backend.');
       } finally {
         if (active) {
           setLoading(false);
@@ -163,7 +163,7 @@ const MonitoringPage: React.FC = () => {
         timestamp: toTimeString(alarm.occurredAt),
         severity: alarm.severity,
         message: alarm.message,
-        source: alarm.rtuName || `RTU-${alarm.rtuId || 'N/A'}`,
+        source: alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`,
       })),
     [alarms]
   );
@@ -171,17 +171,17 @@ const MonitoringPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>
-        View 2 - Network
+        Vue 2 - Réseau
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Optical topology, attenuation, and OTDR results.
+        Topologie optique, atténuation et résultats OTDR.
       </Typography>
 
       {loading && (
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Loading monitoring data...
+            Chargement des données de supervision...
           </Typography>
         </Stack>
       )}
@@ -196,7 +196,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#27382e', border: '1px solid #4b6b59' }}>
             <Typography variant="caption" color="text.secondary">
-              Fiber Normal
+              Fibre normale
             </Typography>
             <Typography variant="h5" color="#8fe7a7" fontWeight={700}>
               {summary.normal}
@@ -206,7 +206,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#3a3228', border: '1px solid #7c6646' }}>
             <Typography variant="caption" color="text.secondary">
-              Fiber Degraded
+              Fibre dégradée
             </Typography>
             <Typography variant="h5" color="#ffc98c" fontWeight={700}>
               {summary.degraded}
@@ -216,7 +216,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
             <Typography variant="caption" color="text.secondary">
-              Fiber Broken
+              Fibre rompue
             </Typography>
             <Typography variant="h5" color="#ff8d9a" fontWeight={700}>
               {summary.broken}
@@ -226,7 +226,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#252d40', border: '1px solid #46546c' }}>
             <Typography variant="caption" color="text.secondary">
-              Avg Attenuation
+              Atténuation moyenne
             </Typography>
             <Typography variant="h5" color="white" fontWeight={700}>
               {summary.avgAttenuation} dB
@@ -239,7 +239,7 @@ const MonitoringPage: React.FC = () => {
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
           <RouteOutlined sx={{ color: '#8fd3ff' }} />
           <Typography variant="h6" color="white">
-            Real-time GPS map
+            Carte GPS en temps réel
           </Typography>
         </Stack>
         <RealtimeTunisiaMap routes={routes} rtus={rtus} enableEditor />
@@ -251,7 +251,7 @@ const MonitoringPage: React.FC = () => {
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
               <Typography variant="h6" color="white">
-                Attenuation Trend
+                Tendance d’atténuation
               </Typography>
             </Stack>
             <Box sx={{ height: 320 }}>
@@ -267,7 +267,7 @@ const MonitoringPage: React.FC = () => {
                     stroke="#55c2ff"
                     strokeWidth={2}
                     dot={false}
-                    name="Backbone North"
+                    name="Noyau Nord"
                   />
                   <Line
                     type="monotone"
@@ -275,7 +275,7 @@ const MonitoringPage: React.FC = () => {
                     stroke="#ff9f5a"
                     strokeWidth={2}
                     dot={false}
-                    name="Backbone South"
+                    name="Noyau Sud"
                   />
                   <Line
                     type="monotone"
@@ -283,7 +283,7 @@ const MonitoringPage: React.FC = () => {
                     stroke="#92e7a9"
                     strokeWidth={2}
                     dot={false}
-                    name="Metro Ring"
+                    name="Anneau métropolitain"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -296,7 +296,7 @@ const MonitoringPage: React.FC = () => {
             sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}
           >
             <Typography variant="h6" color="white" mb={2}>
-              Event Stream
+              Flux d’événements
             </Typography>
             <Stack spacing={1.5}>
               {liveEvents.map((event) => (
@@ -326,7 +326,7 @@ const MonitoringPage: React.FC = () => {
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <RouteOutlined sx={{ color: '#8fd3ff' }} />
               <Typography variant="h6" color="white">
-                Optical Routes
+                Routes optiques
               </Typography>
             </Stack>
             <TableContainer>
@@ -334,13 +334,13 @@ const MonitoringPage: React.FC = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Route</TableCell>
-                    <TableCell>Path</TableCell>
-                    <TableCell>Fiber Status</TableCell>
-                    <TableCell>Route Status</TableCell>
-                    <TableCell>Length</TableCell>
-                    <TableCell>Attenuation</TableCell>
-                    <TableCell>Reflection Events</TableCell>
-                    <TableCell>Last Test</TableCell>
+                    <TableCell>Trajet</TableCell>
+                    <TableCell>État de la fibre</TableCell>
+                    <TableCell>État de la route</TableCell>
+                    <TableCell>Longueur</TableCell>
+                    <TableCell>Atténuation</TableCell>
+                    <TableCell>Événements de réflexion</TableCell>
+                    <TableCell>Dernier test</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -356,13 +356,13 @@ const MonitoringPage: React.FC = () => {
                       <TableCell>
                         <StatusBadge status={route.routeStatus} variant="outlined" />
                       </TableCell>
-                      <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/A'}</TableCell>
+                      <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
                       <TableCell>
                         {route.attenuationDb && route.attenuationDb > 0
                           ? `${route.attenuationDb.toFixed(1)} dB`
-                          : 'N/A'}
+                          : 'N/D'}
                       </TableCell>
-                      <TableCell>{route.reflectionEvents ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
                       <TableCell>{formatDateTime(route.lastTestTime)}</TableCell>
                     </TableRow>
                   ))}
@@ -379,7 +379,7 @@ const MonitoringPage: React.FC = () => {
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <DeviceHubOutlined sx={{ color: '#9bb9ff' }} />
               <Typography variant="h6" color="white">
-                OTDR Recent Tests ({summary.failedTests} fail)
+                Tests OTDR récents ({summary.failedTests} échecs)
               </Typography>
             </Stack>
             <TableContainer>
@@ -388,10 +388,10 @@ const MonitoringPage: React.FC = () => {
                   <TableRow>
                     <TableCell>Route</TableCell>
                     <TableCell>Mode</TableCell>
-                    <TableCell>Pulse</TableCell>
-                    <TableCell>Range</TableCell>
-                    <TableCell>Wavelength</TableCell>
-                    <TableCell>Result</TableCell>
+                    <TableCell>Impulsion</TableCell>
+                    <TableCell>Plage</TableCell>
+                    <TableCell>Longueur d’onde</TableCell>
+                    <TableCell>Résultat</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -399,8 +399,8 @@ const MonitoringPage: React.FC = () => {
                     <TableRow key={test.id} hover>
                       <TableCell>{test.routeName}</TableCell>
                       <TableCell>{test.mode}</TableCell>
-                      <TableCell>{test.pulseWidth || 'N/A'}</TableCell>
-                      <TableCell>{test.dynamicRangeDb ? `${test.dynamicRangeDb} dB` : 'N/A'}</TableCell>
+                      <TableCell>{test.pulseWidth || 'N/D'}</TableCell>
+                      <TableCell>{test.dynamicRangeDb ? `${test.dynamicRangeDb} dB` : 'N/D'}</TableCell>
                       <TableCell>{test.wavelengthNm} nm</TableCell>
                       <TableCell>
                         <StatusBadge status={test.result} />

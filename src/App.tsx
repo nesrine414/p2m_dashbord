@@ -7,7 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import MonitoringPage from './pages/MonitoringPage';
 import AlarmsPage from './pages/AlarmsPage';
 import ReportsPage from './pages/Reports/ReportsPage';
-import RTUListPage from './pages/RTUList/RTUListPage';
+import RTUInventoryPage from './pages/RTUInventoryPage';
 import AIDashboardPage from './pages/DashboardIA/DashboardIAPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
@@ -161,7 +161,7 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path={ROUTE_SEGMENTS.rtu} element={<RTUListPage />} />
+            <Route path={ROUTE_SEGMENTS.rtu} element={<RTUInventoryPage />} />
             <Route path={ROUTE_SEGMENTS.monitoring} element={<MonitoringPage />} />
             <Route path={ROUTE_SEGMENTS.alarms} element={<AlarmsPage />} />
             <Route path={`${ROUTE_SEGMENTS.alarms}/:alarmId`} element={<AlarmsPage />} />

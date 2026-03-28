@@ -67,6 +67,21 @@ const getNodeColor = (status: RTUStatus) => {
   }
 };
 
+
+const getStatusLabel = (status: RTUStatus) => {
+  switch (status) {
+    case RTUStatus.ONLINE:
+      return 'En ligne';
+    case RTUStatus.WARNING:
+      return 'Avertissement';
+    case RTUStatus.UNREACHABLE:
+      return 'Injoignable';
+    case RTUStatus.OFFLINE:
+    default:
+      return 'Hors ligne';
+  }
+};
+
 const getLinkColor = (status: FiberStatus) => {
   switch (status) {
     case FiberStatus.BROKEN:
@@ -534,7 +549,7 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({ routes, rtus, e
             }}
           >
             <Tooltip direction="top" offset={[0, -8]} opacity={0.9}>
-              <strong>{node.city}</strong> - {node.status}
+              <strong>{node.city}</strong> - {getStatusLabel(node.status)}
             </Tooltip>
           </CircleMarker>
         ))}
@@ -723,3 +738,4 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({ routes, rtus, e
 };
 
 export default RealtimeTunisiaMap;
+

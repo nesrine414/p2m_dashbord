@@ -7,6 +7,40 @@ interface StatusBadgeProps {
   variant?: 'filled' | 'outlined';
 }
 
+const getFrenchLabel = (value: string): string => {
+  const labels: Record<string, string> = {
+    online: 'En ligne',
+    normal: 'Normal',
+    connected: 'Connecté',
+    ready: 'Prêt',
+    pass: 'Réussi',
+    cleared: 'Clôturé',
+    offline: 'Hors ligne',
+    critical: 'Critique',
+    broken: 'Cassé',
+    failure: 'Panne',
+    fault: 'Défaut',
+    disconnected: 'Déconnecté',
+    unreachable: 'Injoignable',
+    fail: 'Échec',
+    warning: 'Avertissement',
+    major: 'Majeur',
+    degraded: 'Dégradé',
+    busy: 'Occupé',
+    active: 'Actif',
+    inactive: 'Inactif',
+    minor: 'Mineur',
+    info: 'Info',
+    acknowledged: 'Pris en compte',
+    scheduled: 'Planifié',
+  };
+
+  return labels[value.toLowerCase()] || value
+    .split(/[_-\s]+/)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' }) => {
   const getColor = (): 'success' | 'error' | 'warning' | 'info' | 'default' => {
     switch (status.toLowerCase()) {
@@ -43,16 +77,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' })
     }
   };
 
-  const getLabel = () => {
-    return status
-      .split(/[_-\s]+/)
-      .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
-      .join(' ');
-  };
-
   return (
     <Chip
-      label={getLabel()}
+      label={getFrenchLabel(String(status))}
       color={getColor()}
       variant={variant}
       size="small"

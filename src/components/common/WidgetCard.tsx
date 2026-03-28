@@ -91,11 +91,11 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
                   color: trend.isPositive ? '#8deab4' : '#ffb3be',
                 }}
               >
-                Trend: {trendLabel}
+                Tendance : {trendLabel}
               </Typography>
             )}
           </Box>
-          
+
           {icon && (
             <Box
               sx={{

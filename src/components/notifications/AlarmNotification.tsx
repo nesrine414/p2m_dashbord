@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Snackbar, Alert, AlertTitle } from '@mui/material';
+import { Alert, AlertTitle, Snackbar } from '@mui/material';
+import { BackendAlarm } from '../../services/api';
 
 interface AlarmNotificationProps {
-  alarm: any;
+  alarm: BackendAlarm;
   onClose: () => void;
 }
 
@@ -17,21 +18,30 @@ const AlarmNotification: React.FC<AlarmNotificationProps> = ({ alarm, onClose })
 
   const getSeverityColor = () => {
     switch (alarm.severity) {
-      case 'critical': return 'error';
-      case 'major': return 'warning';
-      default: return 'info';
+      case 'critical':
+        return 'error';
+      case 'major':
+        return 'warning';
+      default:
+        return 'info';
     }
   };
+
+  const severityLabel =
+    alarm.severity === 'critical' ? 'CRITIQUE' : alarm.severity === 'major' ? 'MAJEURE' : 'MINEURE';
 
   return (
     <Snackbar
       open={open}
       autoHideDuration={10000}
-      onClose={() => { setOpen(false); onClose(); }}
+      onClose={() => {
+        setOpen(false);
+        onClose();
+      }}
       anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
     >
       <Alert severity={getSeverityColor()} onClose={() => setOpen(false)}>
-        <AlertTitle>🚨 Nouvelle Alarme {alarm.severity?.toUpperCase()}</AlertTitle>
+        <AlertTitle>Nouvelle alarme {severityLabel}</AlertTitle>
         <strong>{alarm.rtuName || alarm.rtuId}</strong>: {alarm.message}
       </Alert>
     </Snackbar>

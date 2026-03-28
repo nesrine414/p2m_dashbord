@@ -17,17 +17,17 @@ interface CriticalRoutesWidgetProps {
 
 const getStatusColor = (status: CriticalRoute['status']) => (status === 'broken' ? '#FF3366' : '#FFB800');
 
-const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Broken' : 'Degraded');
+const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Cassée' : 'Dégradée');
 
 const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) => {
   if (!routes || routes.length === 0) {
     return (
       <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          Critical fiber routes
+          Routes fibre critiques
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          No route data available yet.
+          Aucune route disponible pour le moment.
         </Typography>
       </Box>
     );
@@ -36,7 +36,7 @@ const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) =
   return (
     <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
       <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-        Critical fiber routes
+        Routes fibre critiques
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -77,15 +77,15 @@ const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) =
             </Box>
 
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 1 }}>
-              {route.from} to {route.to}
+              {route.from} vers {route.to}
             </Typography>
 
             <Box display="flex" gap={2}>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                Attenuation: <span style={{ color: 'white', fontWeight: 'bold' }}>{route.attenuation}</span>
+                Atténuation: <span style={{ color: 'white', fontWeight: 'bold' }}>{route.attenuation}</span>
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                Last test: <span style={{ color: 'white' }}>{route.lastTest}</span>
+                Dernier test: <span style={{ color: 'white' }}>{route.lastTest}</span>
               </Typography>
             </Box>
           </Box>

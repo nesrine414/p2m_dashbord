@@ -36,12 +36,12 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     if (!password.trim()) {
-      setError('Password is required.');
+      setError('Le mot de passe est obligatoire.');
       return;
     }
 
     if (!email.trim() && !phone.trim()) {
-      setError('Enter email or phone number.');
+      setError('Saisissez un e-mail ou un numéro de téléphone.');
       return;
     }
 
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
       const message =
         loginError?.response?.data?.error ||
         loginError?.message ||
-        "Unable to sign in. Check that the backend is running on localhost:5000.";
+        "Impossible de vous connecter. Vérifiez que le backend tourne sur localhost:5000.";
       setError(String(message));
     } finally {
       setLoading(false);
@@ -101,10 +101,10 @@ const LoginPage: React.FC = () => {
           <Stack spacing={2}>
             <Box>
               <Typography variant="h4" sx={{ mb: 0.5 }}>
-                Sign in
+                Connexion
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Sign in with your email or phone number.
+                Connectez-vous avec votre e-mail ou votre numéro de téléphone.
               </Typography>
             </Box>
 
@@ -113,21 +113,21 @@ const LoginPage: React.FC = () => {
             <Box component="form" onSubmit={handleSubmit}>
               <Stack spacing={2}>
                 <TextField
-                  label="Email"
+                  label="E-mail"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   fullWidth
                   autoComplete="email"
                 />
                 <TextField
-                  label="Phone number"
+                  label="Numéro de téléphone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   fullWidth
                   autoComplete="tel"
                 />
                 <TextField
-                  label="Password"
+                  label="Mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
@@ -137,19 +137,19 @@ const LoginPage: React.FC = () => {
 
                 <FormControlLabel
                   control={<Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />}
-                  label="Stay signed in"
+                  label="Rester connecté"
                 />
 
                 <Button type="submit" variant="contained" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign in'}
+                  {loading ? 'Connexion...' : 'Connexion'}
                 </Button>
               </Stack>
             </Box>
 
             <Typography variant="body2" color="text.secondary">
-              No account?{' '}
+              Pas encore de compte ?{' '}
               <Button component={RouterLink} to={ROUTE_PATHS.register} variant="text" sx={{ p: 0, minWidth: 'auto' }}>
-                Register
+                Créer un compte
               </Button>
             </Typography>
           </Stack>

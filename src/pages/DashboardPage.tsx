@@ -93,7 +93,7 @@ const getRtuAvailabilityEstimate = (rtu: BackendRTU): number => {
 const toDashboardRtuCard = (rtu: BackendRTU): RTUCard => ({
   id: rtu.id,
   name: rtu.name,
-  location: rtu.locationAddress || 'Unknown location',
+  location: rtu.locationAddress || 'Localisation inconnue',
   status: rtu.status as RTUStatus,
   temperature: typeof rtu.temperature === 'number' ? rtu.temperature : 0,
   availabilityPercent: getRtuAvailabilityEstimate(rtu),
@@ -161,7 +161,7 @@ const DashboardPage: React.FC = () => {
         if (!active) {
           return;
         }
-        setError('Unable to load backend data. Check that backend is running on localhost:5000.');
+        setError('Impossible de charger les données du backend. Vérifiez que le backend tourne sur localhost:5000.');
       } finally {
         if (active) {
           setLoading(false);
@@ -179,7 +179,7 @@ const DashboardPage: React.FC = () => {
   const summary = useMemo(() => {
     const online = stats?.rtuOnline || 0;
     const offline = stats?.rtuOffline || 0;
-    const unreachable = stats?.rtuUnreachable || 0;
+    const injoignables = stats?.rtuUnreachable || 0;
     const activeCritical = stats?.criticalAlarms || 0;
     const brokenFibers = routes.filter((item) => item.fiberStatus === FiberStatus.BROKEN).length;
     const testsFailed = otdrTests.filter((item) => item.result === 'fail').length;
@@ -187,7 +187,7 @@ const DashboardPage: React.FC = () => {
     return {
       online,
       offline,
-      unreachable,
+      injoignables,
       activeCritical,
       brokenFibers,
       testsFailed,
@@ -226,12 +226,12 @@ const DashboardPage: React.FC = () => {
       criticalAlarms.map((item) => ({
         id: item.id,
         type: item.alarmType,
-        rtu: item.rtuName || `RTU-${item.rtuId || 'N/A'}`,
-        zone: item.zone || item.location || 'N/A',
+        rtu: item.rtuName || `RTU-${item.rtuId || 'N/D'}`,
+        zone: item.zone || item.location || 'N/D',
         severity: item.severity,
         status: item.lifecycleStatus === 'cleared' ? 'resolved' : item.lifecycleStatus,
         timestamp: item.occurredAt,
-        location: item.localizationKm || item.location || 'N/A',
+        location: item.localizationKm || item.location || 'N/D',
       })),
     [criticalAlarms]
   );
@@ -249,8 +249,8 @@ const DashboardPage: React.FC = () => {
           attenuation:
             route.attenuationDb && route.attenuationDb > 0
               ? `${route.attenuationDb.toFixed(1)} dB`
-              : 'N/A',
-          lastTest: route.lastTestTime || 'N/A',
+              : 'N/D',
+          lastTest: route.lastTestTime || 'N/D',
         })),
     [routes]
   );
@@ -268,17 +268,17 @@ const DashboardPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.7}>
-        View 1 - NOC Real-Time
+        Vue 1 - Supervision temps réel
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={2}>
-        Real-time monitoring of RTUs, critical alarms, and fiber routes.
+        Supervision en temps réel des RTU, des alarmes critiques et des routes fibre.
       </Typography>
 
       {loading && (
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Loading backend data...
+            Chargement des données du backend...
           </Typography>
         </Stack>
       )}
@@ -291,49 +291,49 @@ const DashboardPage: React.FC = () => {
 
       {summary.degradedMode && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Backend is running without PostgreSQL. You are seeing API demo data.
+          Le backend fonctionne sans PostgreSQL. Les données affichées sont celles de démonstration de l'API.
         </Alert>
       )}
 
       {!loading && !error && !summary.degradedMode && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Live API connected to PostgreSQL on localhost:5000.
+          API en direct connectée à PostgreSQL sur localhost:5000.
         </Alert>
       )}
 
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="RTU ONLINE"
+            title="0/6 RTU actives"
             value={`${summary.online}/${summary.totalRtus}`}
-            subtitle={`${summary.offline} offline - ${summary.unreachable} unreachable`}
+            subtitle={`${summary.offline} hors ligne - ${summary.injoignables} injoignables`}
             icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
             color="#6aa884"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="CRITICAL ALARMS"
+            title="ALARMES CRITIQUES"
             value={summary.activeCritical}
-            subtitle="Active, unresolved"
+            subtitle="Actives, non résolues"
             icon={<CrisisAlertOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#cf3f4a"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="BROKEN FIBERS"
+            title="FIBRES CASSÉES"
             value={summary.brokenFibers}
-            subtitle="Routes to fix"
+            subtitle="Routes à corriger"
             icon={<RouterOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#f08934"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="OTDR FAILURES"
+            title="ÉCHECS OTDR"
             value={summary.testsFailed}
-            subtitle="Latest tests"
+            subtitle="Derniers tests"
             icon={<DeviceHubOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#3c7fff"
           />
@@ -343,9 +343,9 @@ const DashboardPage: React.FC = () => {
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="MTTR (Repair Time)"
+            title="MTTR (temps de réparation)"
             value={`${(stats?.mttr || 0).toFixed(1)}h`}
-            subtitle="Live from cleared alarms"
+            subtitle="Calculé à partir des alarmes clôturées"
             icon={<AccessTime sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
             color="#667eea"
@@ -354,9 +354,9 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="MTBF (Estimated)"
+            title="MTBF (estimé)"
             value={`${estimatedMtbfHours.toFixed(1)}h`}
-            subtitle="Derived from live fault density"
+            subtitle="Dérivé de la densité de pannes"
             icon={<Timeline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
             color="#11998e"
@@ -365,9 +365,9 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="AVERAGE ATTENUATION"
+            title="ATTÉNUATION MOYENNE"
             value={`${averageAttenuation.toFixed(1)} dB`}
-            subtitle={`Target: <${attenuationTarget.toFixed(1)} dB`}
+            subtitle={`Cible : <${attenuationTarget.toFixed(1)} dB`}
             icon={<TrendingDown sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
             color="#f093fb"
@@ -376,9 +376,9 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="NETWORK AVAILABILITY"
+            title="DISPONIBILITÉ RÉSEAU"
             value={`${summary.availability.toFixed(1)}%`}
-            subtitle={`Target: >${availabilityTarget.toFixed(1)}%`}
+            subtitle={`Cible : >${availabilityTarget.toFixed(1)}%`}
             icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
             color="#11998e"
@@ -387,81 +387,18 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Box className="glass-card" sx={{ p: 2.8, mb: 3 }}>
-        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          Performance indicators (live API)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mb={2}>
-          These metrics are computed from PostgreSQL-backed RTU, alarm, and topology data.
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#667eea" gutterBottom>
-                MTTR - Mean Time To Repair
-              </Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                Average time to repair a failure. Target: &lt;4h
-              </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
-                Formula: total resolution time / resolved alarms count
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#11998e" gutterBottom>
-                MTBF - Estimated from live load
-              </Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                Estimated average time between failures derived from active alarms and route state.
-              </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
-                Formula: network scale / incident load
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#f093fb" gutterBottom>
-                AVERAGE ATTENUATION - Optical loss
-              </Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                Average attenuation measured from live fiber routes.
-              </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
-                Formula: sum(route attenuation) / count(valid routes)
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#11998e" gutterBottom>
-                AVAILABILITY - Network availability
-              </Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                Percentage of time the network is operational. Target: &gt;99%
-              </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
-                Formula: (uptime / total time) * 100
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} mb={2}>
           <Box>
             <Typography variant="h6" color="white">
-              Attenuation Trend (30 days)
+              Tendance d'atténuation (30 jours)
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Variation tracking on primary routes.
+              Suivi des variations sur les routes principales.
             </Typography>
           </Box>
           <Typography variant="caption" color="#8fb3d1">
-            Last 4 weeks
+            4 dernières semaines
           </Typography>
         </Stack>
         <Box sx={{ width: '100%', height: 260 }}>
@@ -476,15 +413,15 @@ const DashboardPage: React.FC = () => {
                 y={18}
                 stroke="#ff4d6d"
                 strokeDasharray="6 6"
-                label={{ value: 'Critical threshold 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
+                label={{ value: 'Seuil critique 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
               />
               <Legend
                 iconType="circle"
                 wrapperStyle={{ color: '#e2ecff', fontWeight: 600 }}
               />
-              <Line type="monotone" dataKey="backboneNorth" name="Backbone North" stroke="#76d6ff" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="backboneSouth" name="Backbone South" stroke="#f8b26a" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="metroRing" name="Metro Ring" stroke="#b28bff" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="backboneNorth" name="Noyau Nord" stroke="#76d6ff" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="backboneSouth" name="Noyau Sud" stroke="#f8b26a" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="metroRing" name="Anneau métropolitain" stroke="#b28bff" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </Box>
@@ -503,17 +440,17 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#252f44', border: '1px solid #4e6480' }}>
             <Typography variant="h6" color="white" mb={1}>
-              View 2 - Network
+              Vue 2 - Réseau
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Optical topology, per-route attenuation, and latest OTDR tests.
+              Topologie optique, atténuation par route et derniers tests OTDR.
             </Typography>
             <Stack direction="row" spacing={1}>
               <Button component={RouterLink} to={ROUTE_PATHS.monitoring} variant="contained">
-                Open Monitoring
+                Ouvrir la supervision
               </Button>
               <Button component={RouterLink} to={ROUTE_PATHS.rtu} variant="outlined">
-                Open RTU
+                Ouvrir les RTU
               </Button>
             </Stack>
           </Paper>
@@ -521,17 +458,17 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#2b2f46', border: '1px solid #676c95' }}>
             <Typography variant="h6" color="white" mb={1}>
-              View 3 - Quality & History
+              Vue 3 - Qualité et historique
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Trends, quality KPIs, periodic reports, and incident tracking.
+              Tendances, KPI qualité, rapports périodiques et suivi des incidents.
             </Typography>
             <Stack direction="row" spacing={1}>
               <Button component={RouterLink} to={ROUTE_PATHS.reports} variant="contained" color="secondary">
-                Open Reports
+                Ouvrir les rapports
               </Button>
               <Button component={RouterLink} to={ROUTE_PATHS.aiDashboard} variant="outlined">
-                Open AI
+                Ouvrir l'IA
               </Button>
             </Stack>
           </Paper>

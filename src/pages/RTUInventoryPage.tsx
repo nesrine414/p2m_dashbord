@@ -68,7 +68,7 @@ const getVendor = (id: number): string => VENDORS[id % VENDORS.length];
 
 const formatLastSeen = (value?: string | Date | null): string => {
   if (!value) {
-    return 'N/A';
+    return 'N/D';
   }
 
   const date = new Date(value);
@@ -78,17 +78,17 @@ const formatLastSeen = (value?: string | Date | null): string => {
 
   const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
   if (diffMinutes <= 1) {
-    return 'just now';
+    return "À l'instant";
   }
   if (diffMinutes < 60) {
-    return `${diffMinutes} min ago`;
+    return `${diffMinutes} min`;
   }
   const hours = Math.floor(diffMinutes / 60);
   if (hours < 24) {
-    return `${hours} h ago`;
+    return `${hours} h`;
   }
   const days = Math.floor(hours / 24);
-  return `${days} d ago`;
+  return `${days} j`;
 };
 
 const toInventoryRecord = (
@@ -126,9 +126,9 @@ const toInventoryRecord = (
   return {
     id: item.id,
     name: item.name,
-    zone: item.locationAddress || 'Unknown zone',
+    zone: item.locationAddress || 'Zone inconnue',
     vendor: getVendor(item.id),
-    ipAddress: item.ipAddress || 'N/A',
+    ipAddress: item.ipAddress || 'N/D',
     status,
     powerSupply,
     communication,
@@ -180,7 +180,7 @@ const RTUInventoryPage: React.FC = () => {
         if (!active) {
           return;
         }
-        setError('Unable to load RTU data from backend. Verify backend is running.');
+        setError('Impossible de charger les données RTU depuis le backend. Vérifiez que le backend fonctionne.');
       } finally {
         if (active) {
           setLoading(false);
@@ -234,10 +234,10 @@ const RTUInventoryPage: React.FC = () => {
   }, [records]);
 
   const statusDistribution = [
-    { name: 'Online', value: summary.online },
-    { name: 'Warning', value: summary.warning },
-    { name: 'Offline', value: summary.offline },
-    { name: 'Unreachable', value: summary.unreachable },
+    { name: 'En ligne', value: summary.online },
+    { name: 'Avertissement', value: summary.warning },
+    { name: 'Hors ligne', value: summary.offline },
+    { name: 'Injoignable', value: summary.unreachable },
   ];
 
   const handleStatusChange = (event: SelectChangeEvent<'all' | RTUStatus>) => {
@@ -259,14 +259,14 @@ const RTUInventoryPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={800} color="white">
-            RTU Inventory
+            Inventaire RTU
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            RTU health: overall status, power, communication, OTDR availability.
+            Santé RTU : état global, alimentation, communication, disponibilité OTDR.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<DownloadOutlined />} sx={{ borderRadius: 2 }}>
-          Export Snapshot
+    return "À l'instant";
         </Button>
       </Stack>
 
@@ -274,7 +274,7 @@ const RTUInventoryPage: React.FC = () => {
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Loading RTU records from backend...
+            Chargement des enregistrements RTU depuis le backend...
           </Typography>
         </Stack>
       )}
@@ -289,7 +289,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#252d42', border: '1px solid #445069' }}>
             <Typography variant="caption" color="text.secondary">
-              Total RTU
+              RTU total
             </Typography>
             <Typography variant="h4" fontWeight={700} color="white">
               {summary.total}
@@ -299,7 +299,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#25362d', border: '1px solid #486957' }}>
             <Typography variant="caption" color="text.secondary">
-              Online
+              En ligne
             </Typography>
             <Typography variant="h4" fontWeight={700} color="#6ddf9e">
               {summary.online}
@@ -309,7 +309,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3b3126', border: '1px solid #7a6442' }}>
             <Typography variant="caption" color="text.secondary">
-              Warning
+              Avertissement
             </Typography>
             <Typography variant="h4" fontWeight={700} color="#ffb96b">
               {summary.warning}
@@ -319,7 +319,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3a2b31', border: '1px solid #77525b' }}>
             <Typography variant="caption" color="text.secondary">
-              Offline + Unreachable
+              Hors ligne + injoignables
             </Typography>
             <Typography variant="h4" fontWeight={700} color="#ff9fa9">
               {summary.offline + summary.unreachable}
@@ -329,10 +329,10 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2d3250', border: '1px solid #5f6294' }}>
             <Typography variant="caption" color="text.secondary">
-              Average Temperature
+              Température moyenne
             </Typography>
             <Typography variant="h4" fontWeight={700} color="white">
-              {summary.avgTemp} C
+              {summary.avgTemp} °C
             </Typography>
           </Paper>
         </Grid>
@@ -343,18 +343,18 @@ const RTUInventoryPage: React.FC = () => {
           <TextField
             fullWidth
             size="small"
-            label="Search RTU or IP"
+            label="Rechercher une RTU ou une IP"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Status</InputLabel>
-            <Select label="Status" value={status} onChange={handleStatusChange}>
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value={RTUStatus.ONLINE}>Online</MenuItem>
-              <MenuItem value={RTUStatus.WARNING}>Warning</MenuItem>
-              <MenuItem value={RTUStatus.OFFLINE}>Offline</MenuItem>
-              <MenuItem value={RTUStatus.UNREACHABLE}>Unreachable</MenuItem>
+            <InputLabel>Statut</InputLabel>
+            <Select label="Statut" value={status} onChange={handleStatusChange}>
+              <MenuItem value="all">Tous</MenuItem>
+              <MenuItem value={RTUStatus.ONLINE}>En ligne</MenuItem>
+              <MenuItem value={RTUStatus.WARNING}>Avertissement</MenuItem>
+              <MenuItem value={RTUStatus.OFFLINE}>Hors ligne</MenuItem>
+              <MenuItem value={RTUStatus.UNREACHABLE}>Injoignable</MenuItem>
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
@@ -362,7 +362,7 @@ const RTUInventoryPage: React.FC = () => {
             <Select label="Zone" value={zone} onChange={handleZoneChange}>
               {zoneOptions.map((zoneOption) => (
                 <MenuItem key={zoneOption} value={zoneOption}>
-                  {zoneOption === 'all' ? 'All zones' : zoneOption}
+                  {zoneOption === 'all' ? 'Toutes les zones' : zoneOption}
                 </MenuItem>
               ))}
             </Select>
@@ -374,7 +374,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
             <Typography variant="h6" color="white" mb={2}>
-              RTU Health Board
+              Tableau de santé RTU
             </Typography>
             <TableContainer>
               <Table size="small">
@@ -382,13 +382,13 @@ const RTUInventoryPage: React.FC = () => {
                   <TableRow>
                     <TableCell>RTU</TableCell>
                     <TableCell>Zone</TableCell>
-                    <TableCell>RTU Status</TableCell>
-                    <TableCell>Power</TableCell>
+                    <TableCell>État RTU</TableCell>
+                    <TableCell>Alimentation</TableCell>
                     <TableCell>Communication</TableCell>
                     <TableCell>OTDR</TableCell>
-                    <TableCell>Temperature</TableCell>
-                    <TableCell>Attenuation</TableCell>
-                    <TableCell>Last Seen</TableCell>
+                    <TableCell>Température</TableCell>
+                    <TableCell>Atténuation</TableCell>
+                    <TableCell>Dernière vue</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -417,7 +417,7 @@ const RTUInventoryPage: React.FC = () => {
                       </TableCell>
                       <TableCell sx={{ minWidth: 150 }}>
                         <Typography variant="body2" color="white">
-                          {record.temperature === 0 ? 'N/A' : `${record.temperature} C`}
+                          {record.temperature === 0 ? 'N/D' : `${record.temperature} C`}
                         </Typography>
                         <LinearProgress
                           variant="determinate"
@@ -426,7 +426,7 @@ const RTUInventoryPage: React.FC = () => {
                           sx={{ mt: 0.6, height: 6, borderRadius: 4 }}
                         />
                       </TableCell>
-                      <TableCell>{record.opticalBudgetDb === 0 ? 'N/A' : `${record.opticalBudgetDb} dB`}</TableCell>
+                      <TableCell>{record.opticalBudgetDb === 0 ? 'N/D' : `${record.opticalBudgetDb} dB`}</TableCell>
                       <TableCell>{record.lastSeen}</TableCell>
                     </TableRow>
                   ))}
@@ -440,7 +440,7 @@ const RTUInventoryPage: React.FC = () => {
           <Stack spacing={3}>
             <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={2}>
-                Fleet Status Mix
+                Répartition des statuts du parc
               </Typography>
               <Box sx={{ height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -460,7 +460,7 @@ const RTUInventoryPage: React.FC = () => {
               <Stack direction="row" spacing={1} alignItems="center" mb={2}>
                 <HubOutlined sx={{ color: '#7dc3ff' }} />
                 <Typography variant="h6" color="white">
-                  Priority Actions
+                  Actions prioritaires
                 </Typography>
               </Stack>
               <Stack spacing={1.4}>
@@ -474,8 +474,8 @@ const RTUInventoryPage: React.FC = () => {
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {item.activeAlarms > 0
-                          ? `Handle ${item.activeAlarms} active alarm(s) and run OTDR validation.`
-                          : 'Inspect power/cooling and restore communication baseline.'}
+                          ? `Traitez ${item.activeAlarms} alarme(s) active(s) et lancez une validation OTDR.`
+                          : "Vérifiez l'alimentation et le refroidissement, puis rétablissez la communication de base."}
                       </Typography>
                     </Box>
                   ))}

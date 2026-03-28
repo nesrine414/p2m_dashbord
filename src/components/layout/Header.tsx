@@ -38,23 +38,23 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
       {
         id: 'n-1',
         type: 'alarm',
-        title: 'New critical alarm',
-        message: 'RTU-TUN-014 - Fiber Cut',
-        time: '5 min ago',
+        title: 'Nouvelle alarme critique',
+        message: 'RTU-TUN-014 - Coupure fibre',
+        time: 'il y a 5 min',
       },
       {
         id: 'n-2',
         type: 'ai',
-        title: 'AI prediction',
-        message: 'RTU-TUN-014 at 78% risk in 48h',
-        time: '12 min ago',
+        title: 'Prédiction IA',
+        message: 'RTU-TUN-014 à 78 % de risque dans 48 h',
+        time: 'il y a 12 min',
       },
       {
         id: 'n-3',
         type: 'alarm',
-        title: 'Major attenuation drift',
-        message: 'SFX-GAB-SPUR +2.4 dB',
-        time: '24 min ago',
+        title: 'Dérive majeure d\'atténuation',
+        message: 'SFX-GAB-SPUR +2,4 dB',
+        time: 'il y a 24 min',
       },
     ],
     []
@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
         </IconButton>
 
         <TextField
-          placeholder="Search RTU, alarms, or reports"
+          placeholder="Rechercher RTU, alarmes ou rapports"
           variant="outlined"
           size="small"
           sx={{
@@ -147,7 +147,7 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
           <Box sx={{ p: 2 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
               <Typography variant="subtitle1" fontWeight={700}>
-                Notifications ({notificationCount})
+                Alertes ({notificationCount})
               </Typography>
               <Badge badgeContent={notificationCount} color="error">
                 <NotificationsOutlined fontSize="small" />
@@ -188,7 +188,7 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
 
             <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.18)', my: 1.5 }} />
             <Typography variant="caption" color="#7cdfff" sx={{ cursor: 'pointer' }}>
-              View all notifications
+              Voir toutes les notifications
             </Typography>
           </Box>
         </Popover>
@@ -207,11 +207,11 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
             display: { xs: 'none', sm: 'block' },
           }}
         >
-          Connected
+          Connecté
         </Box>
 
-        <Tooltip title="Profile" arrow>
-          <IconButton sx={{ p: 0 }} aria-label="Open profile" onClick={() => navigate(ROUTE_PATHS.profile)}>
+        <Tooltip title="Profil" arrow>
+          <IconButton sx={{ p: 0 }} aria-label="Ouvrir le profil" onClick={() => navigate(ROUTE_PATHS.profile)}>
             <Avatar sx={{ width: 34, height: 34, backgroundColor: '#7ea5e8', fontSize: 14 }}>
               A
             </Avatar>

@@ -35,37 +35,12 @@ interface SidebarProps {
 }
 
 const menuItems: MenuItem[] = [
-  {
-    title: 'Global View',
-    path: ROUTE_PATHS.dashboard,
-    icon: <Dashboard />,
-  },
-  {
-    title: 'RTU Inventory',
-    path: ROUTE_PATHS.rtu,
-    icon: <Inventory />,
-  },
-  {
-    title: 'Monitoring',
-    path: ROUTE_PATHS.monitoring,
-    icon: <RouterOutlined />,
-  },
-  {
-    title: 'Alarms',
-    path: ROUTE_PATHS.alarms,
-    icon: <Notifications />,
-    badge: 3,
-  },
-  {
-    title: 'Reports',
-    path: ROUTE_PATHS.reports,
-    icon: <Assessment />,
-  },
-  {
-    title: 'AI Dashboard',
-    path: ROUTE_PATHS.aiDashboard,
-    icon: <Psychology />,
-  },
+  { title: 'Vue globale', path: ROUTE_PATHS.dashboard, icon: <Dashboard /> },
+  { title: 'Inventaire RTU', path: ROUTE_PATHS.rtu, icon: <Inventory /> },
+  { title: 'Supervision', path: ROUTE_PATHS.monitoring, icon: <RouterOutlined /> },
+  { title: 'Alarmes', path: ROUTE_PATHS.alarms, icon: <Notifications />, badge: 3 },
+  { title: 'Rapports', path: ROUTE_PATHS.reports, icon: <Assessment /> },
+  { title: 'Tableau IA', path: ROUTE_PATHS.aiDashboard, icon: <Psychology /> },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClose }) => {
@@ -88,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
           NQMS
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Fiber supervision cockpit
+          Poste de supervision fibre
         </Typography>
       </Box>
 

@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTE_PATHS } from '../constants/routes';
 import { clearStoredToken } from '../services/auth';
 
-type TechnicianProfile = {
+type TechnicienProfil = {
   firstName: string;
   lastName: string;
   phone: string;
@@ -28,17 +28,17 @@ type TechnicianProfile = {
 
 const STORAGE_KEY = 'nqms_technician_profile_v1';
 
-const emptyProfile: TechnicianProfile = {
+const emptyProfil: TechnicienProfil = {
   firstName: '',
   lastName: '',
   phone: '',
   zone: '',
 };
 
-const safeParseProfile = (raw: string | null): TechnicianProfile | null => {
+const safeParseProfil = (raw: string | null): TechnicienProfil | null => {
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as Partial<TechnicianProfile>;
+    const parsed = JSON.parse(raw) as Partial<TechnicienProfil>;
     return {
       firstName: parsed.firstName ?? '',
       lastName: parsed.lastName ?? '',
@@ -50,39 +50,39 @@ const safeParseProfile = (raw: string | null): TechnicianProfile | null => {
   }
 };
 
-const getInitial = (profile: TechnicianProfile): string => {
+const getInitial = (profile: TechnicienProfil): string => {
   const candidate = (profile.firstName || profile.lastName || 'A').trim();
   return candidate ? candidate[0].toUpperCase() : 'A';
 };
 
-const ProfilePage: React.FC = () => {
+const ProfilPage: React.FC = () => {
   const navigate = useNavigate();
-  const [editing, setEditing] = React.useState(false);
-  const [logoutOpen, setLogoutOpen] = React.useState(false);
-  const [profile, setProfile] = React.useState<TechnicianProfile>(() => {
-    return safeParseProfile(localStorage.getItem(STORAGE_KEY)) ?? emptyProfile;
+  const [editing, setModifiering] = React.useState(false);
+  const [logoutOpen, setDéconnexionOpen] = React.useState(false);
+  const [profile, setProfil] = React.useState<TechnicienProfil>(() => {
+    return safeParseProfil(localStorage.getItem(STORAGE_KEY)) ?? emptyProfil;
   });
 
   const handleChange =
-    (key: keyof TechnicianProfile) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setProfile((current) => ({ ...current, [key]: event.target.value }));
+    (key: keyof TechnicienProfil) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setProfil((current) => ({ ...current, [key]: event.target.value }));
     };
 
-  const handleSave = () => {
+  const handleEnregistrer = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    setEditing(false);
+    setModifiering(false);
   };
 
-  const handleCancel = () => {
-    setProfile(safeParseProfile(localStorage.getItem(STORAGE_KEY)) ?? emptyProfile);
-    setEditing(false);
+  const handleAnnuler = () => {
+    setProfil(safeParseProfil(localStorage.getItem(STORAGE_KEY)) ?? emptyProfil);
+    setModifiering(false);
   };
 
-  const handleLogout = () => {
+  const handleDéconnexion = () => {
     clearStoredToken();
 
-    setLogoutOpen(false);
-    setEditing(false);
+    setDéconnexionOpen(false);
+    setModifiering(false);
     navigate(ROUTE_PATHS.login, { replace: true });
   };
 
@@ -91,7 +91,7 @@ const ProfilePage: React.FC = () => {
   return (
     <Box sx={{ maxWidth: 920, mx: 'auto' }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Profile
+        Profil
       </Typography>
 
       <Card>
@@ -103,10 +103,10 @@ const ProfilePage: React.FC = () => {
               </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
-                  {fullName || 'Technician'}
+                  {fullName || 'Technicien'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {profile.zone || 'Zone: e.g. Sousse or Monastir'}
+                  {profile.zone || 'Zone : par exemple Sousse ou Monastir'}
                 </Typography>
               </Box>
             </Stack>
@@ -114,20 +114,20 @@ const ProfilePage: React.FC = () => {
             <Box flexGrow={1} />
 
             <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
-              <Button variant="outlined" color="error" onClick={() => setLogoutOpen(true)}>
-                Logout
+              <Button variant="outlined" color="error" onClick={() => setDéconnexionOpen(true)}>
+                Déconnexion
               </Button>
               {!editing ? (
-                <Button variant="contained" onClick={() => setEditing(true)}>
-                  Edit
+                <Button variant="contained" onClick={() => setModifiering(true)}>
+                  Modifier
                 </Button>
               ) : (
                 <>
-                  <Button variant="contained" onClick={handleSave}>
-                    Save
+                  <Button variant="contained" onClick={handleEnregistrer}>
+                    Enregistrer
                   </Button>
-                  <Button variant="outlined" onClick={handleCancel}>
-                    Cancel
+                  <Button variant="outlined" onClick={handleAnnuler}>
+                    Annuler
                   </Button>
                 </>
               )}
@@ -138,7 +138,7 @@ const ProfilePage: React.FC = () => {
 
           <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }}>
             <TextField
-              label="Last name"
+              label="Nom"
               value={profile.lastName}
               onChange={handleChange('lastName')}
               fullWidth
@@ -146,7 +146,7 @@ const ProfilePage: React.FC = () => {
               placeholder="Ben Ameur"
             />
             <TextField
-              label="First name"
+              label="Prénom"
               value={profile.firstName}
               onChange={handleChange('firstName')}
               fullWidth
@@ -157,7 +157,7 @@ const ProfilePage: React.FC = () => {
 
           <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} sx={{ mt: 2 }}>
             <TextField
-              label="Phone number"
+              label="Numéro de téléphone"
               value={profile.phone}
               onChange={handleChange('phone')}
               fullWidth
@@ -176,17 +176,17 @@ const ProfilePage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={logoutOpen} onClose={() => setLogoutOpen(false)}>
-        <DialogTitle>Logout</DialogTitle>
+      <Dialog open={logoutOpen} onClose={() => setDéconnexionOpen(false)}>
+        <DialogTitle>Déconnexion</DialogTitle>
         <DialogContent>
-          <DialogContentText>Are you sure you want to log out?</DialogContentText>
+          <DialogContentText>Êtes-vous sûr de vouloir vous déconnecter ?</DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setLogoutOpen(false)} variant="outlined">
-            Cancel
+          <Button onClick={() => setDéconnexionOpen(false)} variant="outlined">
+            Annuler
           </Button>
-          <Button onClick={handleLogout} variant="contained" color="error">
-            Logout
+          <Button onClick={handleDéconnexion} variant="contained" color="error">
+            Déconnexion
           </Button>
         </DialogActions>
       </Dialog>
@@ -194,5 +194,6 @@ const ProfilePage: React.FC = () => {
   );
 };
 
-export default ProfilePage;
+export default ProfilPage;
+
 

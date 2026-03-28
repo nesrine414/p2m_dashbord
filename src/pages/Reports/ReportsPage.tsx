@@ -16,81 +16,81 @@ import {
 
 const ReportsPage: React.FC = () => {
   const kpis = [
-    { id: 'mttr', label: 'MTTR', value: '2.4h', note: 'Average repair time' },
-    { id: 'mtbf', label: 'MTBF', value: '120h', note: 'Average time between failures' },
-    { id: 'availability', label: 'Availability', value: '99.2%', note: 'Network SLA' },
+    { id: 'mttr', label: 'MTTR', value: '2.4h', note: 'Temps moyen de réparation' },
+    { id: 'mtbf', label: 'MTBF', value: '120h', note: 'Temps moyen entre les pannes' },
+    { id: 'availability', label: 'Disponibilité', value: '99.2%', note: 'SLA réseau' },
   ];
 
-  const nqmsParameters = [
+  const nqmsParamètres = [
     {
       domaine: 'RTU',
-      parametre: 'RTU Status',
-      valeurs: 'Online / Offline / Unreachable',
-      widget: 'Tile / LED',
-      criticite: 'Critical',
-    },
-    {
-      domaine: 'RTU',
-      parametre: 'Power Supply',
-      valeurs: 'Normal / Failure',
-      widget: 'Tile',
-      criticite: 'Critical',
+      parametre: 'État RTU',
+      valeurs: 'En ligne / Hors ligne / Injoignable',
+      widget: 'Tuile / LED',
+      criticite: 'Critique',
     },
     {
       domaine: 'RTU',
-      parametre: 'OTDR Availability',
-      valeurs: 'Ready / Busy / Fault',
-      widget: 'Status icon',
-      criticite: 'Critical',
+      parametre: 'Alimentation',
+      valeurs: 'Normal / Panne',
+      widget: 'Tuile',
+      criticite: 'Critique',
     },
     {
-      domaine: 'Fiber',
-      parametre: 'Fiber Status',
-      valeurs: 'Normal / Degraded / Broken',
-      widget: 'Map / List',
-      criticite: 'Critical',
+      domaine: 'RTU',
+      parametre: 'Disponibilité OTDR',
+      valeurs: 'Prêt / Occupé / Défaut',
+      widget: "Icône d'état",
+      criticite: 'Critique',
     },
     {
-      domaine: 'Fiber',
-      parametre: 'Route Status',
-      valeurs: 'Active / Inactive / Skipped',
-      widget: 'List',
-      criticite: 'Critical',
+      domaine: 'Fibre',
+      parametre: 'État de la fibre',
+      valeurs: 'Normal / Dégradé / Cassé',
+      widget: 'Carte / Liste',
+      criticite: 'Critique',
     },
     {
-      domaine: 'Fiber',
-      parametre: 'Attenuation',
-      valeurs: 'dB configurable threshold',
-      widget: 'Gauge',
-      criticite: 'Critical',
+      domaine: 'Fibre',
+      parametre: 'État de la route',
+      valeurs: 'Actif / Inactif / Ignoré',
+      widget: 'Liste',
+      criticite: 'Critique',
+    },
+    {
+      domaine: 'Fibre',
+      parametre: 'Atténuation',
+      valeurs: 'Seuil configurable en dB',
+      widget: 'Jauge',
+      criticite: 'Critique',
     },
     {
       domaine: 'OTDR',
-      parametre: 'Test Result',
-      valeurs: 'Pass / Fail',
-      widget: 'Table',
-      criticite: 'Critical',
+      parametre: 'Résultat du test',
+      valeurs: 'Réussi / Échec',
+      widget: 'Tableau',
+      criticite: 'Critique',
     },
     {
-      domaine: 'Alarms',
-      parametre: 'Alarm Type',
-      valeurs: 'Fiber Cut / High Loss / RTU Down',
-      widget: 'List',
-      criticite: 'Critical',
+      domaine: 'Alarmes',
+      parametre: "Type d'alarme",
+      valeurs: 'Coupure fibre / Forte perte / RTU hors ligne',
+      widget: 'Liste',
+      criticite: 'Critique',
     },
     {
       domaine: 'Performance',
       parametre: 'MTTR',
-      valeurs: 'Hours',
+      valeurs: 'Heures',
       widget: 'KPI',
-      criticite: 'Medium',
+      criticite: 'Moyen',
     },
     {
       domaine: 'Performance',
       parametre: 'MTBF',
-      valeurs: 'Hours',
+      valeurs: 'Heures',
       widget: 'KPI',
-      criticite: 'Medium',
+      criticite: 'Moyen',
     },
   ];
 
@@ -109,8 +109,8 @@ const ReportsPage: React.FC = () => {
   const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
   const buildMatrixCsv = () => {
-    const headers = ['Domain', 'Parameter', 'Values', 'Widget', 'Criticality'];
-    const rows = nqmsParameters.map((param) => [
+    const headers = ['Domaine', 'Paramètre', 'Valeurs', 'Widget', 'Criticité'];
+    const rows = nqmsParamètres.map((param) => [
       param.domaine,
       param.parametre,
       param.valeurs,
@@ -132,7 +132,7 @@ const ReportsPage: React.FC = () => {
       .replace(/'/g, '&#39;');
 
   const buildPdfHtml = () => {
-    const rows = nqmsParameters
+    const rows = nqmsParamètres
       .map(
         (param) => `
           <tr>
@@ -157,10 +157,10 @@ const ReportsPage: React.FC = () => {
       .join('');
 
     return `<!doctype html>
-      <html lang="en">
+      <html lang="fr">
         <head>
           <meta charset="utf-8" />
-          <title>Reports NQMS</title>
+          <title>Rapports NQMS</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 32px; color: #0f1b2d; }
             h1 { margin: 0 0 6px; }
@@ -172,16 +172,16 @@ const ReportsPage: React.FC = () => {
           </style>
         </head>
         <body>
-          <h1>Reports & Documentation</h1>
-          <div class="meta">Export generated on ${new Date().toLocaleString()}</div>
+          <h1>Rapports & documentation</h1>
+          <div class="meta">Export généré le ${new Date().toLocaleString()}</div>
 
-          <h2>Performance KPIs</h2>
+          <h2>KPI de performance</h2>
           <table>
             <thead>
               <tr>
                 <th>KPI</th>
-                <th>Value</th>
-                <th>Note</th>
+                <th>Valeur</th>
+                <th>Remarque</th>
               </tr>
             </thead>
             <tbody>
@@ -189,15 +189,15 @@ const ReportsPage: React.FC = () => {
             </tbody>
           </table>
 
-          <h2>NQMS Matrix - Critical Parameters</h2>
+          <h2>NQMS Matrix - Critique Paramètres</h2>
           <table>
             <thead>
               <tr>
-                <th>Domain</th>
-                <th>Parameter</th>
-                <th>Values</th>
+                <th>Domaine</th>
+                <th>Paramètre</th>
+                <th>Valeurs mesurées</th>
                 <th>Widget</th>
-                <th>Criticality</th>
+                <th>Criticité</th>
               </tr>
             </thead>
             <tbody>
@@ -212,7 +212,7 @@ const ReportsPage: React.FC = () => {
     const html = buildPdfHtml();
     const popup = window.open('', '_blank', 'width=980,height=720');
     if (!popup) {
-      downloadBlob(html, 'reports.html', 'text/html;charset=utf-8;');
+      downloadBlob(html, 'rapports.html', 'text/html;charset=utf-8;');
       return;
     }
     popup.document.write(html);
@@ -223,25 +223,25 @@ const ReportsPage: React.FC = () => {
 
   const handleExportExcel = () => {
     const csv = buildMatrixCsv();
-    downloadBlob(csv, 'nqms-matrix.csv', 'text/csv;charset=utf-8;');
+    downloadBlob(csv, 'matrice-nqms.csv', 'text/csv;charset=utf-8;');
   };
 
-  const handleExportCustom = () => {
+  const handleExportPersonnalisé = () => {
     const payload = {
       generatedAt: new Date().toISOString(),
       kpis,
-      nqmsParameters,
+      nqmsParamètres,
     };
-    downloadBlob(JSON.stringify(payload, null, 2), 'reports-custom.json', 'application/json');
+    downloadBlob(JSON.stringify(payload, null, 2), 'rapport-personnalise.json', 'application/json');
   };
 
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.6}>
-        Reports & Documentation
+        Rapports & documentation
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Performance KPIs, periodic reports, and technical documentation.
+        KPI de performance, rapports périodiques et documentation technique.
       </Typography>
 
       <Grid container spacing={2.5} mb={3}>
@@ -264,22 +264,22 @@ const ReportsPage: React.FC = () => {
 
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          NQMS Matrix - Critical Parameters
+          NQMS Matrix - Critique Paramètres
         </Typography>
 
         <TableContainer sx={{ mt: 2 }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Domain</TableCell>
-                <TableCell>Parameter</TableCell>
-                <TableCell>Values</TableCell>
+                <TableCell>Domaine</TableCell>
+                <TableCell>Paramètre</TableCell>
+                <TableCell>Valeurs</TableCell>
                 <TableCell>Widget</TableCell>
-                <TableCell>Criticality</TableCell>
+                <TableCell>Criticité</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {nqmsParameters.map((param, index) => (
+              {nqmsParamètres.map((param, index) => (
                 <TableRow key={`${param.domaine}-${param.parametre}-${index}`} hover>
                   <TableCell sx={{ color: 'white' }}>{param.domaine}</TableCell>
                   <TableCell sx={{ color: 'white' }}>{param.parametre}</TableCell>
@@ -292,10 +292,10 @@ const ReportsPage: React.FC = () => {
                         py: 0.5,
                         borderRadius: '8px',
                         backgroundColor:
-                          param.criticite === 'Critical'
+                          param.criticite === 'Critique'
                             ? 'rgba(255,51,102,0.2)'
                             : 'rgba(255,184,0,0.2)',
-                        color: param.criticite === 'Critical' ? '#FF3366' : '#FFB800',
+                        color: param.criticite === 'Critique' ? '#FF3366' : '#FFB800',
                         fontWeight: 'bold',
                         fontSize: 12,
                         width: 'fit-content',
@@ -313,10 +313,10 @@ const ReportsPage: React.FC = () => {
 
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-          Generate reports
+          Générer les rapports
         </Typography>
         <Typography variant="body2" color="text.secondary" mb={2}>
-          Quick export to PDF or Excel, or create a custom report.
+          Export rapide en PDF ou Excel, ou création d'un rapport personnalisé.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button variant="contained" onClick={handleExportPdf}>
@@ -325,8 +325,8 @@ const ReportsPage: React.FC = () => {
           <Button variant="outlined" onClick={handleExportExcel}>
             Excel
           </Button>
-          <Button variant="outlined" onClick={handleExportCustom}>
-            Custom
+          <Button variant="outlined" onClick={handleExportPersonnalisé}>
+            Personnalisé
           </Button>
         </Stack>
       </Paper>
@@ -335,3 +335,4 @@ const ReportsPage: React.FC = () => {
 };
 
 export default ReportsPage;
+
