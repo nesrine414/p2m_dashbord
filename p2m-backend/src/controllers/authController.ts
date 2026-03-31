@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { UniqueConstraintError, ValidationError } from 'sequelize';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { User } from '../models';
@@ -52,6 +53,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      res.status(409).json({ error: 'email already exists' });
+      return;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const createdUser = await User.create({
       username: finalUsername,
@@ -79,6 +86,18 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      const field = error.errors[0]?.path || 'field';
+      res.status(409).json({ error: `${field} already exists` });
+      return;
+    }
+
+    if (error instanceof ValidationError) {
+      const message = error.errors[0]?.message || 'Validation failed';
+      res.status(400).json({ error: message });
+      return;
+    }
+
     res.status(500).json({ error: 'Failed to register user' });
   }
 };

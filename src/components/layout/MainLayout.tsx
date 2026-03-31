@@ -3,6 +3,7 @@ import { Box, Toolbar } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import FloatingChatbot from '../chatbot/FloatingChatbot';
 
 const DRAWER_WIDTH = 240;
 
@@ -66,6 +67,7 @@ const MainLayout: React.FC = () => {
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
           <Outlet />
         </Box>
+        <FloatingChatbot />
       </Box>
     </Box>
   );

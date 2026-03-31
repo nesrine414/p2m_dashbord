@@ -67,12 +67,12 @@ export const NQMS_METHODOLOGY: NqmsMethodologyCard[] = [
   {
     title: 'Algorithme de détection',
     summary:
-      'Le tableau de bord calcule chaque statut à partir de la valeur mesurée et d'un seuil fixe, puis classe le résultat en OK, Avertissement ou Critique.',
+      "Le tableau de bord calcule chaque statut à partir de la valeur mesurée et d'un seuil fixe, puis classe le résultat en OK, Avertissement ou Critique.",
     bullets: [
       'Disponibilité RTU = RTU en ligne / RTU totales.',
       'La température passe en avertissement au-dessus de 40 °C et en critique au-dessus de 45 °C.',
       'Le taux de perte est normalisé par rapport à une référence de 3 dB avant comparaison au seuil projet de 5 %.',
-      'La disponibilité réseau est dérivée de l'état des routes, des alarmes ouvertes et des échecs OTDR.',
+      "La disponibilité réseau est dérivée de l'état des routes, des alarmes ouvertes et des échecs OTDR.",
     ],
   },
   {
@@ -80,18 +80,18 @@ export const NQMS_METHODOLOGY: NqmsMethodologyCard[] = [
     summary:
       'G.652 is the reference standard for the single-mode fiber used in the project topology.',
     bullets: [
-      'Elle fournit la base technique pour la qualité de lien et l'interprétation de l'atténuation.',
-      'Nous l'utilisons comme référence normative pour documenter les seuils optiques.',
-      'Les routes qui dépassent le seuil d'atténuation du projet sont signalées dans la matrice.',
+      "Elle fournit la base technique pour la qualité de lien et l'interprétation de l'atténuation.",
+      "Nous l'utilisons comme référence normative pour documenter les seuils optiques.",
+      "Les routes qui dépassent le seuil d'atténuation du projet sont signalées dans la matrice.",
     ],
   },
   {
     title: 'Bellcore GR-196 / SOR',
     summary:
-      'Les traces OTDR sont documentées au format standard SOR afin de conserver des mesures portables d'un outil à l'autre.',
+      "Les traces OTDR sont documentées au format standard SOR afin de conserver des mesures portables d'un outil à l'autre.",
     bullets: [
-      '.Les fichiers SOR stockent la trace OTDR, la table d'événements, les distances et les pertes.',
-      'Le format garde les traces lisibles entre différents constructeurs et outils d'analyse.',
+      "Les fichiers SOR stockent la trace OTDR, la table d'événements, les distances et les pertes.",
+      "Le format garde les traces lisibles entre différents constructeurs et outils d'analyse.",
       'La page des rapports résume les compteurs réussite/échec extraits des résultats OTDR.',
     ],
   },

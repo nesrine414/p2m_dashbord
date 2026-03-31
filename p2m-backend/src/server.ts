@@ -16,10 +16,37 @@ dotenv.config();
 const app: Application = express();
 const server = http.createServer(app);
 const PORT = Number(process.env.PORT || 5000);
+const configuredFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const isAllowedDevOrigin = (origin: string): boolean => {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      return false;
+    }
+
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.')
+    );
+  } catch {
+    return false;
+  }
+};
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || origin === configuredFrontendUrl || isAllowedDevOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -190,7 +217,7 @@ const startServer = async (): Promise<void> => {
 
     console.log(`\nServer started on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    console.log(`CORS enabled for: ${configuredFrontendUrl} + local dev origins`);
     console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
   } catch (error) {
     const listenError = error as NodeJS.ErrnoException;

@@ -3,6 +3,8 @@ import { DashboardStats } from '../types';
 import { getStoredToken } from './auth';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const AUTH_TOKEN_KEY = 'nqms_auth_token';
+const AUTH_EXEMPT_PATHS = new Set(['/login', '/register']);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,6 +22,24 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+
+      if (!AUTH_EXEMPT_PATHS.has(window.location.pathname)) {
+        window.location.assign('/login');
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export interface BackendRTU {
   id: number;
@@ -83,6 +103,26 @@ export interface PaginatedResponse<T> {
   degradedMode?: boolean;
 }
 
+export interface AiChatResponse {
+  reply: string;
+  suggestions: string[];
+  degradedMode: boolean;
+  provider: 'groq' | 'fallback';
+  context: {
+    matchedRtu?: string;
+    matchedAlarm?: string;
+    matchedRoute?: string;
+    counts: {
+      rtus: number;
+      activeAlarms: number;
+      brokenRoutes: number;
+      failedOtdrTests: number;
+    };
+  };
+  requestedBy: string;
+  timestamp: string;
+}
+
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   const response = await apiClient.get<DashboardStats>('/dashboard/stats');
   return response.data;
@@ -124,6 +164,11 @@ export const getAlarms = async (params?: {
   pageSize?: number;
 }): Promise<PaginatedResponse<BackendAlarm>> => {
   const response = await apiClient.get<PaginatedResponse<BackendAlarm>>('/alarms', { params });
+  return response.data;
+};
+
+export const sendAiChatMessage = async (message: string): Promise<AiChatResponse> => {
+  const response = await apiClient.post<AiChatResponse>('/ai/chat', { message }, { timeout: 65000 });
   return response.data;
 };
 
