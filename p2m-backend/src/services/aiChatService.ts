@@ -4,6 +4,8 @@ import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from '../data/de
 
 type ChatSeverity = 'info' | 'warning' | 'critical';
 type ChatScope = 'global' | 'alarm' | 'rtu' | 'route';
+type AlarmSeverityFilter = 'critical' | 'major' | 'minor' | 'info' | null;
+type GroqMode = 'grounded' | 'general';
 
 export interface AiChatResponsePayload {
   reply: string;
@@ -64,6 +66,13 @@ interface ChatContext {
   degradedMode: boolean;
 }
 
+interface GroundingPayload {
+  scope: ChatScope;
+  targetLabel?: string;
+  facts: Record<string, unknown>;
+  allowedEntityNames: string[];
+}
+
 const ACTIVE_ALARM_STATUSES = new Set(['active', 'acknowledged']);
 const normalize = (value: string): string => value.toLowerCase().trim();
 const AI_PROVIDER = process.env.AI_PROVIDER || 'groq';
@@ -71,6 +80,7 @@ const GROQ_BASE_URL = process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 const GROQ_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS || 60000);
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GROQ_ONLY_ERROR = 'GROQ_RESPONSE_UNAVAILABLE';
 
 const includesNormalized = (haystack: string | null | undefined, needle: string): boolean => {
   if (!haystack) {
@@ -90,6 +100,66 @@ const hasRtuIntent = (message: string): boolean =>
 
 const hasRouteIntent = (message: string): boolean =>
   ['route', 'fibre', 'fiber', 'cable', 'liaison'].some((keyword) => includesNormalized(message, keyword));
+
+const hasUnavailableRtuIntent = (message: string): boolean =>
+  ['injoignable', 'unreachable', 'hors ligne', 'offline', 'ne repond pas', 'down'].some((keyword) =>
+    includesNormalized(message, keyword)
+  );
+
+const hasBrokenRouteIntent = (message: string): boolean =>
+  ['cassée', 'cassee', 'broken', 'coupee', 'coupure', 'perte'].some((keyword) => includesNormalized(message, keyword));
+
+const hasProjectIntent = (message: string): boolean =>
+  [
+    hasAlarmIntent(message),
+    hasRtuIntent(message),
+    hasRouteIntent(message),
+    ['otdr', 'nqms', 'supervision', 'rapport', 'report', 'dashboard', 'reseau', 'réseau', 'fibre', 'fiber'].some(
+      (keyword) => includesNormalized(message, keyword)
+    ),
+  ].some(Boolean);
+
+const hasAlarmCountIntent = (message: string): boolean =>
+  ['combien', 'nombre', 'count', 'total'].some((keyword) => includesNormalized(message, keyword)) &&
+  ['alarme', 'alarm'].some((keyword) => includesNormalized(message, keyword));
+
+const getAlarmSeverityFilter = (message: string): AlarmSeverityFilter => {
+  if (['critique', 'critical'].some((keyword) => includesNormalized(message, keyword))) {
+    return 'critical';
+  }
+
+  if (['majeure', 'majeur', 'major'].some((keyword) => includesNormalized(message, keyword))) {
+    return 'major';
+  }
+
+  if (['mineure', 'mineur', 'minor'].some((keyword) => includesNormalized(message, keyword))) {
+    return 'minor';
+  }
+
+  if (['info', 'information'].some((keyword) => includesNormalized(message, keyword))) {
+    return 'info';
+  }
+
+  return null;
+};
+
+const isGreetingMessage = (message: string): boolean => {
+  const normalizedMessage = normalize(message)
+    .replace(/[!?.،,;:]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return ['salut', 'bonjour', 'bonsoir', 'hello', 'hi'].includes(normalizedMessage);
+};
+
+const formatDisplayName = (username: string): string => {
+  const cleaned = username.trim();
+  if (!cleaned || cleaned === 'anonymous') {
+    return 'bonjour';
+  }
+
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+};
 
 const getSeverityLabel = (severity: ChatSeverity): string => {
   switch (severity) {
@@ -119,6 +189,8 @@ const formatTechnicianReply = (sections: Array<{ title: string; content: string 
     .map((section) => `${section.title}\n${section.content}`)
     .join('\n\n');
 
+const toIsoOrFallback = (value: string | null): string => value || 'non disponible';
+
 const buildSuggestions = (matchedRtu?: string, matchedAlarm?: string, matchedRoute?: string): string[] => {
   const suggestions = [
     'Donne-moi une checklist terrain en 5 etapes.',
@@ -139,6 +211,69 @@ const buildSuggestions = (matchedRtu?: string, matchedAlarm?: string, matchedRou
   }
 
   return suggestions.slice(0, 4);
+};
+
+const buildAlarmCountReply = (context: ChatContext, message: string): string => {
+  const severityFilter = getAlarmSeverityFilter(message);
+  const activeOnly =
+    ['active', 'actives', 'ouverte', 'ouvertes', 'encore ouvertes'].some((keyword) => includesNormalized(message, keyword)) ||
+    !['resolved', 'resolues', 'closed', 'fermees', 'fermées'].some((keyword) => includesNormalized(message, keyword));
+
+  const filtered = context.alarms.filter((alarm) => {
+    const severityMatch = !severityFilter || alarm.severity === severityFilter;
+    const statusMatch = activeOnly ? isAlarmActive(alarm.lifecycleStatus) : true;
+    return severityMatch && statusMatch;
+  });
+
+  const severityLabel =
+    severityFilter === 'critical'
+      ? 'critiques'
+      : severityFilter === 'major'
+        ? 'majeures'
+        : severityFilter === 'minor'
+          ? 'mineures'
+          : severityFilter === 'info'
+            ? 'informatives'
+            : '';
+
+  return formatTechnicianReply([
+    {
+      title: 'Comptage',
+      content: severityLabel
+        ? `Il y a ${filtered.length} alarmes ${severityLabel}${activeOnly ? ' actives' : ''}.`
+        : `Il y a ${filtered.length} alarmes${activeOnly ? ' actives' : ''}.`,
+    },
+    {
+      title: 'Source',
+      content: context.degradedMode
+        ? 'Valeur calculee a partir des donnees de demonstration.'
+        : 'Valeur calculee directement a partir des alarmes en base.',
+    },
+  ]);
+};
+
+const buildGreetingReply = (username: string): string =>
+  `Bonjour ${formatDisplayName(username)}, en quoi puis-je vous aider aujourd'hui ?`;
+
+const getAlarmPriorityScore = (alarm: ChatContext['alarms'][number]): number => {
+  const severityScore =
+    alarm.severity === 'critical' ? 300 : alarm.severity === 'major' ? 200 : alarm.severity === 'minor' ? 100 : 0;
+  const statusScore = isAlarmActive(alarm.lifecycleStatus) ? 50 : 0;
+  const dateScore = alarm.occurredAt ? new Date(alarm.occurredAt).getTime() / 1_000_000_000_000 : 0;
+  return severityScore + statusScore + dateScore;
+};
+
+const getRtuPriorityScore = (rtu: ChatContext['rtus'][number]): number => {
+  const statusScore =
+    rtu.status === 'unreachable' ? 300 : rtu.status === 'offline' ? 250 : rtu.status === 'warning' ? 150 : 0;
+  const tempScore = rtu.temperature ?? 0;
+  return statusScore + tempScore;
+};
+
+const getRoutePriorityScore = (route: ChatContext['routes'][number]): number => {
+  const statusScore = route.fiberStatus === 'broken' ? 300 : route.fiberStatus === 'degraded' ? 180 : 0;
+  const attenuationScore = route.attenuationDb ?? 0;
+  return statusScore + attenuationScore;
 };
 
 const buildContextDigest = (context: ChatContext): string => {
@@ -169,12 +304,161 @@ const buildContextDigest = (context: ChatContext): string => {
   ].join('\n');
 };
 
+const buildGroundingPayload = (params: {
+  context: ChatContext;
+  scope: ChatScope;
+  matchedRtu?: ChatContext['rtus'][number] | null;
+  matchedAlarm?: ChatContext['alarms'][number] | null;
+  matchedRoute?: ChatContext['routes'][number] | null;
+}): GroundingPayload => {
+  const { context, scope, matchedAlarm, matchedRoute, matchedRtu } = params;
+
+  if (scope === 'alarm' && matchedAlarm) {
+    const relatedRtu = context.rtus.find((rtu) => rtu.id === matchedAlarm.rtuId) || null;
+    const relatedRoute = context.routes.find((route) => route.id === matchedAlarm.routeId) || null;
+    const relatedTests = context.otdrTests.filter((test) => test.routeId === matchedAlarm.routeId).slice(0, 3);
+
+    return {
+      scope,
+      targetLabel: `${matchedAlarm.alarmType} #${matchedAlarm.id}`,
+      facts: {
+        alarm: matchedAlarm,
+        relatedRtu,
+        relatedRoute,
+        recentOtdrTests: relatedTests,
+      },
+      allowedEntityNames: [
+        matchedAlarm.alarmType,
+        matchedAlarm.location || '',
+        relatedRtu?.name || '',
+        relatedRoute?.routeName || '',
+        relatedRoute?.source || '',
+        relatedRoute?.destination || '',
+      ].filter(Boolean),
+    };
+  }
+
+  if (scope === 'rtu' && matchedRtu) {
+    const relatedAlarms = context.alarms
+      .filter((alarm) => alarm.rtuId === matchedRtu.id)
+      .map((alarm) => ({
+        id: alarm.id,
+        alarmType: alarm.alarmType,
+        severity: alarm.severity,
+        lifecycleStatus: alarm.lifecycleStatus,
+        message: alarm.message,
+        location: alarm.location,
+      }))
+      .slice(0, 5);
+    const relatedRouteIds = new Set(
+      context.alarms
+        .filter((alarm) => alarm.rtuId === matchedRtu.id)
+        .map((alarm) => alarm.routeId)
+        .filter((routeId): routeId is number => routeId !== null)
+    );
+    const relatedTests = context.otdrTests
+      .filter((test) => test.routeId !== null && relatedRouteIds.has(test.routeId))
+      .slice(0, 5);
+
+    return {
+      scope,
+      targetLabel: matchedRtu.name,
+      facts: {
+        rtu: matchedRtu,
+        relatedAlarms,
+        relatedOtdrTests: relatedTests,
+      },
+      allowedEntityNames: [matchedRtu.name, matchedRtu.locationAddress || ''].filter(Boolean),
+    };
+  }
+
+  if (scope === 'route' && matchedRoute) {
+    const relatedAlarms = context.alarms
+      .filter((alarm) => alarm.routeId === matchedRoute.id)
+      .map((alarm) => ({
+        id: alarm.id,
+        alarmType: alarm.alarmType,
+        severity: alarm.severity,
+        lifecycleStatus: alarm.lifecycleStatus,
+        message: alarm.message,
+        rtuId: alarm.rtuId,
+      }))
+      .slice(0, 5);
+    const relatedTests = context.otdrTests.filter((test) => test.routeId === matchedRoute.id).slice(0, 5);
+
+    return {
+      scope,
+      targetLabel: matchedRoute.routeName,
+      facts: {
+        route: matchedRoute,
+        relatedAlarms,
+        relatedOtdrTests: relatedTests,
+      },
+      allowedEntityNames: [matchedRoute.routeName, matchedRoute.source, matchedRoute.destination].filter(Boolean),
+    };
+  }
+
+  return {
+    scope: 'global',
+    targetLabel: 'global',
+    facts: {
+      summary: {
+        totalRtus: context.rtus.length,
+        activeAlarms: context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length,
+        criticalAlarms: context.alarms.filter(
+          (alarm) => alarm.severity === 'critical' && isAlarmActive(alarm.lifecycleStatus)
+        ).length,
+        brokenRoutes: context.routes.filter((route) => route.fiberStatus === 'broken').length,
+        failedOtdrTests: context.otdrTests.filter((test) => test.result === 'fail').length,
+      },
+      topOfflineRtus: context.rtus
+        .filter((rtu) => rtu.status === 'offline' || rtu.status === 'unreachable')
+        .slice(0, 5),
+      topProblemRoutes: context.routes.filter((route) => route.fiberStatus !== 'normal').slice(0, 5),
+      topActiveAlarms: context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).slice(0, 5),
+    },
+    allowedEntityNames: [],
+  };
+};
+
+const isGroqReplyGrounded = (reply: string, grounding: GroundingPayload, context: ChatContext): boolean => {
+  if (grounding.scope === 'global') {
+    return true;
+  }
+
+  const normalizedReply = normalize(reply);
+  const allowedNames = grounding.allowedEntityNames
+    .map((value) => value.trim())
+    .filter((value) => value.length >= 4)
+    .map((value) => normalize(value));
+
+  const knownEntityNames = [
+    ...context.rtus.map((rtu) => rtu.name),
+    ...context.routes.map((route) => route.routeName),
+    ...context.routes.map((route) => route.source),
+    ...context.routes.map((route) => route.destination),
+  ]
+    .map((value) => value.trim())
+    .filter((value) => value.length >= 4);
+
+  return knownEntityNames.every((entityName) => {
+    const normalizedEntityName = normalize(entityName);
+
+    if (!normalizedReply.includes(normalizedEntityName)) {
+      return true;
+    }
+
+    return allowedNames.includes(normalizedEntityName);
+  });
+};
+
 const generateGroqReply = async (params: {
   message: string;
   context: ChatContext;
   fallbackReply: string;
-  scope: ChatScope;
-  targetLabel?: string;
+  grounding: GroundingPayload;
+  mode?: GroqMode;
+  username?: string;
 }): Promise<string | null> => {
   if (AI_PROVIDER !== 'groq' || !GROQ_API_KEY.trim()) {
     return null;
@@ -193,41 +477,67 @@ const generateGroqReply = async (params: {
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
-          {
-            role: 'system',
-            content: [
-              'You are NQMS, a telecom fiber supervision assistant for field technicians.',
-              'Answer in clear operational French.',
-              'Prefer short and useful wording over generic explanations.',
-              'If you use a technical term, explain it briefly in simple language.',
-              'Use this structure whenever possible:',
-              'Diagnostic',
-              'Causes probables',
-              'Verifications terrain',
-              'Action immediate',
-              'Keep the answer under 10 lines unless the user asks for more detail.',
-              'Do not invent project facts. Use the provided context only.',
-            ].join(' '),
-          },
+          ...(params.mode === 'general'
+            ? [
+                {
+                  role: 'system' as const,
+                  content: [
+                    'You are a helpful conversational assistant embedded in an NQMS supervision dashboard.',
+                    'Answer in natural French unless the user writes in another language.',
+                    'You can answer general questions like a regular chat assistant.',
+                    'If the question is not about the project, answer normally and clearly.',
+                    'If the user asks about telecom, fiber, alarms, RTU, OTDR or the dashboard, stay practical and concise.',
+                  ].join(' '),
+                },
+              ]
+            : [
+                {
+                  role: 'system' as const,
+                  content: [
+                    'You are NQMS, a telecom fiber supervision assistant for field technicians.',
+                    'Answer in clear operational French.',
+                    'Your job is to rewrite the deterministic analysis using only the allowed facts.',
+                    'Do not invent entities, counts, causes, metrics, sites or actions that are not present in the allowed facts or deterministic analysis.',
+                    'If a fact is missing, say: information non disponible dans les donnees actuelles.',
+                    'Prefer short and useful wording over generic explanations.',
+                    'If you use a technical term, explain it briefly in simple language.',
+                    'Use this structure whenever possible:',
+                    'Diagnostic',
+                    'Causes probables',
+                    'Verifications terrain',
+                    'Action immediate',
+                    'Keep the answer under 8 short paragraphs or bullet-like blocks.',
+                    'Never mention a route, RTU or alarm that is not present in the allowed facts.',
+                  ].join(' '),
+                },
+              ]),
           {
             role: 'user',
             content: [
               `Question: ${params.message}`,
-              `Scope: ${params.scope}`,
-              `Target: ${params.targetLabel || 'global'}`,
-              '',
-              'Project context:',
-              buildContextDigest(params.context),
-              '',
-              'Base operational analysis:',
-              params.fallbackReply,
-              '',
-              'Return a practical answer for a technician in the field.',
+              ...(params.mode === 'general'
+                ? [
+                    `User: ${params.username || 'anonymous'}`,
+                    '',
+                    'Answer this like a regular assistant.',
+                  ]
+                : [
+                    `Scope: ${params.grounding.scope}`,
+                    `Target: ${params.grounding.targetLabel || 'global'}`,
+                    '',
+                    'Allowed facts (JSON):',
+                    JSON.stringify(params.grounding.facts, null, 2),
+                    '',
+                    'Deterministic analysis to preserve:',
+                    params.fallbackReply,
+                    '',
+                    'Return a practical grounded answer for a technician in the field.',
+                  ]),
             ].join('\n'),
           },
         ],
-        temperature: 0.2,
-        max_tokens: 350,
+        temperature: 0.1,
+        max_tokens: 280,
         stream: false,
       }),
       signal: controller.signal,
@@ -240,13 +550,38 @@ const generateGroqReply = async (params: {
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
-    const content = data.choices?.[0]?.message?.content?.trim();
-    return content || null;
+  const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      return null;
+    }
+
+    if (params.mode === 'general') {
+      return content;
+    }
+
+    return isGroqReplyGrounded(content, params.grounding, params.context) ? content : null;
   } catch {
     return null;
   } finally {
     clearTimeout(timeout);
   }
+};
+
+const requireGroqReply = async (params: {
+  message: string;
+  context: ChatContext;
+  fallbackReply: string;
+  grounding: GroundingPayload;
+  mode?: GroqMode;
+  username?: string;
+}): Promise<string> => {
+  const groqReply = await generateGroqReply(params);
+
+  if (!groqReply) {
+    throw new Error(GROQ_ONLY_ERROR);
+  }
+
+  return groqReply;
 };
 
 const buildGlobalReply = (context: ChatContext): string => {
@@ -257,6 +592,16 @@ const buildGlobalReply = (context: ChatContext): string => {
   const brokenRoutes = context.routes.filter((route) => route.fiberStatus === 'broken').length;
   const failedTests = context.otdrTests.filter((test) => test.result === 'fail').length;
   const offlineRtus = context.rtus.filter((rtu) => rtu.status === 'offline' || rtu.status === 'unreachable').length;
+  const topOfflineRtus = context.rtus
+    .filter((rtu) => rtu.status === 'offline' || rtu.status === 'unreachable')
+    .slice(0, 3)
+    .map((rtu) => rtu.name)
+    .join(', ');
+  const topBrokenRoutes = context.routes
+    .filter((route) => route.fiberStatus === 'broken')
+    .slice(0, 3)
+    .map((route) => route.routeName)
+    .join(', ');
 
   return formatTechnicianReply([
     {
@@ -274,6 +619,15 @@ const buildGlobalReply = (context: ChatContext): string => {
       title: 'Verifications terrain',
       content:
         'Verifier alimentation, lien reseau, dernier test OTDR et coherence entre alarmes ouvertes et etat reel du site.',
+    },
+    {
+      title: 'Elements a surveiller',
+      content: [
+        topBrokenRoutes ? `Routes critiques: ${topBrokenRoutes}.` : '',
+        topOfflineRtus ? `RTU hors ligne ou injoignables: ${topOfflineRtus}.` : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     },
     {
       title: 'Source',
@@ -304,7 +658,7 @@ const buildRtuReply = (
     text: formatTechnicianReply([
       {
         title: 'Diagnostic',
-        content: `${getSeverityLabel(severity)}. RTU ${rtu.name} en statut ${rtu.status}. Temperature ${rtu.temperature ?? 0} C. Dernier contact ${rtu.lastSeen || 'inconnu'}.`,
+        content: `${getSeverityLabel(severity)}. RTU ${rtu.name} en statut ${rtu.status}. Temperature ${rtu.temperature ?? 0} C. Dernier contact ${toIsoOrFallback(rtu.lastSeen)}.`,
       },
       {
         title: 'Impact',
@@ -380,7 +734,7 @@ const buildRouteReply = (
       },
       {
         title: 'Mesures',
-        content: `Attenuation ${route.attenuationDb ?? 0} dB. Dernier test ${route.lastTestTime || 'inconnu'}. ${activeAlarms.length} alarmes actives et ${failedTests.length} tests OTDR en echec.`,
+        content: `Attenuation ${route.attenuationDb ?? 0} dB. Dernier test ${toIsoOrFallback(route.lastTestTime)}. ${activeAlarms.length} alarmes actives et ${failedTests.length} tests OTDR en echec.`,
       },
       {
         title: 'Causes probables',
@@ -496,12 +850,113 @@ const loadContext = async (): Promise<ChatContext> => {
   };
 };
 
-export const generateAiChatResponse = async (message: string): Promise<AiChatResponsePayload> => {
+export const generateAiChatResponse = async (
+  message: string,
+  username = 'anonymous'
+): Promise<AiChatResponsePayload> => {
   const context = await loadContext();
   const trimmedMessage = message.trim();
   const normalizedMessage = normalize(trimmedMessage);
 
-  const matchedRoute =
+  if (isGreetingMessage(trimmedMessage)) {
+    const activeAlarms = context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length;
+    const brokenRoutes = context.routes.filter((route) => route.fiberStatus === 'broken').length;
+    const failedOtdrTests = context.otdrTests.filter((test) => test.result === 'fail').length;
+    const greetingReply = buildGreetingReply(username);
+    const greetingGrounding: GroundingPayload = {
+      scope: 'global',
+      targetLabel: 'greeting',
+      facts: {
+        userQuestion: trimmedMessage,
+        exactAnswer: greetingReply,
+        userDisplayName: formatDisplayName(username),
+      },
+      allowedEntityNames: [],
+    };
+    const groqReply = await requireGroqReply({
+      message: trimmedMessage,
+      context,
+      fallbackReply: greetingReply,
+      grounding: greetingGrounding,
+    });
+
+    return {
+      reply: groqReply,
+      suggestions: [
+        'Explique cette alarme critique.',
+        'Donne-moi une checklist pour une RTU injoignable.',
+        'Analyse une route avec perte optique.',
+      ],
+      degradedMode: context.degradedMode,
+      provider: 'groq',
+      context: {
+        counts: {
+          rtus: context.rtus.length,
+          activeAlarms,
+          brokenRoutes,
+          failedOtdrTests,
+        },
+      },
+    };
+  }
+
+  if (hasAlarmCountIntent(trimmedMessage)) {
+    const activeAlarms = context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length;
+    const brokenRoutes = context.routes.filter((route) => route.fiberStatus === 'broken').length;
+    const failedOtdrTests = context.otdrTests.filter((test) => test.result === 'fail').length;
+    const countReply = buildAlarmCountReply(context, trimmedMessage);
+    const countGrounding: GroundingPayload = {
+      scope: 'global',
+      targetLabel: 'alarm-count',
+      facts: {
+        userQuestion: trimmedMessage,
+        exactAnswer: countReply,
+        activeAlarmsBySeverity: {
+          critical: context.alarms.filter(
+            (alarm) => alarm.severity === 'critical' && isAlarmActive(alarm.lifecycleStatus)
+          ).length,
+          major: context.alarms.filter(
+            (alarm) => alarm.severity === 'major' && isAlarmActive(alarm.lifecycleStatus)
+          ).length,
+          minor: context.alarms.filter(
+            (alarm) => alarm.severity === 'minor' && isAlarmActive(alarm.lifecycleStatus)
+          ).length,
+          info: context.alarms.filter(
+            (alarm) => alarm.severity === 'info' && isAlarmActive(alarm.lifecycleStatus)
+          ).length,
+        },
+      },
+      allowedEntityNames: [],
+    };
+
+    const groqReply = await requireGroqReply({
+      message: trimmedMessage,
+      context,
+      fallbackReply: countReply,
+      grounding: countGrounding,
+    });
+
+    return {
+      reply: groqReply,
+      suggestions: [
+        'Combien d alarmes critiques actives ?',
+        'Combien d alarmes majeures actives ?',
+        'Resume les alarmes les plus prioritaires.',
+      ],
+      degradedMode: context.degradedMode,
+      provider: 'groq',
+      context: {
+        counts: {
+          rtus: context.rtus.length,
+          activeAlarms,
+          brokenRoutes,
+          failedOtdrTests,
+        },
+      },
+    };
+  }
+
+  let matchedRoute =
     context.routes.find(
       (route) =>
         includesNormalized(trimmedMessage, route.routeName) ||
@@ -509,7 +964,7 @@ export const generateAiChatResponse = async (message: string): Promise<AiChatRes
         (hasRouteIntent(trimmedMessage) && includesNormalized(trimmedMessage, String(route.id)))
     ) || null;
 
-  const matchedRtu =
+  let matchedRtu =
     context.rtus.find(
       (rtu) =>
         includesNormalized(trimmedMessage, rtu.name) ||
@@ -517,7 +972,7 @@ export const generateAiChatResponse = async (message: string): Promise<AiChatRes
         (hasRtuIntent(trimmedMessage) && includesNormalized(trimmedMessage, String(rtu.id)))
     ) || null;
 
-  const matchedAlarm =
+  let matchedAlarm =
     context.alarms.find(
       (alarm) =>
         includesNormalized(trimmedMessage, alarm.alarmType) ||
@@ -526,6 +981,67 @@ export const generateAiChatResponse = async (message: string): Promise<AiChatRes
           (includesNormalized(trimmedMessage, String(alarm.id)) ||
             normalizedMessage.includes(`#${String(alarm.id).toLowerCase()}`)))
     ) || null;
+
+  if (!matchedAlarm && hasAlarmIntent(trimmedMessage)) {
+    const requestedSeverity = getAlarmSeverityFilter(trimmedMessage);
+    matchedAlarm =
+      context.alarms
+        .filter((alarm) => isAlarmActive(alarm.lifecycleStatus))
+        .filter((alarm) => !requestedSeverity || alarm.severity === requestedSeverity)
+        .sort((left, right) => getAlarmPriorityScore(right) - getAlarmPriorityScore(left))[0] || null;
+  }
+
+  if (!matchedRtu && hasRtuIntent(trimmedMessage)) {
+    matchedRtu =
+      context.rtus
+        .filter((rtu) => (hasUnavailableRtuIntent(trimmedMessage) ? ['offline', 'unreachable'].includes(rtu.status) : rtu.status !== 'online'))
+        .sort((left, right) => getRtuPriorityScore(right) - getRtuPriorityScore(left))[0] || null;
+  }
+
+  if (!matchedRoute && hasRouteIntent(trimmedMessage)) {
+    matchedRoute =
+      context.routes
+        .filter((route) => (hasBrokenRouteIntent(trimmedMessage) ? route.fiberStatus === 'broken' : route.fiberStatus !== 'normal'))
+        .sort((left, right) => getRoutePriorityScore(right) - getRoutePriorityScore(left))[0] || null;
+  }
+
+  const isGeneralConversation =
+    !hasProjectIntent(trimmedMessage) && !matchedRoute && !matchedRtu && !matchedAlarm && !hasAlarmCountIntent(trimmedMessage);
+
+  if (isGeneralConversation) {
+    const generalReply = await requireGroqReply({
+      message: trimmedMessage,
+      context,
+      fallbackReply: trimmedMessage,
+      grounding: {
+        scope: 'global',
+        targetLabel: 'general-chat',
+        facts: {},
+        allowedEntityNames: [],
+      },
+      mode: 'general',
+      username,
+    });
+
+    return {
+      reply: generalReply,
+      suggestions: [
+        'Explique cette alarme critique.',
+        'Donne-moi une checklist pour une RTU injoignable.',
+        'Pose-moi une autre question generale.',
+      ],
+      degradedMode: context.degradedMode,
+      provider: 'groq',
+      context: {
+        counts: {
+          rtus: context.rtus.length,
+          activeAlarms: context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length,
+          brokenRoutes: context.routes.filter((route) => route.fiberStatus === 'broken').length,
+          failedOtdrTests: context.otdrTests.filter((test) => test.result === 'fail').length,
+        },
+      },
+    };
+  }
 
   let scope: ChatScope = 'global';
   let targetLabel: string | undefined;
@@ -554,19 +1070,22 @@ export const generateAiChatResponse = async (message: string): Promise<AiChatRes
     targetLabel = matchedRoute.routeName;
   }
 
-  const groqReply = await generateGroqReply({
+  const grounding = buildGroundingPayload({
+    context,
+    scope,
+    matchedAlarm,
+    matchedRoute,
+    matchedRtu,
+  });
+
+  const groqReply = await requireGroqReply({
     message: trimmedMessage,
     context,
     fallbackReply: reply,
-    scope,
-    targetLabel,
+    grounding,
   });
 
-  let provider: 'groq' | 'fallback' = 'fallback';
-  if (groqReply) {
-    reply = groqReply;
-    provider = 'groq';
-  }
+  reply = groqReply;
 
   const activeAlarms = context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length;
   const brokenRoutes = context.routes.filter((route) => route.fiberStatus === 'broken').length;
@@ -580,7 +1099,7 @@ export const generateAiChatResponse = async (message: string): Promise<AiChatRes
       matchedRoute?.routeName
     ),
     degradedMode: context.degradedMode,
-    provider,
+    provider: 'groq',
     context: {
       matchedRtu: matchedRtu?.name,
       matchedAlarm: matchedAlarm ? `${matchedAlarm.alarmType} #${matchedAlarm.id}` : undefined,

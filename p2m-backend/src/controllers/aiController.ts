@@ -11,7 +11,7 @@ export const postChatMessage = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const payload = await generateAiChatResponse(message);
+    const payload = await generateAiChatResponse(message, req.user?.username || 'anonymous');
 
     res.json({
       ...payload,
@@ -19,6 +19,11 @@ export const postChatMessage = async (req: AuthRequest, res: Response): Promise<
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'GROQ_RESPONSE_UNAVAILABLE') {
+      res.status(503).json({ error: 'Grok indisponible pour le moment. Veuillez reessayer.' });
+      return;
+    }
+
     res.status(500).json({ error: 'Failed to generate chatbot response' });
   }
 };
