@@ -1,4 +1,4 @@
-import { Alarm, FiberRoute, OtdrTestResult, RTU } from '../models';
+import { Alarm, Fibre, Measurement, RTU } from '../models';
 import { databaseState } from '../config/database';
 import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from '../data/demoData';
 
@@ -190,6 +190,8 @@ const formatTechnicianReply = (sections: Array<{ title: string; content: string 
     .join('\n\n');
 
 const toIsoOrFallback = (value: string | null): string => value || 'non disponible';
+
+const buildRouteName = (rtuName: string, fibreName: string): string => `${rtuName}-${fibreName}`;
 
 const buildSuggestions = (matchedRtu?: string, matchedAlarm?: string, matchedRoute?: string): string[] => {
   const suggestions = [
@@ -796,12 +798,46 @@ const loadContext = async (): Promise<ChatContext> => {
     };
   }
 
-  const [rtus, alarms, routes, otdrTests] = await Promise.all([
+  const [rtus, alarms, fibres, measurements] = await Promise.all([
     RTU.findAll({ order: [['id', 'ASC']] }),
     Alarm.findAll({ order: [['occurredAt', 'DESC']], limit: 100 }),
-    FiberRoute.findAll({ order: [['id', 'ASC']] }),
-    OtdrTestResult.findAll({ order: [['testedAt', 'DESC']], limit: 50 }),
+    Fibre.findAll({ order: [['id', 'ASC']] }),
+    Measurement.findAll({ order: [['timestamp', 'DESC']], limit: 100 }),
   ]);
+
+  const rtuById = new Map<number, RTU>(
+    rtus.map((rtu) => [rtu.get('id') as number, rtu])
+  );
+
+  const latestMeasurementByFibre = new Map<number, Measurement>();
+  measurements.forEach((measurement) => {
+    const fibreId = measurement.get('fibreId') as number;
+    if (!latestMeasurementByFibre.has(fibreId)) {
+      latestMeasurementByFibre.set(fibreId, measurement);
+    }
+  });
+
+  const routes = fibres.map((fibre) => {
+    const fibreId = fibre.get('id') as number;
+    const rtuId = fibre.get('rtuId') as number;
+    const rtu = rtuById.get(rtuId);
+    const fibreName = fibre.get('name') as string;
+    const routeName = buildRouteName(
+      rtu ? ((rtu.get('name') as string) || `RTU-${rtuId}`) : `RTU-${rtuId}`,
+      fibreName
+    );
+    const latestMeasurement = latestMeasurementByFibre.get(fibreId);
+
+    return {
+      id: fibreId,
+      routeName,
+      source: rtu ? (((rtu.get('locationAddress') as string | null) || (rtu.get('name') as string)) as string) : routeName,
+      destination: `Fibre ${fibreName}`,
+      fiberStatus: fibre.get('status') as string,
+      attenuationDb: latestMeasurement ? ((latestMeasurement.get('attenuation') as number | null) ?? null) : null,
+      lastTestTime: latestMeasurement ? ((latestMeasurement.get('timestamp') as Date | null)?.toISOString() || null) : null,
+    };
+  });
 
   return {
     rtus: rtus.map((rtu) => ({
@@ -815,7 +851,9 @@ const loadContext = async (): Promise<ChatContext> => {
     alarms: alarms.map((alarm) => ({
       id: alarm.get('id') as number,
       rtuId: (alarm.get('rtuId') as number | null) ?? null,
-      routeId: (alarm.get('routeId') as number | null) ?? null,
+      routeId:
+        (alarm.get('routeId') as number | null) ??
+        ((alarm.get('fibreId') as number | null) ?? null),
       severity: alarm.get('severity') as string,
       lifecycleStatus: alarm.get('lifecycleStatus') as string,
       alarmType: alarm.get('alarmType') as string,
@@ -824,26 +862,19 @@ const loadContext = async (): Promise<ChatContext> => {
       localizationKm: (alarm.get('localizationKm') as string | null) || null,
       occurredAt: ((alarm.get('occurredAt') as Date | null)?.toISOString()) || null,
     })),
-    routes: routes.map((route) => ({
-      id: route.get('id') as number,
-      routeName: route.get('routeName') as string,
-      source: route.get('source') as string,
-      destination: route.get('destination') as string,
-      fiberStatus: route.get('fiberStatus') as string,
-      attenuationDb: (route.get('attenuationDb') as number | null) ?? null,
-      lastTestTime: ((route.get('lastTestTime') as Date | null)?.toISOString()) || null,
-    })),
-    otdrTests: otdrTests.map((test) => {
-      const routeId = (test.get('routeId') as number | null) ?? null;
-      const matchedRoute = routes.find((route) => (route.get('id') as number) === routeId);
+    routes,
+    otdrTests: measurements.map((test) => {
+      const routeId = (test.get('fibreId') as number | null) ?? null;
+      const matchedRoute = routes.find((route) => route.id === routeId);
+      const attenuation = (test.get('attenuation') as number | null) ?? null;
 
       return {
         id: test.get('id') as number,
         routeId,
-        routeName: matchedRoute ? (matchedRoute.get('routeName') as string) : 'Unknown',
-        result: test.get('result') as string,
-        testedAt: ((test.get('testedAt') as Date | null)?.toISOString()) || null,
-        dynamicRangeDb: (test.get('dynamicRangeDb') as number | null) ?? null,
+        routeName: matchedRoute ? matchedRoute.routeName : 'Unknown',
+        result: test.get('testResult') as string,
+        testedAt: ((test.get('timestamp') as Date | null)?.toISOString()) || null,
+        dynamicRangeDb: attenuation !== null ? Number((attenuation + 12).toFixed(1)) : null,
       };
     }),
     degradedMode: false,

@@ -1,9 +1,12 @@
 import Alarm from './Alarm';
 import AuditLog from './AuditLog';
 import DashboardSnapshot from './DashboardSnapshot';
+import Fibre from './Fibre';
 import FiberRoute from './FiberRoute';
 import HealthScore from './HealthScore';
+import Measurement from './Measurement';
 import OtdrTestResult from './OtdrTestResult';
+import Performance from './Performance';
 import Prediction from './Prediction';
 import ReportJob from './ReportJob';
 import RTU from './RTU';
@@ -15,8 +18,20 @@ RTU.belongsTo(User, { foreignKey: 'userId', as: 'owner' });
 RTU.hasMany(Alarm, { foreignKey: 'rtuId', as: 'alarms' });
 Alarm.belongsTo(RTU, { foreignKey: 'rtuId', as: 'rtu' });
 
+RTU.hasMany(Fibre, { foreignKey: 'rtuId', as: 'fibres' });
+Fibre.belongsTo(RTU, { foreignKey: 'rtuId', as: 'rtu' });
+
+Fibre.hasMany(Alarm, { foreignKey: 'fibreId', as: 'fibreAlarms' });
+Alarm.belongsTo(Fibre, { foreignKey: 'fibreId', as: 'fibre' });
+
 FiberRoute.hasMany(Alarm, { foreignKey: 'routeId', as: 'alarms' });
 Alarm.belongsTo(FiberRoute, { foreignKey: 'routeId', as: 'route' });
+
+Fibre.hasMany(Measurement, { foreignKey: 'fibreId', as: 'measurements' });
+Measurement.belongsTo(Fibre, { foreignKey: 'fibreId', as: 'fibre' });
+
+Fibre.hasMany(Performance, { foreignKey: 'fibreId', as: 'performances' });
+Performance.belongsTo(Fibre, { foreignKey: 'fibreId', as: 'fibre' });
 
 RTU.hasMany(OtdrTestResult, { foreignKey: 'rtuId', as: 'otdrTests' });
 OtdrTestResult.belongsTo(RTU, { foreignKey: 'rtuId', as: 'rtu' });
@@ -39,9 +54,12 @@ AuditLog.belongsTo(User, { foreignKey: 'userId', as: 'actor' });
 export {
   User,
   RTU,
+  Fibre,
   FiberRoute,
   Alarm,
+  Measurement,
   OtdrTestResult,
+  Performance,
   Prediction,
   HealthScore,
   DashboardSnapshot,

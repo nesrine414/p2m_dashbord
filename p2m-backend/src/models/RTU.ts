@@ -10,7 +10,9 @@ interface RTUAttributes {
   ipAddress?: string;
   serialNumber?: string;
   status: 'online' | 'offline' | 'warning' | 'unreachable';
+  power?: 'normal' | 'failure';
   temperature?: number;
+  otdrStatus?: 'ready' | 'busy' | 'fault';
   attenuationDb?: number; // Added property
   installationDate?: Date;
   lastSeen?: Date;
@@ -30,7 +32,9 @@ class RTU extends Model<RTUAttributes, RTUCreationAttributes> implements RTUAttr
   declare ipAddress?: string;
   declare serialNumber?: string;
   declare status: 'online' | 'offline' | 'warning' | 'unreachable';
+  declare power?: 'normal' | 'failure';
   declare temperature?: number;
+  declare otdrStatus?: 'ready' | 'busy' | 'fault';
   declare attenuationDb?: number; // Added property
   declare installationDate?: Date;
   declare lastSeen?: Date;
@@ -82,9 +86,18 @@ RTU.init(
       allowNull: false,
       defaultValue: 'online',
     },
+    power: {
+      type: DataTypes.ENUM('normal', 'failure'),
+      allowNull: true,
+    },
     temperature: {
       type: DataTypes.FLOAT,
       allowNull: true,
+    },
+    otdrStatus: {
+      type: DataTypes.ENUM('ready', 'busy', 'fault'),
+      allowNull: true,
+      field: 'otdr_status',
     },
     attenuationDb: {
       type: DataTypes.FLOAT,

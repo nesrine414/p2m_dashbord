@@ -5,8 +5,27 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { connectDatabase, databaseState } from './config/database';
 import './models';
-import { Alarm, FiberRoute, OtdrTestResult, RTU, User } from './models';
-import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from './data/demoData';
+import {
+  Alarm,
+  Fibre,
+  FiberRoute,
+  HealthScore,
+  Measurement,
+  OtdrTestResult,
+  Performance,
+  Prediction,
+  RTU,
+  User,
+} from './models';
+import {
+  demoAlarms,
+  demoFibres,
+  demoFiberRoutes,
+  demoMeasurements,
+  demoOtdrTests,
+  demoPerformances,
+  demoRtus,
+} from './data/demoData';
 import routes from './routes';
 import { initWebSocket } from './utils/websocket';
 import { startAlarmDetection } from './services/cronJobs';
@@ -17,6 +36,9 @@ const app: Application = express();
 const server = http.createServer(app);
 const PORT = Number(process.env.PORT || 5000);
 const configuredFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const resetDemoDataOnBoot =
+  process.env.RESET_DEMO_DATA_ON_BOOT === 'true' ||
+  (process.env.NODE_ENV === 'development' && process.env.RESET_DEMO_DATA_ON_BOOT !== 'false');
 const isAllowedDevOrigin = (origin: string): boolean => {
   try {
     const { hostname, protocol } = new URL(origin);
@@ -149,8 +171,21 @@ const seedDefaultData = async (): Promise<void> => {
     console.log('Seeded default admin user (admin / Admin@1234)');
   }
 
-  for (const rtu of demoRtus) {
-    await RTU.upsert({
+  if (resetDemoDataOnBoot) {
+    await Alarm.destroy({ where: {} });
+    await Measurement.destroy({ where: {} });
+    await Performance.destroy({ where: {} });
+    await OtdrTestResult.destroy({ where: {} });
+    await FiberRoute.destroy({ where: {} });
+    await HealthScore.destroy({ where: {} });
+    await Prediction.destroy({ where: {} });
+    await Fibre.destroy({ where: {} });
+    await RTU.destroy({ where: {} });
+    console.log('Reset demo operational data on boot');
+  }
+
+  await RTU.bulkCreate(
+    demoRtus.map((rtu) => ({
       id: rtu.id,
       name: rtu.name,
       locationLatitude: rtu.locationLatitude,
@@ -159,48 +194,70 @@ const seedDefaultData = async (): Promise<void> => {
       ipAddress: rtu.ipAddress,
       serialNumber: rtu.serialNumber,
       status: rtu.status,
+      power: rtu.power,
       temperature: rtu.temperature,
+      otdrStatus: rtu.otdrStatus,
       attenuationDb: undefined,
       installationDate: undefined,
       lastSeen: new Date(rtu.lastSeen),
       userId: undefined,
-    });
-  }
+    })),
+    { ignoreDuplicates: false }
+  );
   console.log('Synced Tunisia RTU demo inventory');
 
-  const fiberRouteCount = await FiberRoute.count();
-  if (fiberRouteCount < demoFiberRoutes.length) {
-    await FiberRoute.bulkCreate(
-      demoFiberRoutes.map(({ path: _path, ...route }) => ({
-        ...route,
-        lastTestTime: new Date(route.lastTestTime),
-      })),
-      { ignoreDuplicates: true }
-    );
-    console.log('Seeded Tunisia fiber route demo data');
-  }
+  await Fibre.bulkCreate(demoFibres, { ignoreDuplicates: false });
+  console.log('Seeded fibre demo data');
 
-  const alarmCount = await Alarm.count();
-  if (alarmCount === 0) {
-    await Alarm.bulkCreate(
-      demoAlarms.map((alarm) => ({
-        ...alarm,
-        occurredAt: new Date(alarm.occurredAt),
-      }))
-    );
-    console.log('Seeded alarm demo data');
-  }
+  await Measurement.bulkCreate(
+    demoMeasurements.map((measurement) => ({
+      id: measurement.id,
+      fibreId: measurement.fibreId,
+      attenuation: measurement.attenuation,
+      testResult: measurement.testResult,
+      wavelength: measurement.wavelength,
+      timestamp: new Date(measurement.timestamp),
+    })),
+    { ignoreDuplicates: false }
+  );
+  console.log('Seeded measurement demo data');
 
-  const otdrCount = await OtdrTestResult.count();
-  if (otdrCount === 0) {
-    await OtdrTestResult.bulkCreate(
-      demoOtdrTests.map((test) => ({
-        ...test,
-        testedAt: new Date(test.testedAt),
-      }))
-    );
-    console.log('Seeded OTDR demo data');
-  }
+  await Performance.bulkCreate(
+    demoPerformances.map((item) => ({
+      id: item.id,
+      fibreId: item.fibreId,
+      mttr: item.mttr,
+      mtbf: item.mtbf,
+      recordedAt: new Date(item.recordedAt),
+    })),
+    { ignoreDuplicates: false }
+  );
+  console.log('Seeded performance demo data');
+
+  await FiberRoute.bulkCreate(
+    demoFiberRoutes.map(({ path: _path, ...route }) => ({
+      ...route,
+      lastTestTime: new Date(route.lastTestTime),
+    })),
+    { ignoreDuplicates: false }
+  );
+  console.log('Seeded Tunisia fiber route demo data');
+
+  await Alarm.bulkCreate(
+    demoAlarms.map((alarm) => ({
+      ...alarm,
+      occurredAt: new Date(alarm.occurredAt),
+    }))
+  );
+  console.log('Seeded alarm demo data');
+
+  await OtdrTestResult.bulkCreate(
+    demoOtdrTests.map((test) => ({
+      ...test,
+      testedAt: new Date(test.testedAt),
+    }))
+  );
+  console.log('Seeded OTDR demo data');
 };
 
 const startServer = async (): Promise<void> => {

@@ -218,28 +218,10 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({ routes, rtus, e
   }, [rtus]);
 
   const hasRealtimeNodes = rtuNodes.length > 0;
-  const displayNodes = useMemo<RtuNode[]>(() => {
-    const combined: RtuNode[] = [];
-    const seen = new Set<string>();
-
-    const remember = (node: RtuNode) => {
-      const keys = [normalizeKey(node.city), normalizeKey(node.name), normalizeKey(node.id)].filter(
-        (value): value is string => Boolean(value)
-      );
-
-      if (keys.some((key) => seen.has(key))) {
-        return;
-      }
-
-      keys.forEach((key) => seen.add(key));
-      combined.push(node);
-    };
-
-    rtuNodes.forEach(remember);
-    BASE_NODES.forEach(remember);
-
-    return combined;
-  }, [rtuNodes]);
+  const displayNodes = useMemo<RtuNode[]>(
+    () => (hasRealtimeNodes ? rtuNodes : BASE_NODES),
+    [hasRealtimeNodes, rtuNodes]
+  );
 
   const nodeMap = useMemo(() => {
     const map = new Map<string, RtuNode>();
@@ -356,8 +338,11 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({ routes, rtus, e
     if (manualSegments.length > 0) {
       return manualSegments;
     }
+    if (hasRealtimeNodes) {
+      return [];
+    }
     return fallbackRoutes;
-  }, [backendEndpointSegments, backendPathSegments, fallbackRoutes, manualSegments]);
+  }, [backendEndpointSegments, backendPathSegments, fallbackRoutes, hasRealtimeNodes, manualSegments]);
 
   const bounds = useMemo<Bounds | null>(() => {
     if (displayNodes.length === 0) return null;

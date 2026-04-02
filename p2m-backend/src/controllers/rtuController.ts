@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
-import { Alarm, HealthScore, OtdrTestResult, Prediction, RTU } from '../models';
+import { Alarm, Fibre, HealthScore, Measurement, OtdrTestResult, Prediction, RTU } from '../models';
 import { demoRtus } from '../data/demoData';
 
 export const getRTUs = async (req: Request, res: Response): Promise<void> => {
@@ -63,6 +63,11 @@ export const getRTUById = async (req: Request, res: Response): Promise<void> => 
     const rtu = await RTU.findByPk(id, {
       include: [
         { model: Alarm, as: 'alarms' },
+        {
+          model: Fibre,
+          as: 'fibres',
+          include: [{ model: Measurement, as: 'measurements' }],
+        },
         { model: Prediction, as: 'predictions' },
         { model: HealthScore, as: 'healthScores' },
         { model: OtdrTestResult, as: 'otdrTests' },

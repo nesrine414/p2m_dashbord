@@ -4,6 +4,7 @@ import sequelize from '../config/database';
 interface AlarmAttributes {
   id: number;
   rtuId?: number;
+  fibreId?: number;
   routeId?: number;
   alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   severity: 'critical' | 'major' | 'minor' | 'info';
@@ -25,6 +26,7 @@ type AlarmCreationAttributes = Optional<AlarmAttributes, 'id' | 'lifecycleStatus
 class Alarm extends Model<AlarmAttributes, AlarmCreationAttributes> implements AlarmAttributes {
   declare id: number;
   declare rtuId?: number;
+  declare fibreId?: number;
   declare routeId?: number;
   declare alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   declare severity: 'critical' | 'major' | 'minor' | 'info';
@@ -52,6 +54,11 @@ Alarm.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       field: 'rtu_id',
+    },
+    fibreId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'fibre_id',
     },
     routeId: {
       type: DataTypes.INTEGER,

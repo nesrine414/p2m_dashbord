@@ -1,7 +1,8 @@
-﻿import { Op } from 'sequelize';
+import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import Alarm from '../models/Alarm';
-import FiberRoute from '../models/FiberRoute';
+import Fibre from '../models/Fibre';
+import Measurement from '../models/Measurement';
 import RTU from '../models/RTU';
 import { emitEvent } from '../utils/websocket';
 
@@ -14,6 +15,7 @@ const ATTENUATION_CRITICAL_DB = 18;
 
 type AlarmPayload = {
   rtuId?: number;
+  fibreId?: number;
   routeId?: number;
   severity: 'critical' | 'major' | 'minor' | 'info';
   alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
@@ -37,14 +39,26 @@ export class AlarmDetectionService {
       return;
     }
 
-    const [rtus, routes] = await Promise.all([RTU.findAll(), FiberRoute.findAll()]);
+    const [rtus, fibres, measurements] = await Promise.all([
+      RTU.findAll(),
+      Fibre.findAll(),
+      Measurement.findAll({ order: [['timestamp', 'DESC']] }),
+    ]);
+
+    const latestMeasurementByFibre = new Map<number, Measurement>();
+    measurements.forEach((measurement) => {
+      const fibreId = measurement.get('fibreId') as number;
+      if (!latestMeasurementByFibre.has(fibreId)) {
+        latestMeasurementByFibre.set(fibreId, measurement);
+      }
+    });
 
     for (const rtu of rtus) {
       await this.detectRtuAlarm(rtu);
     }
 
-    for (const route of routes) {
-      await this.detectRouteAlarm(route);
+    for (const fibre of fibres) {
+      await this.detectFibreAlarm(fibre, latestMeasurementByFibre.get(fibre.id));
     }
   }
 
@@ -96,59 +110,77 @@ export class AlarmDetectionService {
     }
   }
 
-  private async detectRouteAlarm(route: FiberRoute): Promise<void> {
-    if (route.fiberStatus === 'broken' || route.routeStatus === 'inactive') {
+  private async detectFibreAlarm(fibre: Fibre, measurement?: Measurement): Promise<void> {
+    const fibreStatus = fibre.get('status') as string;
+    const fibreName = fibre.get('name') as string;
+    const rtuId = fibre.get('rtuId') as number;
+    const rtu = await RTU.findByPk(rtuId);
+    const label = `${rtu?.name || `RTU-${rtuId}`} ${fibreName}`;
+    const attenuation = (measurement?.get('attenuation') as number | null) ?? null;
+    const testResult = (measurement?.get('testResult') as string | null) ?? null;
+    const length = (fibre.get('length') as number | null) ?? null;
+    const location = (rtu?.get('locationAddress') as string | null) || rtu?.name || label;
+
+    if (fibreStatus === 'broken') {
       await this.createAlarm({
-        routeId: route.id,
+        rtuId,
+        fibreId: fibre.id,
+        routeId: fibre.id,
         severity: 'critical',
         alarmType: 'Fiber Cut',
-        message: `Fiber cut detected on ${route.routeName} (${route.source} -> ${route.destination}).`,
-        location: route.source,
-        localizationKm: formatRouteKm(route.lengthKm),
+        message: `Fiber cut detected on ${label}.`,
+        location,
+        localizationKm: formatRouteKm(length),
         owner: 'NQMS Rule Engine',
       });
       return;
     }
 
-    if (typeof route.attenuationDb === 'number') {
-      if (route.attenuationDb > ATTENUATION_CRITICAL_DB) {
+    if (typeof attenuation === 'number') {
+      if (attenuation > ATTENUATION_CRITICAL_DB) {
         await this.createAlarm({
-          routeId: route.id,
+          rtuId,
+          fibreId: fibre.id,
+          routeId: fibre.id,
           severity: 'critical',
           alarmType: 'High Loss',
-          message: `High loss detected on ${route.routeName}: ${route.attenuationDb.toFixed(1)} dB.`,
-          location: route.source,
-          localizationKm: formatRouteKm(route.lengthKm),
+          message: `High loss detected on ${label}: ${attenuation.toFixed(1)} dB.`,
+          location,
+          localizationKm: formatRouteKm(length),
           owner: 'NQMS Rule Engine',
         });
-      } else if (route.attenuationDb > ATTENUATION_WARNING_DB) {
+      } else if (attenuation > ATTENUATION_WARNING_DB) {
         await this.createAlarm({
-          routeId: route.id,
+          rtuId,
+          fibreId: fibre.id,
+          routeId: fibre.id,
           severity: 'major',
           alarmType: 'High Loss',
-          message: `Loss drift detected on ${route.routeName}: ${route.attenuationDb.toFixed(1)} dB.`,
-          location: route.source,
-          localizationKm: formatRouteKm(route.lengthKm),
+          message: `Loss drift detected on ${label}: ${attenuation.toFixed(1)} dB.`,
+          location,
+          localizationKm: formatRouteKm(length),
           owner: 'NQMS Rule Engine',
         });
       }
     }
 
-    if (route.reflectionEvents && typeof route.attenuationDb === 'number' && route.attenuationDb > ATTENUATION_WARNING_DB) {
+    if (testResult === 'fail' && typeof attenuation === 'number' && attenuation > ATTENUATION_WARNING_DB) {
       await this.createAlarm({
-        routeId: route.id,
+        rtuId,
+        fibreId: fibre.id,
+        routeId: fibre.id,
         severity: 'minor',
         alarmType: 'High Loss',
-        message: `Reflection events observed on ${route.routeName}; verify splice and connector quality.`,
-        location: route.source,
-        localizationKm: formatRouteKm(route.lengthKm),
+        message: `OTDR fail observed on ${label}; verify splice and connector quality.`,
+        location,
+        localizationKm: formatRouteKm(length),
         owner: 'NQMS Rule Engine',
       });
     }
   }
 
   private async createAlarm(alarmData: AlarmPayload): Promise<void> {
-    const where: Record<string, unknown> = {
+    const where: Record<string | symbol, unknown> = {
       alarmType: alarmData.alarmType,
       lifecycleStatus: {
         [Op.in]: [...OPEN_LIFECYCLE_STATUSES],
@@ -157,6 +189,10 @@ export class AlarmDetectionService {
 
     if (typeof alarmData.rtuId === 'number') {
       where.rtuId = alarmData.rtuId;
+    }
+
+    if (typeof alarmData.fibreId === 'number') {
+      where.fibreId = alarmData.fibreId;
     }
 
     if (typeof alarmData.routeId === 'number') {
