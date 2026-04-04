@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Chip, Grid, LinearProgress, Typography } from '@mui/material';
-import { Cancel, CheckCircle, Thermostat, Warning } from '@mui/icons-material';
+import { Cancel, CheckCircle, Thermostat } from '@mui/icons-material';
 import { RTUStatus } from '../../types';
+import { normalizeRtuStatus } from '../../utils/rtuStatus';
 
 export interface RTUCard {
   id: number;
@@ -20,8 +21,6 @@ const getStatusIcon = (status: RTUStatus) => {
   switch (status) {
     case RTUStatus.ONLINE:
       return <CheckCircle sx={{ color: '#00FF88', fontSize: 24 }} />;
-    case RTUStatus.WARNING:
-      return <Warning sx={{ color: '#FFB800', fontSize: 24 }} />;
     default:
       return <Cancel sx={{ color: '#FF3366', fontSize: 24 }} />;
   }
@@ -47,7 +46,7 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
     );
   }
 
-  const onlineCount = rtus.filter((rtu) => rtu.status === RTUStatus.ONLINE).length;
+  const onlineCount = rtus.filter((rtu) => normalizeRtuStatus(rtu.status) === RTUStatus.ONLINE).length;
 
   return (
     <Box sx={{ mt: 3 }}>
@@ -70,28 +69,30 @@ const RTUCardsWidget: React.FC<RTUCardsWidgetProps> = ({ rtus }) => {
                 p: 2,
                 height: '100%',
                 border:
-                  rtu.status === RTUStatus.OFFLINE || rtu.status === RTUStatus.UNREACHABLE
-                    ? '2px solid #FF3366'
-                    : 'none',
+                  normalizeRtuStatus(rtu.status) === RTUStatus.ONLINE
+                    ? 'none'
+                    : '2px solid #FF3366',
                 boxShadow:
-                  rtu.status === RTUStatus.OFFLINE || rtu.status === RTUStatus.UNREACHABLE
-                    ? '0 0 0 1px rgba(255, 51, 102, 0.4), 0 18px 30px rgba(255, 51, 102, 0.18)'
-                    : undefined,
+                  normalizeRtuStatus(rtu.status) === RTUStatus.ONLINE
+                    ? undefined
+                    : '0 0 0 1px rgba(255, 51, 102, 0.4), 0 18px 30px rgba(255, 51, 102, 0.18)',
               }}
             >
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="subtitle1" fontWeight="bold" color="white">
                   {rtu.name}
                 </Typography>
-                {getStatusIcon(rtu.status)}
+                {getStatusIcon(normalizeRtuStatus(rtu.status))}
               </Box>
 
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }} display="block" mb={2}>
                 {rtu.location}
               </Typography>
-              {(rtu.status === RTUStatus.OFFLINE || rtu.status === RTUStatus.UNREACHABLE) && (
+              {normalizeRtuStatus(rtu.status) !== RTUStatus.ONLINE && (
                 <Chip
-                  label="HORS LIGNE"
+                  label={
+                    normalizeRtuStatus(rtu.status) === RTUStatus.UNREACHABLE ? 'INJOIGNABLE' : 'HORS LIGNE'
+                  }
                   size="small"
                   sx={{
                     backgroundColor: '#FF3366',

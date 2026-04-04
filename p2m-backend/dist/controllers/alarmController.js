@@ -1,88 +1,51 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActiveCriticalAlarms = exports.resolveAlarm = exports.acknowledgeAlarm = exports.createAlarm = exports.getAlarmById = exports.getAlarms = exports.closeAlarm = exports.resolvedAlarm = exports.inProgressAlarm = void 0;
-// Mark alarm as in progress
-const inProgressAlarm = async (req, res) => {
-    try {
-        if (!database_1.databaseState.connected) {
-            res.status(503).json({ error: 'Database not connected' });
-            return;
-        }
-        const id = Number(req.params.id);
-        const alarm = await models_1.Alarm.findByPk(id);
-        if (!alarm) {
-            res.status(404).json({ error: 'Alarm not found' });
-            return;
-        }
-        await alarm.update({
-            lifecycleStatus: 'in_progress',
-            owner: req.body.owner || alarm.owner,
-        });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
-    }
-    catch (error) {
-        res.status(400).json({ error: 'Failed to mark alarm in progress' });
-    }
-};
-exports.inProgressAlarm = inProgressAlarm;
-// Mark alarm as resolved
-const resolvedAlarm = async (req, res) => {
-    try {
-        if (!database_1.databaseState.connected) {
-            res.status(503).json({ error: 'Database not connected' });
-            return;
-        }
-        const id = Number(req.params.id);
-        const alarm = await models_1.Alarm.findByPk(id);
-        if (!alarm) {
-            res.status(404).json({ error: 'Alarm not found' });
-            return;
-        }
-        await alarm.update({
-            lifecycleStatus: 'resolved',
-            resolvedAt: new Date(),
-            resolutionComment: req.body.comment || undefined,
-            owner: req.body.owner || alarm.owner,
-        });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
-    }
-    catch (error) {
-        res.status(400).json({ error: 'Failed to resolve alarm' });
-    }
-};
-exports.resolvedAlarm = resolvedAlarm;
-// Mark alarm as closed (archived)
-const closeAlarm = async (req, res) => {
-    try {
-        if (!database_1.databaseState.connected) {
-            res.status(503).json({ error: 'Database not connected' });
-            return;
-        }
-        const id = Number(req.params.id);
-        const alarm = await models_1.Alarm.findByPk(id);
-        if (!alarm) {
-            res.status(404).json({ error: 'Alarm not found' });
-            return;
-        }
-        await alarm.update({
-            lifecycleStatus: 'closed',
-            owner: req.body.owner || alarm.owner,
-        });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
-    }
-    catch (error) {
-        res.status(400).json({ error: 'Failed to close alarm' });
-    }
-};
-exports.closeAlarm = closeAlarm;
+exports.getActiveCriticalAlarms = exports.closeAlarm = exports.resolvedAlarm = exports.inProgressAlarm = exports.resolveAlarm = exports.acknowledgeAlarm = exports.createAlarm = exports.getAlarmById = exports.getAlarms = void 0;
 const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
 const demoData_1 = require("../data/demoData");
 const websocket_1 = require("../utils/websocket");
+const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'];
+const mapDemoAlarm = (alarm) => {
+    const rtu = demoData_1.demoRtus.find((item) => item.id === alarm.rtuId);
+    return {
+        ...alarm,
+        rtuName: rtu?.name || 'Unknown RTU',
+        zone: rtu?.locationAddress || alarm.location,
+    };
+};
+const mapDbAlarm = (alarm, rtu) => ({
+    id: alarm.get('id'),
+    rtuId: alarm.get('rtuId') ?? null,
+    fibreId: alarm.get('fibreId') ?? null,
+    routeId: alarm.get('routeId') ?? null,
+    rtuName: rtu ? (rtu.get('name') || 'Unknown RTU') : 'Unknown RTU',
+    zone: rtu ? (rtu.get('locationAddress') || 'Unknown zone') : 'Unknown zone',
+    severity: alarm.get('severity'),
+    lifecycleStatus: alarm.get('lifecycleStatus'),
+    alarmType: alarm.get('alarmType'),
+    message: alarm.get('message'),
+    location: alarm.get('location') || null,
+    localizationKm: alarm.get('localizationKm') || null,
+    owner: alarm.get('owner') || null,
+    occurredAt: alarm.get('occurredAt'),
+    acknowledgedAt: alarm.get('acknowledgedAt') || null,
+    resolvedAt: alarm.get('resolvedAt') || null,
+});
+const resolveAlarmRtu = async (alarm) => {
+    const alarmRtuId = alarm.get('rtuId') ?? null;
+    if (alarmRtuId) {
+        return models_1.RTU.findByPk(alarmRtuId);
+    }
+    const fibreId = alarm.get('fibreId') ?? null;
+    if (!fibreId) {
+        return null;
+    }
+    const fibre = await models_1.Fibre.findByPk(fibreId);
+    const rtuId = fibre?.get('rtuId') ?? null;
+    return rtuId ? models_1.RTU.findByPk(rtuId) : null;
+};
 const getAlarms = async (req, res) => {
     try {
         const { severity, status, rtuId, page = '1', pageSize = '20', } = req.query;
@@ -98,14 +61,7 @@ const getAlarms = async (req, res) => {
                 return severityMatch && statusMatch && rtuMatch;
             })
                 .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
-            const paged = filtered.slice(offset, offset + size).map((alarm) => {
-                const rtu = demoData_1.demoRtus.find((item) => item.id === alarm.rtuId);
-                return {
-                    ...alarm,
-                    rtuName: rtu?.name || 'Unknown RTU',
-                    zone: rtu?.locationAddress || alarm.location,
-                };
-            });
+            const paged = filtered.slice(offset, offset + size).map(mapDemoAlarm);
             res.json({
                 data: paged,
                 total: filtered.length,
@@ -116,38 +72,32 @@ const getAlarms = async (req, res) => {
             return;
         }
         const whereClause = {};
-        if (severity)
+        if (severity) {
             whereClause.severity = severity;
-        if (status)
+        }
+        if (status) {
             whereClause.lifecycleStatus = status;
-        if (rtuId)
-            whereClause.rtuId = Number(rtuId);
+        }
+        if (rtuId) {
+            const fibreIds = await models_1.Fibre.findAll({
+                where: { rtuId: Number(rtuId) },
+                attributes: ['id'],
+            });
+            whereClause[sequelize_1.Op.or] = [
+                { rtuId: Number(rtuId) },
+                { fibreId: { [sequelize_1.Op.in]: fibreIds.map((item) => item.get('id')) } },
+            ];
+        }
         const { rows, count } = await models_1.Alarm.findAndCountAll({
             where: whereClause,
-            include: [{ model: models_1.RTU, as: 'rtu', attributes: ['id', 'name', 'locationAddress'] }],
             order: [['occurredAt', 'DESC']],
             limit: size,
             offset,
         });
-        const mapped = rows.map((alarm) => {
-            const rtu = alarm.get('rtu');
-            return {
-                id: alarm.get('id'),
-                rtuId: alarm.get('rtuId'),
-                rtuName: rtu ? rtu.get('name') : 'Unknown RTU',
-                zone: rtu ? (rtu.get('locationAddress') || 'Unknown zone') : 'Unknown zone',
-                severity: alarm.get('severity'),
-                lifecycleStatus: alarm.get('lifecycleStatus'),
-                alarmType: alarm.get('alarmType'),
-                message: alarm.get('message'),
-                location: alarm.get('location'),
-                localizationKm: alarm.get('localizationKm'),
-                owner: alarm.get('owner'),
-                occurredAt: alarm.get('occurredAt'),
-                acknowledgedAt: alarm.get('acknowledgedAt'),
-                resolvedAt: alarm.get('resolvedAt'),
-            };
-        });
+        const mapped = await Promise.all(rows.map(async (alarm) => {
+            const rtu = await resolveAlarmRtu(alarm);
+            return mapDbAlarm(alarm, rtu);
+        }));
         res.json({
             data: mapped,
             total: count,
@@ -162,28 +112,23 @@ const getAlarms = async (req, res) => {
 exports.getAlarms = getAlarms;
 const getAlarmById = async (req, res) => {
     try {
+        const id = Number(req.params.id);
         if (!database_1.databaseState.connected) {
-            const id = Number(req.params.id);
             const alarm = demoData_1.demoAlarms.find((item) => item.id === id);
             if (!alarm) {
                 res.status(404).json({ error: 'Alarm not found' });
                 return;
             }
-            const rtu = demoData_1.demoRtus.find((item) => item.id === alarm.rtuId);
-            res.json({
-                ...alarm,
-                rtuName: rtu?.name || 'Unknown RTU',
-                zone: rtu?.locationAddress || alarm.location,
-            });
+            res.json(mapDemoAlarm(alarm));
             return;
         }
-        const id = Number(req.params.id);
         const alarm = await models_1.Alarm.findByPk(id);
         if (!alarm) {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
-        res.json(alarm);
+        const rtu = await resolveAlarmRtu(alarm);
+        res.json(mapDbAlarm(alarm, rtu));
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch alarm' });
@@ -259,12 +204,84 @@ const resolveAlarm = async (req, res) => {
     }
 };
 exports.resolveAlarm = resolveAlarm;
-const getActiveCriticalAlarms = async () => {
-    return models_1.Alarm.count({
-        where: {
-            severity: 'critical',
-            lifecycleStatus: { [sequelize_1.Op.ne]: 'cleared' },
-        },
-    });
+const inProgressAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'in_progress',
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to mark alarm in progress' });
+    }
 };
+exports.inProgressAlarm = inProgressAlarm;
+const resolvedAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'resolved',
+            resolvedAt: new Date(),
+            resolutionComment: req.body.comment || undefined,
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to resolve alarm' });
+    }
+};
+exports.resolvedAlarm = resolvedAlarm;
+const closeAlarm = async (req, res) => {
+    try {
+        if (!database_1.databaseState.connected) {
+            res.status(503).json({ error: 'Database not connected' });
+            return;
+        }
+        const id = Number(req.params.id);
+        const alarm = await models_1.Alarm.findByPk(id);
+        if (!alarm) {
+            res.status(404).json({ error: 'Alarm not found' });
+            return;
+        }
+        await alarm.update({
+            lifecycleStatus: 'closed',
+            owner: req.body.owner || alarm.owner,
+        });
+        (0, websocket_1.emitEvent)('alarm_updated', alarm);
+        res.json(alarm);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to close alarm' });
+    }
+};
+exports.closeAlarm = closeAlarm;
+const getActiveCriticalAlarms = async () => models_1.Alarm.count({
+    where: {
+        severity: 'critical',
+        lifecycleStatus: { [sequelize_1.Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES },
+    },
+});
 exports.getActiveCriticalAlarms = getActiveCriticalAlarms;

@@ -23,6 +23,7 @@ import {
   getTopology,
 } from '../../services/api';
 import { DashboardStats, FiberStatus, RTUStatus } from '../../types';
+import { normalizeRtuStatus } from '../../utils/rtuStatus';
 
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -89,26 +90,22 @@ const getRiskLevel = (probability: number): RiskLevel => {
 const formatPercent = (value: number): string => `${Math.round(value)}%`;
 
 const getStatusPenalty = (status: BackendRTU['status']): number => {
-  switch (status) {
+  switch (normalizeRtuStatus(status)) {
     case RTUStatus.OFFLINE:
       return 0.48;
     case RTUStatus.UNREACHABLE:
       return 0.38;
-    case RTUStatus.WARNING:
-      return 0.22;
     default:
       return 0.08;
   }
 };
 
 const getStatusLabel = (status: BackendRTU['status']): string => {
-  switch (status) {
+  switch (normalizeRtuStatus(status)) {
     case RTUStatus.OFFLINE:
       return 'RTU hors ligne';
     case RTUStatus.UNREACHABLE:
       return 'RTU injoignable';
-    case RTUStatus.WARNING:
-      return 'RTU en avertissement';
     default:
       return 'RTU stable';
   }

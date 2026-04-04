@@ -74,6 +74,8 @@ export interface BackendFiberRoute {
   routeName: string;
   source: string;
   destination: string;
+  sourceRtuId?: number | null;
+  destinationRtuId?: number | null;
   fiberStatus: 'normal' | 'degraded' | 'broken';
   routeStatus: 'active' | 'inactive' | 'skipped';
   path?: Array<[number, number]> | null;

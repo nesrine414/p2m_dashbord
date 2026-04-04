@@ -49,9 +49,18 @@ RTU.init({
         allowNull: false,
         defaultValue: 'online',
     },
+    power: {
+        type: sequelize_1.DataTypes.ENUM('normal', 'failure'),
+        allowNull: true,
+    },
     temperature: {
         type: sequelize_1.DataTypes.FLOAT,
         allowNull: true,
+    },
+    otdrStatus: {
+        type: sequelize_1.DataTypes.ENUM('ready', 'busy', 'fault'),
+        allowNull: true,
+        field: 'otdr_status',
     },
     attenuationDb: {
         type: sequelize_1.DataTypes.FLOAT,

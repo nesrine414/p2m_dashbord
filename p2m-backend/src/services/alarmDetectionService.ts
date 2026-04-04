@@ -5,9 +5,9 @@ import Fibre from '../models/Fibre';
 import Measurement from '../models/Measurement';
 import RTU from '../models/RTU';
 import { emitEvent } from '../utils/websocket';
+import { HEARTBEAT_STALE_MINUTES } from '../utils/rtuHealth';
 
 const OPEN_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
-const OFFLINE_THRESHOLD_MINUTES = 15;
 const TEMPERATURE_WARNING_C = 40;
 const TEMPERATURE_CRITICAL_C = 45;
 const ATTENUATION_WARNING_DB = 15;
@@ -72,7 +72,7 @@ export class AlarmDetectionService {
     if (
       rtu.status === 'offline' ||
       rtu.status === 'unreachable' ||
-      minutesSinceLastSeen > OFFLINE_THRESHOLD_MINUTES
+      minutesSinceLastSeen > HEARTBEAT_STALE_MINUTES
     ) {
       await this.createAlarm({
         rtuId: rtu.id,

@@ -1,4 +1,4 @@
-export type DemoRTUStatus = 'online' | 'offline' | 'warning' | 'unreachable';
+export type DemoRTUStatus = 'online' | 'offline' |'unreachable';
 export type DemoPowerStatus = 'normal' | 'failure';
 export type DemoOtdrStatus = 'ready' | 'busy' | 'fault';
 export type DemoFibreStatus = 'normal' | 'degraded' | 'broken';
@@ -23,7 +23,8 @@ export interface DemoRTU {
 
 export interface DemoFibre {
   id: number;
-  rtuId: number;
+  fromRtuId: number;
+  toRtuId: number;
   name: string;
   length: number;
   status: DemoFibreStatus;
@@ -61,6 +62,8 @@ export interface DemoFiberRoute {
   routeName: string;
   source: string;
   destination: string;
+  sourceRtuId?: number;
+  destinationRtuId?: number;
   fiberStatus: 'normal' | 'degraded' | 'broken';
   routeStatus: 'active' | 'inactive' | 'skipped';
   lengthKm: number;
@@ -81,17 +84,6 @@ export interface DemoOtdrTest {
   result: 'pass' | 'fail';
   testedAt: string;
 }
-
-const FIBRE_OFFSETS: DemoRoutePathPoint[] = [
-  [0.0, 0.018],
-  [0.014, 0.012],
-  [0.018, 0.0],
-  [0.014, -0.012],
-  [0.0, -0.018],
-  [-0.014, -0.012],
-  [-0.018, 0.0],
-  [-0.014, 0.012],
-];
 
 export const demoRtus: DemoRTU[] = [
   {
@@ -116,7 +108,7 @@ export const demoRtus: DemoRTU[] = [
     locationLongitude: 10.636,
     ipAddress: '10.60.1.12',
     serialNumber: 'NQMS-RTU-TN-0002',
-    status: 'warning',
+    status: 'online',
     power: 'normal',
     temperature: 39,
     otdrStatus: 'busy',
@@ -181,18 +173,18 @@ export const demoRtus: DemoRTU[] = [
 ];
 
 export const demoFibres: DemoFibre[] = [
-  { id: 1, rtuId: 1, name: 'F1', length: 24.5, status: 'normal' },
-  { id: 2, rtuId: 1, name: 'F2', length: 18.2, status: 'degraded' },
-  { id: 3, rtuId: 1, name: 'F3', length: 35.1, status: 'normal' },
-  { id: 4, rtuId: 2, name: 'F1', length: 14.8, status: 'degraded' },
-  { id: 5, rtuId: 2, name: 'F2', length: 9.6, status: 'normal' },
-  { id: 6, rtuId: 3, name: 'F1', length: 27.3, status: 'normal' },
-  { id: 7, rtuId: 3, name: 'F2', length: 19.4, status: 'broken' },
-  { id: 8, rtuId: 4, name: 'F1', length: 16.1, status: 'broken' },
-  { id: 9, rtuId: 4, name: 'F2', length: 13.5, status: 'degraded' },
-  { id: 10, rtuId: 5, name: 'F1', length: 21.7, status: 'degraded' },
-  { id: 11, rtuId: 6, name: 'F1', length: 11.4, status: 'normal' },
-  { id: 12, rtuId: 6, name: 'F2', length: 15.2, status: 'normal' },
+  { id: 1, fromRtuId: 1, toRtuId: 6, name: 'F1', length: 24.5, status: 'normal' },
+  { id: 2, fromRtuId: 1, toRtuId: 2, name: 'F2', length: 18.2, status: 'degraded' },
+  { id: 3, fromRtuId: 1, toRtuId: 5, name: 'F3', length: 35.1, status: 'normal' },
+  { id: 4, fromRtuId: 2, toRtuId: 1, name: 'F1', length: 14.8, status: 'degraded' },
+  { id: 5, fromRtuId: 2, toRtuId: 3, name: 'F2', length: 9.6, status: 'normal' },
+  { id: 6, fromRtuId: 3, toRtuId: 2, name: 'F1', length: 27.3, status: 'normal' },
+  { id: 7, fromRtuId: 3, toRtuId: 4, name: 'F2', length: 19.4, status: 'broken' },
+  { id: 8, fromRtuId: 4, toRtuId: 3, name: 'F1', length: 16.1, status: 'broken' },
+  { id: 9, fromRtuId: 4, toRtuId: 5, name: 'F2', length: 13.5, status: 'degraded' },
+  { id: 10, fromRtuId: 5, toRtuId: 4, name: 'F1', length: 21.7, status: 'degraded' },
+  { id: 11, fromRtuId: 6, toRtuId: 1, name: 'F1', length: 11.4, status: 'normal' },
+  { id: 12, fromRtuId: 6, toRtuId: 2, name: 'F2', length: 15.2, status: 'normal' },
 ];
 
 export const demoMeasurements: DemoMeasurement[] = [
@@ -233,14 +225,16 @@ const latestMeasurementByFibre = new Map<number, DemoMeasurement>(
     .map((measurement) => [measurement.fibreId, measurement])
 );
 
-const buildFibrePath = (rtu: DemoRTU, fibreName: string): DemoRoutePathPoint[] => {
-  const fibreIndex = Math.max(0, Number(fibreName.replace(/\D+/g, '')) - 1) % FIBRE_OFFSETS.length;
-  const [latOffset, lonOffset] = FIBRE_OFFSETS[fibreIndex];
-  return [
-    [rtu.locationLatitude, rtu.locationLongitude],
-    [Number((rtu.locationLatitude + latOffset).toFixed(6)), Number((rtu.locationLongitude + lonOffset).toFixed(6))],
-  ];
-};
+const buildFibrePath = (source: DemoRTU, destination: DemoRTU): DemoRoutePathPoint[] => [
+  [
+    Number(source.locationLatitude.toFixed(6)),
+    Number(source.locationLongitude.toFixed(6)),
+  ],
+  [
+    Number(destination.locationLatitude.toFixed(6)),
+    Number(destination.locationLongitude.toFixed(6)),
+  ],
+];
 
 const toRouteStatus = (status: DemoFibreStatus): 'active' | 'inactive' | 'skipped' => {
   if (status === 'broken') {
@@ -273,25 +267,32 @@ const getMode = (measurement: DemoMeasurement): 'auto' | 'manual' | 'scheduled' 
 };
 
 export const demoFiberRoutes: DemoFiberRoute[] = demoFibres.map((fibre) => {
-  const rtu = demoRtus.find((item) => item.id === fibre.rtuId);
+  const rtu = demoRtus.find((item) => item.id === fibre.fromRtuId);
   const latestMeasurement = latestMeasurementByFibre.get(fibre.id);
+  const destinationRtu = demoRtus.find((item) => item.id === fibre.toRtuId);
 
   if (!rtu) {
     throw new Error(`RTU not found for fibre ${fibre.id}`);
   }
 
+  if (!destinationRtu) {
+    throw new Error(`Destination RTU not found for fibre ${fibre.id}`);
+  }
+
   return {
     id: fibre.id,
-    routeName: `${rtu.name}-${fibre.name}`,
-    source: rtu.locationAddress,
-    destination: `Fibre ${fibre.name}`,
+    routeName: `${rtu.name} -> ${destinationRtu.name} (${fibre.name})`,
+    source: rtu.name,
+    destination: destinationRtu.name,
+    sourceRtuId: rtu.id,
+    destinationRtuId: destinationRtu.id,
     fiberStatus: fibre.status,
     routeStatus: toRouteStatus(fibre.status),
     lengthKm: fibre.length,
     attenuationDb: latestMeasurement?.attenuation ?? 0,
     reflectionEvents: latestMeasurement?.testResult === 'fail',
     lastTestTime: latestMeasurement?.timestamp || rtu.lastSeen,
-    path: buildFibrePath(rtu, fibre.name),
+    path: buildFibrePath(rtu, destinationRtu),
   };
 });
 
@@ -303,7 +304,7 @@ export const demoOtdrTests: DemoOtdrTest[] = demoMeasurements.map((measurement) 
 
   return {
     id: measurement.id,
-    rtuId: fibre.rtuId,
+    rtuId: fibre.fromRtuId,
     routeId: fibre.id,
     mode: getMode(measurement),
     pulseWidth: getPulseWidth(fibre.length),
@@ -316,7 +317,7 @@ export const demoOtdrTests: DemoOtdrTest[] = demoMeasurements.map((measurement) 
 
 export const demoAlarms = demoFibreAlarms.map((alarm) => {
   const fibre = demoFibres.find((item) => item.id === alarm.fibreId);
-  const rtu = fibre ? demoRtus.find((item) => item.id === fibre.rtuId) : undefined;
+  const rtu = fibre ? demoRtus.find((item) => item.id === fibre.fromRtuId) : undefined;
 
   if (!fibre || !rtu) {
     throw new Error(`Fibre or RTU not found for alarm ${alarm.id}`);

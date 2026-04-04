@@ -108,3 +108,85 @@ code {
     animation: none;
   }
 }
+
+.leaflet-tooltip.rtu-route-tooltip {
+  background: rgba(10, 16, 31, 0.96);
+  border: 1px solid rgba(124, 223, 255, 0.24);
+  color: #eef4ff;
+  border-radius: 14px;
+  box-shadow: 0 18px 34px rgba(4, 9, 20, 0.38);
+  padding: 10px 12px;
+  backdrop-filter: blur(10px);
+}
+
+.leaflet-tooltip.rtu-route-tooltip::before {
+  border-top-color: rgba(10, 16, 31, 0.96);
+}
+
+.leaflet-popup.rtu-route-popup .leaflet-popup-content-wrapper {
+  background: linear-gradient(180deg, rgba(11, 16, 31, 0.98), rgba(8, 12, 24, 0.96));
+  color: #eef4ff;
+  border-radius: 18px;
+  border: 1px solid rgba(124, 223, 255, 0.2);
+  box-shadow: 0 28px 50px rgba(4, 9, 20, 0.44);
+  backdrop-filter: blur(14px);
+}
+
+.leaflet-popup.rtu-route-popup .leaflet-popup-content {
+  margin: 0;
+}
+
+.leaflet-popup.rtu-route-popup .leaflet-popup-tip {
+  background: rgba(11, 16, 31, 0.96);
+}
+
+.leaflet-popup.rtu-route-popup .leaflet-popup-close-button {
+  color: rgba(238, 244, 255, 0.76);
+}
+
+.rtu-route-flow {
+  will-change: stroke-dashoffset, opacity;
+  animation: rtu-route-dash 18s linear infinite;
+}
+
+.rtu-route-hit-area {
+  cursor: pointer;
+}
+
+.rtu-route-flow--backbone {
+  animation-duration: 20s;
+}
+
+.rtu-route-flow--fiber {
+  animation-duration: 14s;
+}
+
+.rtu-route-flow--degraded {
+  animation-duration: 9s;
+}
+
+.rtu-route-flow--broken {
+  animation: rtu-route-dash 6.5s linear infinite, rtu-route-blink 1.15s ease-in-out infinite;
+}
+
+@keyframes rtu-route-dash {
+  to {
+    stroke-dashoffset: -1200;
+  }
+}
+
+@keyframes rtu-route-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rtu-route-flow {
+    animation: none;
+  }
+}

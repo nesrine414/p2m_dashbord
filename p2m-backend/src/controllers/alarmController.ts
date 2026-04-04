@@ -5,6 +5,8 @@ import { Alarm, Fibre, RTU } from '../models';
 import { demoAlarms, demoFibres, demoRtus } from '../data/demoData';
 import { emitEvent } from '../utils/websocket';
 
+const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
+
 const mapDemoAlarm = (alarm: (typeof demoAlarms)[number]) => {
   const rtu = demoRtus.find((item) => item.id === alarm.rtuId);
 
@@ -321,6 +323,6 @@ export const getActiveCriticalAlarms = async (): Promise<number> =>
   Alarm.count({
     where: {
       severity: 'critical',
-      lifecycleStatus: { [Op.ne]: 'cleared' },
+      lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES },
     },
   });

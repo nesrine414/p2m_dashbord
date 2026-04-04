@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -22,7 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { HubOutlined, RouteOutlined } from '@mui/icons-material';
+import { RouteOutlined } from '@mui/icons-material';
 import StatusBadge from '../components/common/StatusBadge';
 import {
   AlarmLifecycleStatus,
@@ -41,6 +41,7 @@ import {
   getRTUs,
   getTopology,
 } from '../services/api';
+import { normalizeRtuStatus } from '../utils/rtuStatus';
 
 const PIE_COLORS = ['#4caf50', '#ff9800', '#ef4444', '#b43bf2'];
 const VENDORS = ['EXFO', 'Viavi', 'Yokogawa', 'Anritsu'];
@@ -195,7 +196,7 @@ const getRoutePriority = (route: BackendFiberRoute): number => {
 };
 
 const toInventoryRecord = (item: BackendRTU, activeAlarms: number): RtuInventoryRecord => {
-  const status = item.status as RTUStatus;
+  const status = normalizeRtuStatus(item.status);
   const isDisconnected = status === RTUStatus.OFFLINE || status === RTUStatus.UNREACHABLE;
   const temperature = item.temperature ?? 0;
 
@@ -205,19 +206,13 @@ const toInventoryRecord = (item: BackendRTU, activeAlarms: number): RtuInventory
     ? CommunicationStatus.DISCONNECTED
     : CommunicationStatus.CONNECTED;
   const otdrAvailability =
-    status === RTUStatus.ONLINE
-      ? OtdrAvailabilityStatus.READY
-      : status === RTUStatus.WARNING
-        ? OtdrAvailabilityStatus.BUSY
-        : OtdrAvailabilityStatus.FAULT;
+    status === RTUStatus.ONLINE ? OtdrAvailabilityStatus.READY : OtdrAvailabilityStatus.FAULT;
 
   const uptimePercent = isDisconnected
     ? status === RTUStatus.UNREACHABLE
       ? 82.4
       : 87.2
-    : status === RTUStatus.WARNING
-      ? 95.8
-      : 99.3;
+    : 99.3;
 
   const opticalBudgetDb = isDisconnected
     ? 0
@@ -252,7 +247,6 @@ const RTUInventoryPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RTUStatus>('all');
   const [zone, setZone] = useState<'all' | string>('all');
-  const routesSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -491,7 +485,6 @@ const RTUInventoryPage: React.FC = () => {
 
   const summary = useMemo(() => {
     const online = records.filter((item) => item.status === RTUStatus.ONLINE).length;
-    const warning = records.filter((item) => item.status === RTUStatus.WARNING).length;
     const offline = records.filter((item) => item.status === RTUStatus.OFFLINE).length;
     const unreachable = records.filter((item) => item.status === RTUStatus.UNREACHABLE).length;
     const avgTemp =
@@ -502,7 +495,6 @@ const RTUInventoryPage: React.FC = () => {
     return {
       total: records.length,
       online,
-      warning,
       offline,
       unreachable,
       avgTemp: avgTemp.toFixed(1),
@@ -511,7 +503,6 @@ const RTUInventoryPage: React.FC = () => {
 
   const statusDistribution = [
     { name: 'En ligne', value: summary.online },
-    { name: 'Avertissement', value: summary.warning },
     { name: 'Hors ligne', value: summary.offline },
     { name: 'Injoignable', value: summary.unreachable },
   ];
@@ -526,9 +517,6 @@ const RTUInventoryPage: React.FC = () => {
 
   const handleSelectRtu = (rtuId: number) => {
     setSelectedRtuId(rtuId);
-    window.requestAnimationFrame(() => {
-      routesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
   };
 
   return (
@@ -544,9 +532,7 @@ const RTUInventoryPage: React.FC = () => {
           <Typography variant="h4" fontWeight={800} color="white">
             Inventaire RTU
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Les RTU affiches ici sont les noeuds GPS reels. Cliquez sur une RTU pour voir ses routes optiques.
-          </Typography>
+          
         </Box>
       </Stack>
 
@@ -569,7 +555,7 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#252d42', border: '1px solid #445069' }}>
             <Typography variant="caption" color="text.secondary">
-              RTU GPS total
+              RTU total
             </Typography>
             <Typography variant="h4" fontWeight={700} color="white">
               {summary.total}
@@ -589,20 +575,20 @@ const RTUInventoryPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3b3126', border: '1px solid #7a6442' }}>
             <Typography variant="caption" color="text.secondary">
-              Avertissement
+              Hors ligne
             </Typography>
             <Typography variant="h4" fontWeight={700} color="#ffb96b">
-              {summary.warning}
+              {summary.offline}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
           <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3a2b31', border: '1px solid #77525b' }}>
             <Typography variant="caption" color="text.secondary">
-              Hors ligne + injoignables
+              Injoignables
             </Typography>
             <Typography variant="h4" fontWeight={700} color="#ff9fa9">
-              {summary.offline + summary.unreachable}
+              {summary.unreachable}
             </Typography>
           </Paper>
         </Grid>
@@ -632,7 +618,6 @@ const RTUInventoryPage: React.FC = () => {
             <Select label="Statut" value={status} onChange={handleStatusChange}>
               <MenuItem value="all">Tous</MenuItem>
               <MenuItem value={RTUStatus.ONLINE}>En ligne</MenuItem>
-              <MenuItem value={RTUStatus.WARNING}>Avertissement</MenuItem>
               <MenuItem value={RTUStatus.OFFLINE}>Hors ligne</MenuItem>
               <MenuItem value={RTUStatus.UNREACHABLE}>Injoignable</MenuItem>
             </Select>
@@ -756,48 +741,12 @@ const RTUInventoryPage: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-                <HubOutlined sx={{ color: '#7dc3ff' }} />
-                <Typography variant="h6" color="white">
-                  RTU selectionnee
-                </Typography>
-              </Stack>
-              {selectedRecord ? (
-                <Stack spacing={1.1}>
-                  <Typography variant="body1" color="white" fontWeight={700}>
-                    {selectedRecord.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Zone: {selectedRecord.zone}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    IP: {selectedRecord.ipAddress}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Fournisseur: {selectedRecord.vendor}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Alarmes actives: {selectedRecord.activeAlarms}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Routes optiques associees: {relatedRoutes.length}
-                  </Typography>
-                </Stack>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Selectionnez une RTU dans le tableau.
-                </Typography>
-              )}
-            </Paper>
+            
           </Stack>
         </Grid>
       </Grid>
 
-      <Paper
-        ref={routesSectionRef}
-        sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}
-      >
+      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
           <RouteOutlined sx={{ color: '#8fd3ff' }} />
           <Typography variant="h6" color="white">

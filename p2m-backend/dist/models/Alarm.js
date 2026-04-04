@@ -18,6 +18,11 @@ Alarm.init({
         allowNull: true,
         field: 'rtu_id',
     },
+    fibreId: {
+        type: sequelize_1.DataTypes.INTEGER,
+        allowNull: true,
+        field: 'fibre_id',
+    },
     routeId: {
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: true,

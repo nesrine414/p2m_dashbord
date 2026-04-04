@@ -19,8 +19,34 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const PORT = Number(process.env.PORT || 5000);
+const configuredFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const resetDemoDataOnBoot = process.env.RESET_DEMO_DATA_ON_BOOT === 'true' ||
+    (process.env.NODE_ENV === 'development' && process.env.RESET_DEMO_DATA_ON_BOOT !== 'false');
+const isAllowedDevOrigin = (origin) => {
+    try {
+        const { hostname, protocol } = new URL(origin);
+        if (protocol !== 'http:' && protocol !== 'https:') {
+            return false;
+        }
+        return (hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '::1' ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('10.') ||
+            hostname.startsWith('172.'));
+    }
+    catch {
+        return false;
+    }
+};
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin || origin === configuredFrontendUrl || isAllowedDevOrigin(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
 }));
 app.use(express_1.default.json());
@@ -106,48 +132,70 @@ const seedDefaultData = async () => {
         });
         console.log('Seeded default admin user (admin / Admin@1234)');
     }
-    for (const rtu of demoData_1.demoRtus) {
-        await models_1.RTU.upsert({
-            id: rtu.id,
-            name: rtu.name,
-            locationLatitude: rtu.locationLatitude,
-            locationLongitude: rtu.locationLongitude,
-            locationAddress: rtu.locationAddress,
-            ipAddress: rtu.ipAddress,
-            serialNumber: rtu.serialNumber,
-            status: rtu.status,
-            temperature: rtu.temperature,
-            attenuationDb: undefined,
-            installationDate: undefined,
-            lastSeen: new Date(rtu.lastSeen),
-            userId: undefined,
-        });
+    if (resetDemoDataOnBoot) {
+        await models_1.Alarm.destroy({ where: {} });
+        await models_1.Measurement.destroy({ where: {} });
+        await models_1.Performance.destroy({ where: {} });
+        await models_1.OtdrTestResult.destroy({ where: {} });
+        await models_1.FiberRoute.destroy({ where: {} });
+        await models_1.HealthScore.destroy({ where: {} });
+        await models_1.Prediction.destroy({ where: {} });
+        await models_1.Fibre.destroy({ where: {} });
+        await models_1.RTU.destroy({ where: {} });
+        console.log('Reset demo operational data on boot');
     }
+    await models_1.RTU.bulkCreate(demoData_1.demoRtus.map((rtu) => ({
+        id: rtu.id,
+        name: rtu.name,
+        locationLatitude: rtu.locationLatitude,
+        locationLongitude: rtu.locationLongitude,
+        locationAddress: rtu.locationAddress,
+        ipAddress: rtu.ipAddress,
+        serialNumber: rtu.serialNumber,
+        status: rtu.status,
+        power: rtu.power,
+        temperature: rtu.temperature,
+        otdrStatus: rtu.otdrStatus,
+        attenuationDb: undefined,
+        installationDate: undefined,
+        lastSeen: new Date(rtu.lastSeen),
+        userId: undefined,
+    })), { ignoreDuplicates: false });
     console.log('Synced Tunisia RTU demo inventory');
-    const fiberRouteCount = await models_1.FiberRoute.count();
-    if (fiberRouteCount < demoData_1.demoFiberRoutes.length) {
-        await models_1.FiberRoute.bulkCreate(demoData_1.demoFiberRoutes.map(({ path: _path, ...route }) => ({
-            ...route,
-            lastTestTime: new Date(route.lastTestTime),
-        })), { ignoreDuplicates: true });
-        console.log('Seeded Tunisia fiber route demo data');
-    }
-    const alarmCount = await models_1.Alarm.count();
-    if (alarmCount === 0) {
-        await models_1.Alarm.bulkCreate(demoData_1.demoAlarms.map((alarm) => ({
-            ...alarm,
-            occurredAt: new Date(alarm.occurredAt),
-        })));
-        console.log('Seeded alarm demo data');
-    }
-    const otdrCount = await models_1.OtdrTestResult.count();
-    if (otdrCount === 0) {
-        await models_1.OtdrTestResult.bulkCreate(demoData_1.demoOtdrTests.map((test) => ({
-            ...test,
-            testedAt: new Date(test.testedAt),
-        })));
-        console.log('Seeded OTDR demo data');
-    }
+    await models_1.Fibre.bulkCreate(demoData_1.demoFibres, { ignoreDuplicates: false });
+    console.log('Seeded fibre demo data');
+    await models_1.Measurement.bulkCreate(demoData_1.demoMeasurements.map((measurement) => ({
+        id: measurement.id,
+        fibreId: measurement.fibreId,
+        attenuation: measurement.attenuation,
+        testResult: measurement.testResult,
+        wavelength: measurement.wavelength,
+        timestamp: new Date(measurement.timestamp),
+    })), { ignoreDuplicates: false });
+    console.log('Seeded measurement demo data');
+    await models_1.Performance.bulkCreate(demoData_1.demoPerformances.map((item) => ({
+        id: item.id,
+        fibreId: item.fibreId,
+        mttr: item.mttr,
+        mtbf: item.mtbf,
+        recordedAt: new Date(item.recordedAt),
+    })), { ignoreDuplicates: false });
+    console.log('Seeded performance demo data');
+    await models_1.FiberRoute.bulkCreate(demoData_1.demoFiberRoutes.map(({ path: _path, ...route }) => ({
+        ...route,
+        lastTestTime: new Date(route.lastTestTime),
+    })), { ignoreDuplicates: false });
+    console.log('Seeded Tunisia fiber route demo data');
+    await models_1.Alarm.bulkCreate(demoData_1.demoAlarms.map((alarm) => ({
+        ...alarm,
+        occurredAt: new Date(alarm.occurredAt),
+    })));
+    console.log('Seeded alarm demo data');
+    await models_1.OtdrTestResult.bulkCreate(demoData_1.demoOtdrTests.map((test) => ({
+        ...test,
+        testedAt: new Date(test.testedAt),
+    })));
+    console.log('Seeded OTDR demo data');
 };
 const startServer = async () => {
     try {
@@ -160,7 +208,7 @@ const startServer = async () => {
         (0, cronJobs_1.startAlarmDetection)();
         console.log(`\nServer started on http://localhost:${PORT}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+        console.log(`CORS enabled for: ${configuredFrontendUrl} + local dev origins`);
         console.log(`WebSocket ready on ws://localhost:${PORT}\n`);
     }
     catch (error) {

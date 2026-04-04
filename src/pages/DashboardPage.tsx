@@ -36,6 +36,7 @@ import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsT
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
 import RTUCardsWidget, { RTUCard } from '../components/widgets/RTUCardsWidget';
 import { ROUTE_PATHS } from '../constants/routes';
+import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {
   BackendAlarm,
   BackendFiberRoute,
@@ -77,38 +78,32 @@ const buildAttenuationSeries = (routes: BackendFiberRoute[]): AttenuationSeriesP
 };
 
 const getRtuAvailabilityEstimate = (rtu: BackendRTU): number => {
-  const statusBase: Record<BackendRTU['status'], number> = {
-    online: 99.4,
-    warning: 87.2,
-    offline: 18.5,
-    unreachable: 12.5,
-  };
+  const status = normalizeRtuStatus(rtu.status);
 
   const temperature = typeof rtu.temperature === 'number' ? rtu.temperature : 0;
   const penalty = temperature > 38 ? (temperature - 38) * 0.45 : 0;
+  const base = status === RTUStatus.ONLINE ? 99.4 : status === RTUStatus.OFFLINE ? 18.5 : 12.5;
 
-  return Number(Math.max(0, statusBase[rtu.status] - penalty).toFixed(1));
+  return Number(Math.max(0, base - penalty).toFixed(1));
 };
 
 const toDashboardRtuCard = (rtu: BackendRTU): RTUCard => ({
   id: rtu.id,
   name: rtu.name,
   location: rtu.locationAddress || 'Localisation inconnue',
-  status: rtu.status as RTUStatus,
+  status: normalizeRtuStatus(rtu.status),
   temperature: typeof rtu.temperature === 'number' ? rtu.temperature : 0,
   availabilityPercent: getRtuAvailabilityEstimate(rtu),
 });
 
 const getStatusPriority = (status: BackendRTU['status']): number => {
-  switch (status) {
-    case 'offline':
+  switch (normalizeRtuStatus(status)) {
+    case RTUStatus.OFFLINE:
       return 0;
-    case 'unreachable':
+    case RTUStatus.UNREACHABLE:
       return 1;
-    case 'warning':
-      return 2;
     default:
-      return 3;
+      return 2;
   }
 };
 
@@ -304,9 +299,8 @@ const DashboardPage: React.FC = () => {
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="0/6 RTU actives"
+            title="RTU EN LIGNE"
             value={`${summary.online}/${summary.totalRtus}`}
-            subtitle={`${summary.offline} hors ligne - ${summary.injoignables} injoignables`}
             icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
             color="#6aa884"
           />
@@ -322,7 +316,7 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="FIBRES CASSÉES"
+            title="FIBRES COUPEES"
             value={summary.brokenFibers}
             subtitle="Routes à corriger"
             icon={<RouterOutlined sx={{ color: 'white', fontSize: 30 }} />}
@@ -345,87 +339,41 @@ const DashboardPage: React.FC = () => {
           <WidgetCard
             title="MTTR (temps de réparation)"
             value={`${(stats?.mttr || 0).toFixed(1)}h`}
-            subtitle="Calculé à partir des alarmes clôturées"
             icon={<AccessTime sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
             color="#667eea"
-            trend={{ value: mttrTrend, isPositive: (stats?.mttr || 0) <= mttrTarget }}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="MTBF (estimé)"
             value={`${estimatedMtbfHours.toFixed(1)}h`}
-            subtitle="Dérivé de la densité de pannes"
             icon={<Timeline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
             color="#11998e"
-            trend={{ value: mtbfTrend, isPositive: estimatedMtbfHours >= mtbfTarget }}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="ATTÉNUATION MOYENNE"
             value={`${averageAttenuation.toFixed(1)} dB`}
-            subtitle={`Cible : <${attenuationTarget.toFixed(1)} dB`}
             icon={<TrendingDown sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
             color="#f093fb"
-            trend={{ value: attenuationTrend, isPositive: averageAttenuation <= attenuationTarget }}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="DISPONIBILITÉ RÉSEAU"
             value={`${summary.availability.toFixed(1)}%`}
-            subtitle={`Cible : >${availabilityTarget.toFixed(1)}%`}
             icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
             color="#11998e"
-            trend={{ value: availabilityTrend, isPositive: summary.availability >= availabilityTarget }}
           />
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5} mb={2}>
-          <Box>
-            <Typography variant="h6" color="white">
-              Tendance d'atténuation (30 jours)
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Suivi des variations sur les routes principales.
-            </Typography>
-          </Box>
-          <Typography variant="caption" color="#8fb3d1">
-            4 dernières semaines
-          </Typography>
-        </Stack>
-        <Box sx={{ width: '100%', height: 260 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={attenuationSeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
-              <XAxis dataKey="slot" stroke="#9aa9bd" />
-              <YAxis stroke="#9aa9bd" />
-              <Tooltip />
-              <ReferenceArea x1="14:00" x2="15:00" fill="rgba(140, 96, 255, 0.16)" />
-              <ReferenceLine
-                y={18}
-                stroke="#ff4d6d"
-                strokeDasharray="6 6"
-                label={{ value: 'Seuil critique 18 dB', position: 'right', fill: '#ff4d6d', fontSize: 12 }}
-              />
-              <Legend
-                iconType="circle"
-                wrapperStyle={{ color: '#e2ecff', fontWeight: 600 }}
-              />
-              <Line type="monotone" dataKey="backboneNorth" name="Noyau Nord" stroke="#76d6ff" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="backboneSouth" name="Noyau Sud" stroke="#f8b26a" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="metroRing" name="Anneau métropolitain" stroke="#b28bff" strokeWidth={2.5} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Box>
-      </Paper>
+      
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 7 }}>
@@ -436,44 +384,7 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} mb={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#252f44', border: '1px solid #4e6480' }}>
-            <Typography variant="h6" color="white" mb={1}>
-              Vue 2 - Réseau
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              Topologie optique, atténuation par route et derniers tests OTDR.
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button component={RouterLink} to={ROUTE_PATHS.monitoring} variant="contained">
-                Ouvrir la supervision
-              </Button>
-              <Button component={RouterLink} to={ROUTE_PATHS.rtu} variant="outlined">
-                Ouvrir les RTU
-              </Button>
-            </Stack>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#2b2f46', border: '1px solid #676c95' }}>
-            <Typography variant="h6" color="white" mb={1}>
-              Vue 3 - Qualité et historique
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              Tendances, KPI qualité, rapports périodiques et suivi des incidents.
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button component={RouterLink} to={ROUTE_PATHS.reports} variant="contained" color="secondary">
-                Ouvrir les rapports
-              </Button>
-              <Button component={RouterLink} to={ROUTE_PATHS.aiDashboard} variant="outlined">
-                Ouvrir l'IA
-              </Button>
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
+      
 
       <RTUCardsWidget rtus={dashboardRtus} />
 

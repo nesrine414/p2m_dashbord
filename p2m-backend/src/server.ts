@@ -206,7 +206,16 @@ const seedDefaultData = async (): Promise<void> => {
   );
   console.log('Synced Tunisia RTU demo inventory');
 
-  await Fibre.bulkCreate(demoFibres, { ignoreDuplicates: false });
+  await Fibre.bulkCreate(
+    demoFibres.map((fibre) => ({
+      id: fibre.id,
+      rtuId: fibre.fromRtuId,
+      name: fibre.name,
+      length: fibre.length,
+      status: fibre.status,
+    })),
+    { ignoreDuplicates: false }
+  );
   console.log('Seeded fibre demo data');
 
   await Measurement.bulkCreate(

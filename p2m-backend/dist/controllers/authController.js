@@ -7,6 +7,7 @@ exports.me = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sequelize_1 = require("sequelize");
+const sequelize_2 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
 const signToken = (user) => jsonwebtoken_1.default.sign(user, process.env.JWT_SECRET || 'fallback_secret', {
@@ -40,6 +41,11 @@ const register = async (req, res) => {
             res.status(409).json({ error: 'username already exists' });
             return;
         }
+        const existingEmail = await models_1.User.findOne({ where: { email } });
+        if (existingEmail) {
+            res.status(409).json({ error: 'email already exists' });
+            return;
+        }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const createdUser = await models_1.User.create({
             username: finalUsername,
@@ -66,6 +72,16 @@ const register = async (req, res) => {
         });
     }
     catch (error) {
+        if (error instanceof sequelize_1.UniqueConstraintError) {
+            const field = error.errors[0]?.path || 'field';
+            res.status(409).json({ error: `${field} already exists` });
+            return;
+        }
+        if (error instanceof sequelize_1.ValidationError) {
+            const message = error.errors[0]?.message || 'Validation failed';
+            res.status(400).json({ error: message });
+            return;
+        }
         res.status(500).json({ error: 'Failed to register user' });
     }
 };
@@ -84,7 +100,7 @@ const login = async (req, res) => {
         }
         const user = await models_1.User.findOne({
             where: {
-                [sequelize_1.Op.or]: [{ username: identifier }, { email: identifier }, { phone: identifier }],
+                [sequelize_2.Op.or]: [{ username: identifier }, { email: identifier }, { phone: identifier }],
             },
         });
         if (!user) {

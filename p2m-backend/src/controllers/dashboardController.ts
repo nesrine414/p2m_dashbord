@@ -4,18 +4,25 @@ import { databaseState } from '../config/database';
 import { Alarm, Fibre, Measurement, RTU } from '../models';
 import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from '../data/demoData';
 
-const FIBRE_OFFSETS: Array<[number, number]> = [
-  [0.0, 0.018],
-  [0.014, 0.012],
-  [0.018, 0.0],
-  [0.014, -0.012],
-  [0.0, -0.018],
-  [-0.014, -0.012],
-  [-0.018, 0.0],
-  [-0.014, 0.012],
-];
+const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
+const RESOLVED_ALARM_LIFECYCLE_STATUSES = ['resolved', 'closed', 'cleared'] as const;
 
-const buildRouteName = (rtuName: string, fibreName: string): string => `${rtuName}-${fibreName}`;
+const ROUTE_TARGETS_BY_SOURCE: Record<number, number[]> = {
+  1: [6, 2, 5],
+  2: [1, 3],
+  3: [2, 4],
+  4: [3, 5],
+  5: [4],
+  6: [1, 2],
+};
+
+const buildRouteName = (sourceName: string, destinationName: string, fibreName?: string): string => {
+  if (fibreName) {
+    return `${sourceName} -> ${destinationName} (${fibreName})`;
+  }
+
+  return `${sourceName}-${destinationName}`;
+};
 
 const buildRouteStatus = (status: string): 'active' | 'inactive' | 'skipped' => {
   if (status === 'broken') {
@@ -27,6 +34,39 @@ const buildRouteStatus = (status: string): 'active' | 'inactive' | 'skipped' => 
   }
 
   return 'active';
+};
+
+const pickDestinationRtuId = (
+  sourceRtuId: number,
+  fibreName: string,
+  availableRtuIds: number[]
+): number | null => {
+  const fiberOrdinal = Math.max(1, Number((fibreName || '').replace(/\D+/g, '')) || 1);
+  const configuredTargets = ROUTE_TARGETS_BY_SOURCE[sourceRtuId] || [];
+  const configuredTargetId =
+    configuredTargets.length > 0 ? configuredTargets[(fiberOrdinal - 1) % configuredTargets.length] : undefined;
+
+  if (configuredTargetId && configuredTargetId !== sourceRtuId && availableRtuIds.includes(configuredTargetId)) {
+    return configuredTargetId;
+  }
+
+  if (availableRtuIds.length === 0) {
+    return null;
+  }
+
+  const sourceIndex = availableRtuIds.indexOf(sourceRtuId);
+  const fallbackIndex = sourceIndex >= 0 ? sourceIndex : 0;
+  let candidate = availableRtuIds[(fallbackIndex + fiberOrdinal) % availableRtuIds.length];
+
+  if (candidate === sourceRtuId) {
+    candidate = availableRtuIds[(fallbackIndex + fiberOrdinal + 1) % availableRtuIds.length];
+  }
+
+  if (candidate === sourceRtuId) {
+    return null;
+  }
+
+  return candidate;
 };
 
 const buildPulseWidth = (length?: number | null): string => {
@@ -57,27 +97,38 @@ const buildMeasurementMode = (result: string, wavelength: number): 'auto' | 'man
   return 'auto';
 };
 
-const buildFibrePath = (latitude?: number | string | null, longitude?: number | string | null, fibreName?: string) => {
-  const lat = Number(latitude);
-  const lon = Number(longitude);
+const buildFibrePath = (
+  sourceLatitude?: number | string | null,
+  sourceLongitude?: number | string | null,
+  destinationLatitude?: number | string | null,
+  destinationLongitude?: number | string | null
+) => {
+  const sourceLat = Number(sourceLatitude);
+  const sourceLon = Number(sourceLongitude);
+  const destLat = Number(destinationLatitude);
+  const destLon = Number(destinationLongitude);
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+  if (
+    !Number.isFinite(sourceLat) ||
+    !Number.isFinite(sourceLon) ||
+    !Number.isFinite(destLat) ||
+    !Number.isFinite(destLon)
+  ) {
     return null;
   }
 
-  const fibreIndex = Math.max(0, Number((fibreName || '').replace(/\D+/g, '')) - 1) % FIBRE_OFFSETS.length;
-  const [latOffset, lonOffset] = FIBRE_OFFSETS[fibreIndex];
-
   return [
-    [lat, lon],
-    [Number((lat + latOffset).toFixed(6)), Number((lon + lonOffset).toFixed(6))],
+    [Number(sourceLat.toFixed(6)), Number(sourceLon.toFixed(6))],
+    [Number(destLat.toFixed(6)), Number(destLon.toFixed(6))],
   ];
 };
 
 const calculateMTTR = async (): Promise<number> => {
   const resolvedAlarms = await Alarm.findAll({
     where: {
-      lifecycleStatus: 'cleared',
+      lifecycleStatus: {
+        [Op.in]: RESOLVED_ALARM_LIFECYCLE_STATUSES,
+      },
     },
   });
 
@@ -101,18 +152,24 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
     if (!databaseState.connected) {
       const rtuOnline = demoRtus.filter((item) => item.status === 'online').length;
       const rtuOffline = demoRtus.filter((item) => item.status === 'offline').length;
-      const rtuWarning = demoRtus.filter((item) => item.status === 'warning').length;
       const rtuUnreachable = demoRtus.filter((item) => item.status === 'unreachable').length;
+      const rtuWarning = 0;
+      const rtuTotal = demoRtus.length;
       const criticalAlarms = demoAlarms.filter(
-        (item) => item.severity === 'critical' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
+        (item) =>
+          item.severity === 'critical' &&
+          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
       ).length;
       const majorAlarms = demoAlarms.filter(
-        (item) => item.severity === 'major' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
+        (item) =>
+          item.severity === 'major' &&
+          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
       ).length;
       const minorAlarms = demoAlarms.filter(
-        (item) => item.severity === 'minor' && item.lifecycleStatus !== 'closed' && item.lifecycleStatus !== 'resolved'
+        (item) =>
+          item.severity === 'minor' &&
+          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
       ).length;
-      const rtuTotal = demoRtus.length;
       const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
 
       res.json({
@@ -131,20 +188,18 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
       return;
     }
 
-    const [rtuOnline, rtuOffline, rtuWarning, rtuUnreachable] = await Promise.all([
+    const [rtuOnline, rtuOffline, rtuWarning, rtuUnreachable, criticalAlarms, majorAlarms, minorAlarms] = await Promise.all([
       RTU.count({ where: { status: 'online' } }),
       RTU.count({ where: { status: 'offline' } }),
-      RTU.count({ where: { status: 'warning' } }),
-      RTU.count({ where: { status: 'unreachable' } }),
-    ]);
-
-    const [criticalAlarms, majorAlarms, minorAlarms] = await Promise.all([
-      Alarm.count({ where: { severity: 'critical', lifecycleStatus: { [Op.ne]: 'cleared' } } }),
-      Alarm.count({ where: { severity: 'major', lifecycleStatus: { [Op.ne]: 'cleared' } } }),
-      Alarm.count({ where: { severity: 'minor', lifecycleStatus: { [Op.ne]: 'cleared' } } }),
+      Promise.resolve(0),
+      RTU.count({ where: { status: { [Op.in]: ['unreachable', 'warning'] } } }),
+      Alarm.count({ where: { severity: 'critical', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
+      Alarm.count({ where: { severity: 'major', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
+      Alarm.count({ where: { severity: 'minor', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
     ]);
 
     const rtuTotal = rtuOnline + rtuOffline + rtuWarning + rtuUnreachable;
+
     const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
     const mttr = await calculateMTTR();
 
@@ -172,12 +227,16 @@ export const getTopology = async (_req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const [fibres, measurements] = await Promise.all([
+    const [fibres, measurements, rtus] = await Promise.all([
       Fibre.findAll({
         include: [{ model: RTU, as: 'rtu', attributes: ['id', 'name', 'locationAddress', 'locationLatitude', 'locationLongitude'] }],
         order: [['id', 'ASC']],
       }),
       Measurement.findAll({ order: [['timestamp', 'DESC']] }),
+      RTU.findAll({
+        attributes: ['id', 'name', 'locationAddress', 'locationLatitude', 'locationLongitude'],
+        order: [['id', 'ASC']],
+      }),
     ]);
 
     const latestMeasurementByFibre = new Map<number, Measurement>();
@@ -188,25 +247,45 @@ export const getTopology = async (_req: Request, res: Response): Promise<void> =
       }
     });
 
-    const routes = fibres.map((fibre) => {
+    const availableRtuIds = rtus.map((rtu) => rtu.get('id') as number);
+    const rtuById = new Map<number, RTU>();
+    rtus.forEach((rtu) => {
+      rtuById.set(rtu.get('id') as number, rtu);
+    });
+
+    const routes = fibres.map((fibre, index) => {
       const rtu = fibre.get('rtu') as RTU | undefined;
       const latestMeasurement = latestMeasurementByFibre.get(fibre.get('id') as number);
       const fibreName = fibre.get('name') as string;
-      const routeName = buildRouteName(
-        rtu ? ((rtu.get('name') as string) || `RTU-${fibre.get('rtuId') as number}`) : `RTU-${fibre.get('rtuId') as number}`,
-        fibreName
-      );
+      const sourceRtu = rtu || rtuById.get(fibre.get('rtuId') as number);
+      const sourceRtuId = sourceRtu ? (sourceRtu.get('id') as number) : null;
+      const destinationRtuId =
+        sourceRtuId !== null ? pickDestinationRtuId(sourceRtuId, fibreName, availableRtuIds) : null;
+      const destinationRtu = destinationRtuId !== null ? rtuById.get(destinationRtuId) || null : null;
+      const sourceName = sourceRtu ? ((sourceRtu.get('name') as string) || `RTU-${fibre.get('rtuId') as number}`) : `RTU-${fibre.get('rtuId') as number}`;
+      const destinationName = destinationRtu
+        ? ((destinationRtu.get('name') as string) || `RTU-${destinationRtuId}`)
+        : `RTU-${destinationRtuId ?? index + 1}`;
+      const routeName = buildRouteName(sourceName, destinationName, fibreName);
 
       return {
         id: fibre.get('id') as number,
         routeName,
-        source: rtu ? ((rtu.get('locationAddress') as string) || (rtu.get('name') as string)) : routeName,
-        destination: `Fibre ${fibreName}`,
+        source: sourceName,
+        destination: destinationName,
+        sourceRtuId,
+        destinationRtuId,
         fiberStatus: fibre.get('status') as string,
         routeStatus: buildRouteStatus(fibre.get('status') as string),
-        path: rtu
-          ? buildFibrePath(rtu.get('locationLatitude') as string | number | null, rtu.get('locationLongitude') as string | number | null, fibreName)
-          : null,
+        path:
+          sourceRtu && destinationRtu
+            ? buildFibrePath(
+                sourceRtu.get('locationLatitude') as string | number | null,
+                sourceRtu.get('locationLongitude') as string | number | null,
+                destinationRtu.get('locationLatitude') as string | number | null,
+                destinationRtu.get('locationLongitude') as string | number | null
+              )
+            : null,
         lengthKm: (fibre.get('length') as number | null) ?? null,
         attenuationDb: latestMeasurement ? ((latestMeasurement.get('attenuation') as number | null) ?? null) : null,
         reflectionEvents: latestMeasurement ? (latestMeasurement.get('testResult') as string) === 'fail' : false,

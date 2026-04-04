@@ -239,10 +239,10 @@ const MonitoringPage: React.FC = () => {
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
           <RouteOutlined sx={{ color: '#8fd3ff' }} />
           <Typography variant="h6" color="white">
-            Carte GPS en temps réel
+            Carte GIS
           </Typography>
         </Stack>
-        <RealtimeTunisiaMap routes={routes} rtus={rtus} enableEditor />
+        <RealtimeTunisiaMap routes={routes} rtus={rtus} loading={loading} />
       </Paper>
 
       <Grid container spacing={3} mb={3}>

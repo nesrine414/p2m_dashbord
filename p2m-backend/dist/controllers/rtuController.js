@@ -59,6 +59,11 @@ const getRTUById = async (req, res) => {
         const rtu = await models_1.RTU.findByPk(id, {
             include: [
                 { model: models_1.Alarm, as: 'alarms' },
+                {
+                    model: models_1.Fibre,
+                    as: 'fibres',
+                    include: [{ model: models_1.Measurement, as: 'measurements' }],
+                },
                 { model: models_1.Prediction, as: 'predictions' },
                 { model: models_1.HealthScore, as: 'healthScores' },
                 { model: models_1.OtdrTestResult, as: 'otdrTests' },

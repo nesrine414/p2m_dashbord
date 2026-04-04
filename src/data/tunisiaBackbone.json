@@ -1,0 +1,49 @@
+[
+  {
+    "id": "bb-bizerte-tunis",
+    "routeName": "Backbone Bizerte-Tunis",
+    "from": "bizerte",
+    "to": "tunis",
+    "status": "normal"
+  },
+  {
+    "id": "bb-tunis-sousse",
+    "routeName": "Backbone Tunis-Sousse",
+    "from": "tunis",
+    "to": "sousse",
+    "via": ["nabeul", "monastir"],
+    "status": "normal"
+  },
+  {
+    "id": "bb-sousse-sfax",
+    "routeName": "Backbone Sousse-Sfax",
+    "from": "sousse",
+    "to": "sfax",
+    "via": ["monastir"],
+    "status": "degraded"
+  },
+  {
+    "id": "bb-sfax-gabes",
+    "routeName": "Backbone Sfax-Gabes",
+    "from": "sfax",
+    "to": "gabes",
+    "via": ["medenine"],
+    "status": "normal"
+  },
+  {
+    "id": "bb-gabes-gafsa",
+    "routeName": "Backbone Gabes-Gafsa",
+    "from": "gabes",
+    "to": "gafsa",
+    "via": ["kasserine"],
+    "status": "degraded"
+  },
+  {
+    "id": "bb-tunis-gafsa",
+    "routeName": "Backbone Tunis-Gafsa",
+    "from": "tunis",
+    "to": "gafsa",
+    "via": ["kairouan", "kasserine"],
+    "status": "normal"
+  }
+]
