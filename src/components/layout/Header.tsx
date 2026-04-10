@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -24,43 +24,35 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ROUTE_PATHS } from '../../constants/routes';
 
+export interface NotificationItem {
+  id: string;
+  backendId?: number;
+  alarmId?: number | null;
+  type: 'alarm' | 'system';
+  title: string;
+  message: string;
+  time: string;
+  read?: boolean;
+}
+
 interface HeaderProps {
   drawerWidth: number;
   onMenuClick: () => void;
+  notifications?: NotificationItem[];
+  onMarkAllRead?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({
+  drawerWidth,
+  onMenuClick,
+  notifications = [],
+  onMarkAllRead,
+}) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  const notifications = useMemo(
-    () => [
-      {
-        id: 'n-1',
-        type: 'alarm',
-        title: 'Nouvelle alarme critique',
-        message: 'RTU-TUN-014 - Coupure fibre',
-        time: 'il y a 5 min',
-      },
-      {
-        id: 'n-2',
-        type: 'ai',
-        title: 'Prédiction IA',
-        message: 'RTU-TUN-014 à 78 % de risque dans 48 h',
-        time: 'il y a 12 min',
-      },
-      {
-        id: 'n-3',
-        type: 'alarm',
-        title: 'Dérive majeure d\'atténuation',
-        message: 'SFX-GAB-SPUR +2,4 dB',
-        time: 'il y a 24 min',
-      },
-    ],
-    []
-  );
-
-  const notificationCount = notifications.length;
+  const unreadCount = notifications.filter((item) => !item.read).length;
+  const notificationCount = unreadCount;
   const popoverOpen = Boolean(anchorEl);
 
   return (
@@ -156,39 +148,56 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
             <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.18)', mb: 1.5 }} />
 
             <Stack spacing={1.2}>
-              {notifications.map((item) => (
-                <Box
-                  key={item.id}
-                  sx={{
-                    p: 1.4,
-                    borderRadius: 2,
-                    backgroundColor: 'rgba(41, 50, 71, 0.7)',
-                    border: '1px solid rgba(156, 176, 217, 0.2)',
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center" mb={0.4}>
-                    {item.type === 'alarm' ? (
-                      <NotificationsActiveOutlined sx={{ color: '#ff7a94', fontSize: 18 }} />
-                    ) : (
-                      <PsychologyOutlined sx={{ color: '#b7a6ff', fontSize: 18 }} />
-                    )}
-                    <Typography variant="body2" fontWeight={700} color="white">
-                      {item.title}
+              {notifications.length > 0 ? (
+                notifications.map((item) => (
+                  <Box
+                    key={item.id}
+                    sx={{
+                      p: 1.4,
+                      borderRadius: 2,
+                      backgroundColor: item.read ? 'rgba(41, 50, 71, 0.4)' : 'rgba(41, 50, 71, 0.75)',
+                      border: item.read
+                        ? '1px solid rgba(156, 176, 217, 0.15)'
+                        : '1px solid rgba(156, 176, 217, 0.28)',
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center" mb={0.4}>
+                      {item.type === 'alarm' ? (
+                        <NotificationsActiveOutlined sx={{ color: '#ff7a94', fontSize: 18 }} />
+                      ) : (
+                        <PsychologyOutlined sx={{ color: '#b7a6ff', fontSize: 18 }} />
+                      )}
+                      <Typography variant="body2" fontWeight={700} color="white">
+                        {item.title}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="caption" color={item.read ? 'text.disabled' : 'text.secondary'} display="block">
+                      {item.message}
                     </Typography>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {item.message}
-                  </Typography>
-                  <Typography variant="caption" color="#8fb3d1">
-                    {item.time}
-                  </Typography>
-                </Box>
-              ))}
+                    <Typography variant="caption" color="#8fb3d1">
+                      {item.time}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="caption" color="text.secondary">
+                  Aucune notification en temps reel.
+                </Typography>
+              )}
             </Stack>
 
             <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.18)', my: 1.5 }} />
-            <Typography variant="caption" color="#7cdfff" sx={{ cursor: 'pointer' }}>
-              Voir toutes les notifications
+            <Typography
+              variant="caption"
+              color={unreadCount > 0 ? '#7cdfff' : 'text.disabled'}
+              sx={{ cursor: unreadCount > 0 ? 'pointer' : 'default' }}
+              onClick={() => {
+                if (unreadCount > 0 && onMarkAllRead) {
+                  onMarkAllRead();
+                }
+              }}
+            >
+              {unreadCount > 0 ? 'Tout marquer comme lu' : 'Toutes les notifications sont lues'}
             </Typography>
           </Box>
         </Popover>
@@ -207,7 +216,7 @@ const Header: React.FC<HeaderProps> = ({ drawerWidth, onMenuClick }) => {
             display: { xs: 'none', sm: 'block' },
           }}
         >
-          Connecté
+          Connecte
         </Box>
 
         <Tooltip title="Profil" arrow>

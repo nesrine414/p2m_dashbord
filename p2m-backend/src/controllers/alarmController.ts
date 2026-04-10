@@ -1,11 +1,20 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
-import { Alarm, Fibre, RTU } from '../models';
+import { Alarm, Fibre, Measurement, RTU } from '../models';
 import { demoAlarms, demoFibres, demoRtus } from '../data/demoData';
-import { emitEvent } from '../utils/websocket';
+import { emitAlarmUpdatedRealtime, emitNewAlarmRealtime } from '../services/alarmRealtimeService';
+import { emitDashboardKpiUpdate } from '../services/dashboardStatsService';
+import { createNotificationForAlarm } from '../services/notificationService';
 
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
+const getActionPayload = (req: Request): { owner?: string; comment?: string } =>
+  req.body && typeof req.body === 'object'
+    ? (req.body as { owner?: string; comment?: string })
+    : {};
+const triggerDashboardStatsRealtime = (): void => {
+  void emitDashboardKpiUpdate();
+};
 
 const mapDemoAlarm = (alarm: (typeof demoAlarms)[number]) => {
   const rtu = demoRtus.find((item) => item.id === alarm.rtuId);
@@ -35,6 +44,54 @@ const mapDbAlarm = (alarm: Alarm, rtu?: RTU | null) => ({
   acknowledgedAt: (alarm.get('acknowledgedAt') as Date | null) || null,
   resolvedAt: (alarm.get('resolvedAt') as Date | null) || null,
 });
+
+const respondWithMappedAlarm = async (alarm: Alarm, res: Response): Promise<void> => {
+  const rtu = await resolveAlarmRtu(alarm);
+  res.json(mapDbAlarm(alarm, rtu));
+};
+
+const restoreNetworkAfterClosure = async (alarm: Alarm): Promise<void> => {
+  const alarmType = alarm.get('alarmType') as string;
+  const fibreId = (alarm.get('fibreId') as number | null) ?? null;
+
+  const rtu = await resolveAlarmRtu(alarm);
+  if (rtu) {
+    const currentPower = (rtu.get('power') as 'normal' | 'failure' | null) ?? null;
+    const currentTemperature = (rtu.get('temperature') as number | null) ?? null;
+    const currentOtdr = (rtu.get('otdrStatus') as 'ready' | 'busy' | 'fault' | null) ?? null;
+
+    await rtu.update({
+      status: 'online',
+      power: currentPower === 'failure' ? 'normal' : currentPower ?? 'normal',
+      temperature:
+        alarmType === 'Temperature'
+          ? 30
+          : typeof currentTemperature === 'number' && currentTemperature > 40
+            ? 36
+            : currentTemperature ?? 30,
+      otdrStatus: currentOtdr === 'fault' ? 'ready' : currentOtdr ?? 'ready',
+      lastSeen: new Date(),
+    });
+  }
+
+  if (fibreId) {
+    const fibre = await Fibre.findByPk(fibreId);
+    if (fibre) {
+      const lengthKm = (fibre.get('length') as number | null) ?? 10;
+      await fibre.update({ status: 'normal' });
+
+      const nextMeasurementId = (((await Measurement.max('id')) as number | null) ?? 0) + 1;
+      await Measurement.create({
+        id: nextMeasurementId,
+        fibreId: fibre.get('id') as number,
+        attenuation: Number(Math.max(2.5, Math.min(5.5, lengthKm / 4)).toFixed(1)),
+        testResult: 'pass',
+        wavelength: 1550,
+        timestamp: new Date(),
+      });
+    }
+  }
+};
 
 const resolveAlarmRtu = async (alarm: Alarm): Promise<RTU | null> => {
   const alarmRtuId = (alarm.get('rtuId') as number | null) ?? null;
@@ -173,8 +230,11 @@ export const createAlarm = async (req: Request, res: Response): Promise<void> =>
       occurredAt: req.body.occurredAt || new Date(),
     };
     const alarm = await Alarm.create(payload);
-    emitEvent('new_alarm', alarm);
-    res.status(201).json(alarm);
+    await emitNewAlarmRealtime(alarm);
+    await createNotificationForAlarm(alarm);
+    triggerDashboardStatsRealtime();
+    res.status(201);
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to create alarm' });
   }
@@ -195,14 +255,17 @@ export const acknowledgeAlarm = async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    const payload = getActionPayload(req);
+
     await alarm.update({
       lifecycleStatus: 'acknowledged',
       acknowledgedAt: new Date(),
-      owner: (req.body as { owner?: string }).owner || alarm.owner,
+      owner: payload.owner || alarm.owner,
     });
 
-    emitEvent('alarm_updated', alarm);
-    res.json(alarm);
+    await emitAlarmUpdatedRealtime(alarm);
+    triggerDashboardStatsRealtime();
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to acknowledge alarm' });
   }
@@ -223,14 +286,17 @@ export const resolveAlarm = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    const payload = getActionPayload(req);
+
     await alarm.update({
       lifecycleStatus: 'closed',
       resolvedAt: new Date(),
-      owner: (req.body as { owner?: string }).owner || alarm.owner,
+      owner: payload.owner || alarm.owner,
     });
 
-    emitEvent('alarm_updated', alarm);
-    res.json(alarm);
+    await emitAlarmUpdatedRealtime(alarm);
+    triggerDashboardStatsRealtime();
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to resolve alarm' });
   }
@@ -251,13 +317,16 @@ export const inProgressAlarm = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    const payload = getActionPayload(req);
+
     await alarm.update({
       lifecycleStatus: 'in_progress',
-      owner: (req.body as { owner?: string }).owner || alarm.owner,
+      owner: payload.owner || alarm.owner,
     });
 
-    emitEvent('alarm_updated', alarm);
-    res.json(alarm);
+    await emitAlarmUpdatedRealtime(alarm);
+    triggerDashboardStatsRealtime();
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to mark alarm in progress' });
   }
@@ -278,15 +347,18 @@ export const resolvedAlarm = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const payload = getActionPayload(req);
+
     await alarm.update({
       lifecycleStatus: 'resolved',
       resolvedAt: new Date(),
-      resolutionComment: (req.body as { comment?: string }).comment || undefined,
-      owner: (req.body as { owner?: string }).owner || alarm.owner,
+      resolutionComment: payload.comment || undefined,
+      owner: payload.owner || alarm.owner,
     });
 
-    emitEvent('alarm_updated', alarm);
-    res.json(alarm);
+    await emitAlarmUpdatedRealtime(alarm);
+    triggerDashboardStatsRealtime();
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to resolve alarm' });
   }
@@ -307,13 +379,19 @@ export const closeAlarm = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    const payload = getActionPayload(req);
+
     await alarm.update({
       lifecycleStatus: 'closed',
-      owner: (req.body as { owner?: string }).owner || alarm.owner,
+      resolvedAt: new Date(),
+      owner: payload.owner || alarm.owner,
     });
 
-    emitEvent('alarm_updated', alarm);
-    res.json(alarm);
+    await restoreNetworkAfterClosure(alarm);
+
+    await emitAlarmUpdatedRealtime(alarm);
+    triggerDashboardStatsRealtime();
+    await respondWithMappedAlarm(alarm, res);
   } catch (error) {
     res.status(400).json({ error: 'Failed to close alarm' });
   }

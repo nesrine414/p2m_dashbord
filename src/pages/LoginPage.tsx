@@ -41,7 +41,7 @@ const LoginPage: React.FC = () => {
     }
 
     if (!email.trim() && !phone.trim()) {
-      setError('Saisissez un e-mail ou un numéro de téléphone.');
+      setError('Saisissez un e-mail ou un numero de telephone.');
       return;
     }
 
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
       const message =
         loginError?.response?.data?.error ||
         loginError?.message ||
-        "Impossible de vous connecter. Vérifiez que le backend tourne sur localhost:5000.";
+        'Impossible de vous connecter. Verifiez que le backend est demarre.';
       setError(String(message));
     } finally {
       setLoading(false);
@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
                 Connexion
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Connectez-vous avec votre e-mail ou votre numéro de téléphone.
+                Connectez-vous avec votre e-mail ou votre numero de telephone.
               </Typography>
             </Box>
 
@@ -120,7 +120,7 @@ const LoginPage: React.FC = () => {
                   autoComplete="email"
                 />
                 <TextField
-                  label="Numéro de téléphone"
+                  label="Numero de telephone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   fullWidth
@@ -137,7 +137,7 @@ const LoginPage: React.FC = () => {
 
                 <FormControlLabel
                   control={<Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />}
-                  label="Rester connecté"
+                  label="Rester connecte"
                 />
 
                 <Button type="submit" variant="contained" disabled={loading}>
@@ -149,7 +149,7 @@ const LoginPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               Pas encore de compte ?{' '}
               <Button component={RouterLink} to={ROUTE_PATHS.register} variant="text" sx={{ p: 0, minWidth: 'auto' }}>
-                Créer un compte
+                Creer un compte
               </Button>
             </Typography>
           </Stack>
@@ -160,5 +160,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-
-

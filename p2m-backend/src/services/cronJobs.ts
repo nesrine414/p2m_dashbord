@@ -1,12 +1,20 @@
 import cron from 'node-cron';
 
-import { AlarmDetectionService } from './alarmDetectionService';
-const alarmService = new AlarmDetectionService();
+import { RtuEmulatorMonitorService } from './rtuEmulatorMonitorService';
+
+const emulatorMonitorService = new RtuEmulatorMonitorService();
 
 export const startAlarmDetection = () => {
-  cron.schedule('*/10 * * * *', async () => {
-    console.log('🔍 Vérification alarmes...');
-    await alarmService.detectAlarms();
+  const runCycle = async () => {
+    console.log('[RTU Emulator] running automatic monitoring cycle...');
+    await emulatorMonitorService.runCycle();
+  };
+
+  void runCycle();
+
+  cron.schedule('*/3 * * * *', async () => {
+    await runCycle();
   });
-  console.log('✅ Cron job alarmes démarré (toutes les 10 min)');
+
+  console.log('[RTU Emulator] automatic monitoring started (every 3 minutes)');
 };

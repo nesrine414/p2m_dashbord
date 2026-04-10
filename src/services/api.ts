@@ -54,19 +54,98 @@ export interface BackendRTU {
   lastSeen?: string | Date | null;
 }
 
+export interface EmulatorMetricEvaluation {
+  key: string;
+  label: string;
+  value: number | string | null;
+  unit?: string;
+  status: 'normal' | 'warning' | 'critical' | 'info';
+  thresholds?: {
+    warning: number;
+    critical: number;
+  };
+}
+
+export interface EmulatorNumericThreshold {
+  warning: number;
+  critical: number;
+  unit: string;
+}
+
+export interface EmulatorThresholdsConfig {
+  rtu: {
+    temperatureC: EmulatorNumericThreshold;
+    heartbeatAgeMinutes: EmulatorNumericThreshold;
+    averageAttenuationDb: EmulatorNumericThreshold;
+  };
+  fibre: {
+    attenuationDb: EmulatorNumericThreshold;
+    measurementAgeMinutes: EmulatorNumericThreshold;
+  };
+}
+
+export interface EmulatorQueryResponse {
+  requestedIpAddress: string;
+  sampledAt: string;
+  thresholdSource: string;
+  rtu: {
+    id: number;
+    name: string;
+    ipAddress: string;
+    serialNumber?: string | null;
+    locationAddress?: string | null;
+    status: 'online' | 'offline' | 'warning' | 'unreachable';
+    metrics: {
+      power: 'normal' | 'failure';
+      otdrStatus: 'ready' | 'busy' | 'fault' | null;
+      temperatureC: number | null;
+      heartbeatAgeMinutes: number;
+      averageAttenuationDb: number | null;
+    };
+    evaluations: EmulatorMetricEvaluation[];
+  };
+  fibres: Array<{
+    id: number;
+    name: string;
+    status: 'normal' | 'degraded' | 'broken';
+    lengthKm: number | null;
+    metrics: {
+      attenuationDb: number | null;
+      wavelength: 1310 | 1550 | 1625 | null;
+      testResult: 'pass' | 'fail' | null;
+      measurementAgeMinutes: number;
+    };
+    evaluations: EmulatorMetricEvaluation[];
+  }>;
+}
+
 export interface BackendAlarm {
   id: number;
   rtuId?: number | null;
   rtuName?: string;
   zone?: string;
   severity: 'critical' | 'major' | 'minor' | 'info';
-  lifecycleStatus: 'active' | 'acknowledged' | 'cleared';
+  lifecycleStatus: 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed' | 'cleared';
   alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   message: string;
   location?: string | null;
   localizationKm?: string | null;
   owner?: string | null;
   occurredAt: string;
+}
+
+export interface BackendNotification {
+  id: number;
+  alarmId?: number | null;
+  notificationType: 'alarm_new' | 'alarm_update' | 'system';
+  severity: 'critical' | 'major' | 'minor' | 'info';
+  title: string;
+  message: string;
+  isRead: boolean;
+  metadata?: Record<string, unknown> | null;
+  occurredAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BackendFiberRoute {
@@ -97,12 +176,34 @@ export interface BackendOtdrTest {
   testedAt: string;
 }
 
+export interface RouteAttenuationTrendPoint {
+  timestamp: string;
+  attenuationDb: number | null;
+  wavelengthNm: number;
+  testResult: 'pass' | 'fail';
+}
+
+export interface RouteAttenuationTrendResponse {
+  routeId: number;
+  routeName: string;
+  source: string;
+  destination: string;
+  windowMinutes: number;
+  sampledAt: string;
+  points: RouteAttenuationTrendPoint[];
+  degradedMode?: boolean;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
   totalPages: number;
   degradedMode?: boolean;
+}
+
+export interface NotificationListResponse extends PaginatedResponse<BackendNotification> {
+  unread: number;
 }
 
 export interface AiChatResponse {
@@ -158,6 +259,35 @@ export const getRTUs = async (params?: {
   return response.data;
 };
 
+export const getRouteAttenuationTrend = async (
+  routeId: number,
+  params?: { windowMinutes?: number; limit?: number }
+): Promise<RouteAttenuationTrendResponse> => {
+  const response = await apiClient.get<RouteAttenuationTrendResponse>(`/dashboard/attenuation-trend/${routeId}`, {
+    params,
+  });
+  return response.data;
+};
+
+export const queryRtuEmulator = async (ipAddress: string): Promise<EmulatorQueryResponse> => {
+  const response = await apiClient.post<EmulatorQueryResponse>('/rtu/emulator/query', {
+    ipAddress,
+  });
+  return response.data;
+};
+
+export const getEmulatorThresholds = async (): Promise<EmulatorThresholdsConfig> => {
+  const response = await apiClient.get<EmulatorThresholdsConfig>('/rtu/emulator/thresholds');
+  return response.data;
+};
+
+export const updateEmulatorThresholds = async (
+  payload: EmulatorThresholdsConfig
+): Promise<EmulatorThresholdsConfig> => {
+  const response = await apiClient.put<EmulatorThresholdsConfig>('/rtu/emulator/thresholds', payload);
+  return response.data;
+};
+
 export const getAlarms = async (params?: {
   severity?: string;
   status?: string;
@@ -166,6 +296,40 @@ export const getAlarms = async (params?: {
   pageSize?: number;
 }): Promise<PaginatedResponse<BackendAlarm>> => {
   const response = await apiClient.get<PaginatedResponse<BackendAlarm>>('/alarms', { params });
+  return response.data;
+};
+
+export const getNotifications = async (params?: {
+  status?: 'all' | 'read' | 'unread';
+  page?: number;
+  pageSize?: number;
+}): Promise<NotificationListResponse> => {
+  const response = await apiClient.get<NotificationListResponse>('/notifications', { params });
+  return response.data;
+};
+
+export const markNotificationRead = async (id: number): Promise<BackendNotification> => {
+  const response = await apiClient.patch<BackendNotification>(`/notifications/${id}/read`, {});
+  return response.data;
+};
+
+export const markAllNotificationsRead = async (): Promise<{ updated: number }> => {
+  const response = await apiClient.patch<{ updated: number }>('/notifications/read-all', {});
+  return response.data;
+};
+
+export const acknowledgeAlarm = async (id: number): Promise<BackendAlarm> => {
+  const response = await apiClient.patch<BackendAlarm>(`/alarms/${id}/acknowledge`, {});
+  return response.data;
+};
+
+export const markAlarmInProgress = async (id: number): Promise<BackendAlarm> => {
+  const response = await apiClient.patch<BackendAlarm>(`/alarms/${id}/in-progress`, {});
+  return response.data;
+};
+
+export const closeAlarm = async (id: number): Promise<BackendAlarm> => {
+  const response = await apiClient.patch<BackendAlarm>(`/alarms/${id}/close`, {});
   return response.data;
 };
 

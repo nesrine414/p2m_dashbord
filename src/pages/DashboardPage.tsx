@@ -1,15 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Grid,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Alert, Box, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import {
   AccessTime,
   CheckCircleOutline,
@@ -19,29 +9,16 @@ import {
   Timeline,
   TrendingDown,
 } from '@mui/icons-material';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceArea,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import WidgetCard from '../components/common/WidgetCard';
 import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
 import RTUCardsWidget, { RTUCard } from '../components/widgets/RTUCardsWidget';
-import { ROUTE_PATHS } from '../constants/routes';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {
   BackendAlarm,
   BackendFiberRoute,
-  BackendRTU,
   BackendOtdrTest,
+  BackendRTU,
   getAlarms,
   getDashboardStats,
   getRecentOtdrTests,
@@ -49,33 +26,7 @@ import {
   getRTUs,
 } from '../services/api';
 import { DashboardStats, FiberStatus, RTUStatus } from '../types';
-
-interface AttenuationSeriesPoint {
-  slot: string;
-  backboneNorth: number;
-  backboneSouth: number;
-  metroRing: number;
-}
-
-const buildAttenuationSeries = (routes: BackendFiberRoute[]): AttenuationSeriesPoint[] => {
-  const validRoutes = routes.filter(
-    (route): route is BackendFiberRoute & { attenuationDb: number } =>
-      typeof route.attenuationDb === 'number' && route.attenuationDb > 0
-  );
-
-  const baselineNorth = validRoutes[0]?.attenuationDb ?? 15.8;
-  const baselineSouth = validRoutes[1]?.attenuationDb ?? 17.3;
-  const baselineMetro = validRoutes[2]?.attenuationDb ?? 14.6;
-  const slots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
-  const offsets = [-0.7, -0.4, 0.1, 0.4, 0.9, 1.1, 0.5, 0];
-
-  return slots.map((slot, index) => ({
-    slot,
-    backboneNorth: Number((baselineNorth + offsets[index]).toFixed(1)),
-    backboneSouth: Number((baselineSouth + offsets[index] + 0.4).toFixed(1)),
-    metroRing: Number((baselineMetro + offsets[index] - 0.3).toFixed(1)),
-  }));
-};
+import getSocket from '../utils/socket';
 
 const getRtuAvailabilityEstimate = (rtu: BackendRTU): number => {
   const status = normalizeRtuStatus(rtu.status);
@@ -107,6 +58,74 @@ const getStatusPriority = (status: BackendRTU['status']): number => {
   }
 };
 
+const toAlarmRowStatus = (status: BackendAlarm['lifecycleStatus']): AlarmRow['status'] => {
+  if (status === 'closed' || status === 'cleared' || status === 'resolved') {
+    return 'resolved';
+  }
+
+  if (status === 'in_progress') {
+    return 'in_progress';
+  }
+
+  if (status === 'acknowledged') {
+    return 'acknowledged';
+  }
+
+  return 'active';
+};
+
+const formatMttrValue = (hours: number): string => {
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return '0.0 min';
+  }
+
+  if (hours < 1) {
+    return `${(hours * 60).toFixed(1)} min`;
+  }
+
+  return `${hours.toFixed(2)}h`;
+};
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const toDashboardStatsPayload = (payload: unknown): DashboardStats | null => {
+  const source = payload as Record<string, unknown>;
+
+  if (
+    !isFiniteNumber(source.rtuOnline) ||
+    !isFiniteNumber(source.rtuOffline) ||
+    !isFiniteNumber(source.rtuWarning) ||
+    !isFiniteNumber(source.rtuUnreachable) ||
+    !isFiniteNumber(source.rtuTotal) ||
+    !isFiniteNumber(source.criticalAlarms) ||
+    !isFiniteNumber(source.majorAlarms) ||
+    !isFiniteNumber(source.minorAlarms) ||
+    !isFiniteNumber(source.mttr) ||
+    !isFiniteNumber(source.mtbf) ||
+    !isFiniteNumber(source.averageAttenuation) ||
+    !isFiniteNumber(source.availability)
+  ) {
+    return null;
+  }
+
+  return {
+    rtuOnline: Number(source.rtuOnline),
+    rtuOffline: Number(source.rtuOffline),
+    rtuWarning: Number(source.rtuWarning),
+    rtuUnreachable: Number(source.rtuUnreachable),
+    rtuTotal: Number(source.rtuTotal),
+    criticalAlarms: Number(source.criticalAlarms),
+    majorAlarms: Number(source.majorAlarms),
+    minorAlarms: Number(source.minorAlarms),
+    mttr: Number(source.mttr),
+    mtbf: Number(source.mtbf),
+    averageAttenuation: Number(source.averageAttenuation),
+    availability: Number(source.availability),
+    degradedMode: typeof source.degradedMode === 'boolean' ? source.degradedMode : undefined,
+  };
+};
+
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [criticalAlarms, setCriticalAlarms] = useState<BackendAlarm[]>([]);
@@ -119,10 +138,12 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     let active = true;
 
-    const load = async () => {
+    const loadDashboardData = async (showLoader = false) => {
       try {
-        setLoading(true);
-        setError(null);
+        if (showLoader) {
+          setLoading(true);
+          setError(null);
+        }
 
         const [statsData, alarmsData, topologyData, otdrData, rtuData] = await Promise.all([
           getDashboardStats(),
@@ -140,6 +161,7 @@ const DashboardPage: React.FC = () => {
         setCriticalAlarms(alarmsData.data);
         setRoutes(topologyData.routes);
         setOtdrTests(otdrData.data);
+
         const dashboardCards = rtuData
           .slice()
           .sort(
@@ -152,22 +174,55 @@ const DashboardPage: React.FC = () => {
           .map(toDashboardRtuCard);
 
         setRtus(dashboardCards);
-      } catch (apiError) {
+      } catch {
         if (!active) {
           return;
         }
-        setError('Impossible de charger les données du backend. Vérifiez que le backend tourne sur localhost:5000.');
+        if (showLoader) {
+          setError('Impossible de charger les donnees du backend. Verifiez que le backend tourne sur localhost:5000.');
+        }
       } finally {
-        if (active) {
+        if (active && showLoader) {
           setLoading(false);
         }
       }
     };
 
-    void load();
+    void loadDashboardData(true);
+
+    const socket = getSocket();
+    const onRealtimeUpdate = () => {
+      void loadDashboardData(false);
+    };
+    const onKpiUpdate = (payload: unknown) => {
+      if (!active) {
+        return;
+      }
+
+      const nextStats = toDashboardStatsPayload(payload);
+      if (!nextStats) {
+        return;
+      }
+
+      setStats(nextStats);
+    };
+
+    socket.on('emulator_cycle_completed', onRealtimeUpdate);
+    socket.on('new_alarm', onRealtimeUpdate);
+    socket.on('alarm_updated', onRealtimeUpdate);
+    socket.on('kpi_updated', onKpiUpdate);
+
+    const refreshInterval = window.setInterval(() => {
+      void loadDashboardData(false);
+    }, 15000);
 
     return () => {
       active = false;
+      window.clearInterval(refreshInterval);
+      socket.off('emulator_cycle_completed', onRealtimeUpdate);
+      socket.off('new_alarm', onRealtimeUpdate);
+      socket.off('alarm_updated', onRealtimeUpdate);
+      socket.off('kpi_updated', onKpiUpdate);
     };
   }, []);
 
@@ -192,9 +247,7 @@ const DashboardPage: React.FC = () => {
     };
   }, [stats, routes, otdrTests]);
 
-  const attenuationSeries = useMemo(() => buildAttenuationSeries(routes), [routes]);
-
-  const averageAttenuation = useMemo(() => {
+  const computedAverageAttenuation = useMemo(() => {
     const validRoutes = routes.filter(
       (route) => typeof route.attenuationDb === 'number' && Number(route.attenuationDb) > 0
     );
@@ -208,11 +261,25 @@ const DashboardPage: React.FC = () => {
     return Number(average.toFixed(1));
   }, [routes]);
 
-  const estimatedMtbfHours = useMemo(() => {
+  const computedMtbfHours = useMemo(() => {
     const incidentLoad = Math.max(1, summary.activeCritical + summary.brokenFibers + summary.testsFailed);
     const networkScale = Math.max(1, summary.totalRtus);
     return Number(((networkScale * 168) / incidentLoad).toFixed(1));
   }, [summary.activeCritical, summary.brokenFibers, summary.testsFailed, summary.totalRtus]);
+
+  const liveAverageAttenuation = useMemo(() => {
+    if (typeof stats?.averageAttenuation === 'number') {
+      return stats.averageAttenuation;
+    }
+    return computedAverageAttenuation;
+  }, [stats?.averageAttenuation, computedAverageAttenuation]);
+
+  const liveMtbfHours = useMemo(() => {
+    if (typeof stats?.mtbf === 'number') {
+      return stats.mtbf;
+    }
+    return computedMtbfHours;
+  }, [stats?.mtbf, computedMtbfHours]);
 
   const dashboardRtus = useMemo(() => rtus, [rtus]);
 
@@ -224,7 +291,7 @@ const DashboardPage: React.FC = () => {
         rtu: item.rtuName || `RTU-${item.rtuId || 'N/D'}`,
         zone: item.zone || item.location || 'N/D',
         severity: item.severity,
-        status: item.lifecycleStatus === 'cleared' ? 'resolved' : item.lifecycleStatus,
+        status: toAlarmRowStatus(item.lifecycleStatus),
         timestamp: item.occurredAt,
         location: item.localizationKm || item.location || 'N/D',
       })),
@@ -241,39 +308,26 @@ const DashboardPage: React.FC = () => {
           from: route.source,
           to: route.destination,
           status: route.fiberStatus === FiberStatus.BROKEN ? 'broken' : 'degraded',
-          attenuation:
-            route.attenuationDb && route.attenuationDb > 0
-              ? `${route.attenuationDb.toFixed(1)} dB`
-              : 'N/D',
+          attenuation: route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(1)} dB` : 'N/D',
           lastTest: route.lastTestTime || 'N/D',
         })),
     [routes]
   );
 
-  const mttrTarget = 4.0;
-  const mtbfTarget = 100.0;
-  const attenuationTarget = 1.0;
-  const availabilityTarget = 99.0;
-
-  const mttrTrend = Number((((mttrTarget - (stats?.mttr || 0)) / mttrTarget) * 100).toFixed(1));
-  const mtbfTrend = Number((((estimatedMtbfHours - mtbfTarget) / mtbfTarget) * 100).toFixed(1));
-  const attenuationTrend = Number((((attenuationTarget - averageAttenuation) / attenuationTarget) * 100).toFixed(1));
-  const availabilityTrend = Number((((summary.availability - availabilityTarget) / availabilityTarget) * 100).toFixed(1));
-
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.7}>
-        Vue 1 - Supervision temps réel
+        Vue 1 - Supervision temps reel
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={2}>
-        Supervision en temps réel des RTU, des alarmes critiques et des routes fibre.
+        Supervision temps reel des RTU, alarmes critiques et routes fibre.
       </Typography>
 
       {loading && (
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Chargement des données du backend...
+            Chargement des donnees du backend...
           </Typography>
         </Stack>
       )}
@@ -286,13 +340,13 @@ const DashboardPage: React.FC = () => {
 
       {summary.degradedMode && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Le backend fonctionne sans PostgreSQL. Les données affichées sont celles de démonstration de l'API.
+          Le backend fonctionne sans PostgreSQL. Donnees de demonstration actives.
         </Alert>
       )}
 
       {!loading && !error && !summary.degradedMode && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          API en direct connectée à PostgreSQL sur localhost:5000.
+          API en direct connectee a PostgreSQL sur localhost:5000.
         </Alert>
       )}
 
@@ -309,7 +363,7 @@ const DashboardPage: React.FC = () => {
           <WidgetCard
             title="ALARMES CRITIQUES"
             value={summary.activeCritical}
-            subtitle="Actives, non résolues"
+            subtitle="Actives, non resolues"
             icon={<CrisisAlertOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#cf3f4a"
           />
@@ -318,14 +372,14 @@ const DashboardPage: React.FC = () => {
           <WidgetCard
             title="FIBRES COUPEES"
             value={summary.brokenFibers}
-            subtitle="Routes à corriger"
+            subtitle="Routes a corriger"
             icon={<RouterOutlined sx={{ color: 'white', fontSize: 30 }} />}
             color="#f08934"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="ÉCHECS OTDR"
+            title="ECHECS OTDR"
             value={summary.testsFailed}
             subtitle="Derniers tests"
             icon={<DeviceHubOutlined sx={{ color: 'white', fontSize: 30 }} />}
@@ -337,8 +391,8 @@ const DashboardPage: React.FC = () => {
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="MTTR (temps de réparation)"
-            value={`${(stats?.mttr || 0).toFixed(1)}h`}
+            title="MTTR (temps de reparation)"
+            value={formatMttrValue(stats?.mttr || 0)}
             icon={<AccessTime sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
             color="#667eea"
@@ -346,8 +400,8 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="MTBF (estimé)"
-            value={`${estimatedMtbfHours.toFixed(1)}h`}
+            title="MTBF (estime)"
+            value={`${liveMtbfHours.toFixed(1)}h`}
             icon={<Timeline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
             color="#11998e"
@@ -355,8 +409,8 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="ATTÉNUATION MOYENNE"
-            value={`${averageAttenuation.toFixed(1)} dB`}
+            title="ATTENUATION MOYENNE"
+            value={`${liveAverageAttenuation.toFixed(1)} dB`}
             icon={<TrendingDown sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
             color="#f093fb"
@@ -364,7 +418,7 @@ const DashboardPage: React.FC = () => {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
-            title="DISPONIBILITÉ RÉSEAU"
+            title="DISPONIBILITE RESEAU"
             value={`${summary.availability.toFixed(1)}%`}
             icon={<CheckCircleOutline sx={{ color: 'white', fontSize: 30 }} />}
             gradient="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
@@ -372,8 +426,6 @@ const DashboardPage: React.FC = () => {
           />
         </Grid>
       </Grid>
-
-      
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 7 }}>
@@ -384,10 +436,7 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      
-
       <RTUCardsWidget rtus={dashboardRtus} />
-
     </Box>
   );
 };

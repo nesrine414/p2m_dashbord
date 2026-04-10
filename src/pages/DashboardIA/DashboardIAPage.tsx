@@ -167,10 +167,10 @@ const DashboardIAPage: React.FC = () => {
   const summary = useMemo<NetworkSummary>(() => {
     const activeAlarmMap = new Map<number, number>();
 
-    alarms.forEach((alarm) => {
-      if (alarm.lifecycleStatus === 'cleared' || !alarm.rtuId) {
-        return;
-      }
+      alarms.forEach((alarm) => {
+        if (['cleared', 'resolved', 'closed'].includes(alarm.lifecycleStatus) || !alarm.rtuId) {
+          return;
+        }
 
       const current = activeAlarmMap.get(alarm.rtuId) || 0;
       activeAlarmMap.set(alarm.rtuId, current + 1);

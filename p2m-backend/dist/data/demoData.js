@@ -1,16 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.demoAlarms = exports.demoOtdrTests = exports.demoFiberRoutes = exports.demoPerformances = exports.demoFibreAlarms = exports.demoMeasurements = exports.demoFibres = exports.demoRtus = void 0;
-const FIBRE_OFFSETS = [
-    [0.0, 0.018],
-    [0.014, 0.012],
-    [0.018, 0.0],
-    [0.014, -0.012],
-    [0.0, -0.018],
-    [-0.014, -0.012],
-    [-0.018, 0.0],
-    [-0.014, 0.012],
-];
 exports.demoRtus = [
     {
         id: 1,
@@ -98,18 +88,18 @@ exports.demoRtus = [
     },
 ];
 exports.demoFibres = [
-    { id: 1, rtuId: 1, name: 'F1', length: 24.5, status: 'normal' },
-    { id: 2, rtuId: 1, name: 'F2', length: 18.2, status: 'degraded' },
-    { id: 3, rtuId: 1, name: 'F3', length: 35.1, status: 'normal' },
-    { id: 4, rtuId: 2, name: 'F1', length: 14.8, status: 'degraded' },
-    { id: 5, rtuId: 2, name: 'F2', length: 9.6, status: 'normal' },
-    { id: 6, rtuId: 3, name: 'F1', length: 27.3, status: 'normal' },
-    { id: 7, rtuId: 3, name: 'F2', length: 19.4, status: 'broken' },
-    { id: 8, rtuId: 4, name: 'F1', length: 16.1, status: 'broken' },
-    { id: 9, rtuId: 4, name: 'F2', length: 13.5, status: 'degraded' },
-    { id: 10, rtuId: 5, name: 'F1', length: 21.7, status: 'degraded' },
-    { id: 11, rtuId: 6, name: 'F1', length: 11.4, status: 'normal' },
-    { id: 12, rtuId: 6, name: 'F2', length: 15.2, status: 'normal' },
+    { id: 1, fromRtuId: 1, toRtuId: 6, name: 'F1', length: 24.5, status: 'normal' },
+    { id: 2, fromRtuId: 1, toRtuId: 2, name: 'F2', length: 18.2, status: 'degraded' },
+    { id: 3, fromRtuId: 1, toRtuId: 5, name: 'F3', length: 35.1, status: 'normal' },
+    { id: 4, fromRtuId: 2, toRtuId: 1, name: 'F1', length: 14.8, status: 'degraded' },
+    { id: 5, fromRtuId: 2, toRtuId: 3, name: 'F2', length: 9.6, status: 'normal' },
+    { id: 6, fromRtuId: 3, toRtuId: 2, name: 'F1', length: 27.3, status: 'normal' },
+    { id: 7, fromRtuId: 3, toRtuId: 4, name: 'F2', length: 19.4, status: 'broken' },
+    { id: 8, fromRtuId: 4, toRtuId: 3, name: 'F1', length: 16.1, status: 'broken' },
+    { id: 9, fromRtuId: 4, toRtuId: 5, name: 'F2', length: 13.5, status: 'degraded' },
+    { id: 10, fromRtuId: 5, toRtuId: 4, name: 'F1', length: 21.7, status: 'degraded' },
+    { id: 11, fromRtuId: 6, toRtuId: 1, name: 'F1', length: 11.4, status: 'normal' },
+    { id: 12, fromRtuId: 6, toRtuId: 2, name: 'F2', length: 15.2, status: 'normal' },
 ];
 exports.demoMeasurements = [
     { id: 1, fibreId: 1, attenuation: 4.8, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:40:00.000Z' },
@@ -143,14 +133,16 @@ const latestMeasurementByFibre = new Map(exports.demoMeasurements
     .slice()
     .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
     .map((measurement) => [measurement.fibreId, measurement]));
-const buildFibrePath = (rtu, fibreName) => {
-    const fibreIndex = Math.max(0, Number(fibreName.replace(/\D+/g, '')) - 1) % FIBRE_OFFSETS.length;
-    const [latOffset, lonOffset] = FIBRE_OFFSETS[fibreIndex];
-    return [
-        [rtu.locationLatitude, rtu.locationLongitude],
-        [Number((rtu.locationLatitude + latOffset).toFixed(6)), Number((rtu.locationLongitude + lonOffset).toFixed(6))],
-    ];
-};
+const buildFibrePath = (source, destination) => [
+    [
+        Number(source.locationLatitude.toFixed(6)),
+        Number(source.locationLongitude.toFixed(6)),
+    ],
+    [
+        Number(destination.locationLatitude.toFixed(6)),
+        Number(destination.locationLongitude.toFixed(6)),
+    ],
+];
 const toRouteStatus = (status) => {
     if (status === 'broken') {
         return 'inactive';
@@ -179,23 +171,29 @@ const getMode = (measurement) => {
     return 'auto';
 };
 exports.demoFiberRoutes = exports.demoFibres.map((fibre) => {
-    const rtu = exports.demoRtus.find((item) => item.id === fibre.rtuId);
+    const rtu = exports.demoRtus.find((item) => item.id === fibre.fromRtuId);
     const latestMeasurement = latestMeasurementByFibre.get(fibre.id);
+    const destinationRtu = exports.demoRtus.find((item) => item.id === fibre.toRtuId);
     if (!rtu) {
         throw new Error(`RTU not found for fibre ${fibre.id}`);
     }
+    if (!destinationRtu) {
+        throw new Error(`Destination RTU not found for fibre ${fibre.id}`);
+    }
     return {
         id: fibre.id,
-        routeName: `${rtu.name}-${fibre.name}`,
-        source: rtu.locationAddress,
-        destination: `Fibre ${fibre.name}`,
+        routeName: `${rtu.name} -> ${destinationRtu.name} (${fibre.name})`,
+        source: rtu.name,
+        destination: destinationRtu.name,
+        sourceRtuId: rtu.id,
+        destinationRtuId: destinationRtu.id,
         fiberStatus: fibre.status,
         routeStatus: toRouteStatus(fibre.status),
         lengthKm: fibre.length,
         attenuationDb: latestMeasurement?.attenuation ?? 0,
         reflectionEvents: latestMeasurement?.testResult === 'fail',
         lastTestTime: latestMeasurement?.timestamp || rtu.lastSeen,
-        path: buildFibrePath(rtu, fibre.name),
+        path: buildFibrePath(rtu, destinationRtu),
     };
 });
 exports.demoOtdrTests = exports.demoMeasurements.map((measurement) => {
@@ -205,7 +203,7 @@ exports.demoOtdrTests = exports.demoMeasurements.map((measurement) => {
     }
     return {
         id: measurement.id,
-        rtuId: fibre.rtuId,
+        rtuId: fibre.fromRtuId,
         routeId: fibre.id,
         mode: getMode(measurement),
         pulseWidth: getPulseWidth(fibre.length),
@@ -217,7 +215,7 @@ exports.demoOtdrTests = exports.demoMeasurements.map((measurement) => {
 });
 exports.demoAlarms = exports.demoFibreAlarms.map((alarm) => {
     const fibre = exports.demoFibres.find((item) => item.id === alarm.fibreId);
-    const rtu = fibre ? exports.demoRtus.find((item) => item.id === fibre.rtuId) : undefined;
+    const rtu = fibre ? exports.demoRtus.find((item) => item.id === fibre.fromRtuId) : undefined;
     if (!fibre || !rtu) {
         throw new Error(`Fibre or RTU not found for alarm ${alarm.id}`);
     }

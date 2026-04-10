@@ -16,18 +16,94 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { NotificationsActiveOutlined } from '@mui/icons-material';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
+import {
+  BackendAlarm,
+  closeAlarm,
+  getAlarms,
+  markAlarmInProgress,
+} from '../services/api';
 import { AlarmLifecycleStatus, AlarmSeverity } from '../types';
-import { BackendAlarm, getAlarms } from '../services/api';
+import getSocket from '../utils/socket';
+
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  const maybe = error as {
+    response?: { data?: { error?: string; message?: string } };
+  };
+
+  return maybe?.response?.data?.error || maybe?.response?.data?.message || fallback;
+};
 
 const formatDateTime = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
+
   return date.toLocaleString();
+};
+
+const formatRealtimeUpdate = (value: string | null): string => {
+  if (!value) {
+    return 'En attente du flux live...';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `Derniere mise a jour temps reel: ${date.toLocaleTimeString()}`;
+};
+
+const isClosedStatus = (status: BackendAlarm['lifecycleStatus']): boolean =>
+  status === AlarmLifecycleStatus.CLOSED ||
+  status === AlarmLifecycleStatus.RESOLVED ||
+  status === AlarmLifecycleStatus.CLEARED;
+
+const normalizeLifecycleStatus = (status: unknown): BackendAlarm['lifecycleStatus'] => {
+  if (
+    status === 'active' ||
+    status === 'acknowledged' ||
+    status === 'in_progress' ||
+    status === 'resolved' ||
+    status === 'closed' ||
+    status === 'cleared'
+  ) {
+    return status;
+  }
+  return 'active';
+};
+
+const normalizeSeverity = (severity: unknown): BackendAlarm['severity'] => {
+  if (severity === 'critical' || severity === 'major' || severity === 'minor' || severity === 'info') {
+    return severity;
+  }
+  return 'info';
+};
+
+const toBackendAlarm = (payload: unknown): BackendAlarm => {
+  const source = payload as Record<string, unknown>;
+  const id = Number(source.id ?? 0);
+  const rtuId = source.rtuId ?? source.rtu_id;
+  const occurredAt = source.occurredAt ?? source.occurred_at ?? new Date().toISOString();
+
+  return {
+    id: Number.isFinite(id) ? id : 0,
+    rtuId: typeof rtuId === 'number' ? rtuId : rtuId ? Number(rtuId) : null,
+    rtuName: typeof source.rtuName === 'string' ? source.rtuName : undefined,
+    zone: typeof source.zone === 'string' ? source.zone : undefined,
+    severity: normalizeSeverity(source.severity),
+    lifecycleStatus: normalizeLifecycleStatus(source.lifecycleStatus ?? source.lifecycle_status),
+    alarmType: (typeof source.alarmType === 'string' ? source.alarmType : 'Maintenance') as BackendAlarm['alarmType'],
+    message: typeof source.message === 'string' ? source.message : 'Alarme detectee.',
+    location: typeof source.location === 'string' ? source.location : null,
+    localizationKm: typeof source.localizationKm === 'string' ? source.localizationKm : null,
+    owner: typeof source.owner === 'string' ? source.owner : null,
+    occurredAt: String(occurredAt),
+  };
 };
 
 const AlarmsPage: React.FC = () => {
@@ -36,6 +112,8 @@ const AlarmsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState<'all' | AlarmSeverity>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | AlarmLifecycleStatus>('all');
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [lastRealtimeUpdateAt, setLastRealtimeUpdateAt] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -51,11 +129,11 @@ const AlarmsPage: React.FC = () => {
         }
 
         setAlarms(response.data);
-      } catch (apiError) {
+      } catch {
         if (!active) {
           return;
         }
-        setError("Impossible de charger les données d'alarmes depuis le backend.");
+        setError("Impossible de charger les donnees d'alarmes depuis le backend.");
       } finally {
         if (active) {
           setLoading(false);
@@ -70,11 +148,114 @@ const AlarmsPage: React.FC = () => {
     };
   }, []);
 
+  const replaceAlarm = (updatedAlarm: BackendAlarm) => {
+    setAlarms((current) => {
+      const existingIndex = current.findIndex((alarm) => alarm.id === updatedAlarm.id);
+      if (existingIndex < 0) {
+        return [updatedAlarm, ...current];
+      }
+
+      const cloned = [...current];
+      cloned[existingIndex] = { ...cloned[existingIndex], ...updatedAlarm };
+      return cloned;
+    });
+  };
+
+  const prependOrReplaceAlarm = (incomingAlarm: BackendAlarm) => {
+    setAlarms((current) => {
+      const existingIndex = current.findIndex((alarm) => alarm.id === incomingAlarm.id);
+      if (existingIndex >= 0) {
+        const cloned = [...current];
+        cloned[existingIndex] = { ...cloned[existingIndex], ...incomingAlarm };
+        return cloned;
+      }
+
+      return [incomingAlarm, ...current];
+    });
+  };
+
+  useEffect(() => {
+    const markRealtimeUpdate = () => {
+      setLastRealtimeUpdateAt(new Date().toISOString());
+    };
+
+    const handleNewAlarm = (event: Event) => {
+      const customEvent = event as CustomEvent<BackendAlarm>;
+      if (!customEvent.detail) {
+        return;
+      }
+
+      prependOrReplaceAlarm(toBackendAlarm(customEvent.detail));
+      markRealtimeUpdate();
+    };
+
+    const handleUpdatedAlarm = (event: Event) => {
+      const customEvent = event as CustomEvent<BackendAlarm>;
+      if (!customEvent.detail) {
+        return;
+      }
+
+      replaceAlarm(toBackendAlarm(customEvent.detail));
+      markRealtimeUpdate();
+    };
+
+    const socket = getSocket();
+    const onSocketNewAlarm = (rawPayload: unknown) => {
+      prependOrReplaceAlarm(toBackendAlarm(rawPayload));
+      markRealtimeUpdate();
+    };
+
+    const onSocketUpdatedAlarm = (rawPayload: unknown) => {
+      replaceAlarm(toBackendAlarm(rawPayload));
+      markRealtimeUpdate();
+    };
+
+    window.addEventListener('nqms:alarm:new', handleNewAlarm as EventListener);
+    window.addEventListener('nqms:alarm:updated', handleUpdatedAlarm as EventListener);
+    socket.on('new_alarm', onSocketNewAlarm);
+    socket.on('alarm_updated', onSocketUpdatedAlarm);
+
+    return () => {
+      window.removeEventListener('nqms:alarm:new', handleNewAlarm as EventListener);
+      window.removeEventListener('nqms:alarm:updated', handleUpdatedAlarm as EventListener);
+      socket.off('new_alarm', onSocketNewAlarm);
+      socket.off('alarm_updated', onSocketUpdatedAlarm);
+    };
+  }, []);
+
+  const handleInProgress = async (alarmId: number) => {
+    try {
+      setActionLoadingId(alarmId);
+      setError(null);
+      replaceAlarm(await markAlarmInProgress(alarmId));
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, "Impossible de passer l'alarme en cours de traitement."));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleClose = async (alarmId: number) => {
+    try {
+      setActionLoadingId(alarmId);
+      setError(null);
+      replaceAlarm(await closeAlarm(alarmId));
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, "Impossible de cloturer l'alarme."));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const filteredAlarms = useMemo(
     () =>
       alarms.filter((alarm) => {
         const severityMatch = severityFilter === 'all' || alarm.severity === severityFilter;
-        const statusMatch = statusFilter === 'all' || alarm.lifecycleStatus === statusFilter;
+        const statusMatch =
+          statusFilter === 'all' ||
+          (statusFilter === AlarmLifecycleStatus.CLOSED
+            ? isClosedStatus(alarm.lifecycleStatus)
+            : alarm.lifecycleStatus === statusFilter);
         return severityMatch && statusMatch;
       }),
     [alarms, severityFilter, statusFilter]
@@ -86,8 +267,8 @@ const AlarmsPage: React.FC = () => {
       major: alarms.filter((item) => item.severity === AlarmSeverity.MAJOR).length,
       minor: alarms.filter((item) => item.severity === AlarmSeverity.MINOR).length,
       active: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.ACTIVE).length,
-      acknowledged: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.ACKNOWLEDGED).length,
-      cleared: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.CLEARED).length,
+      inProgress: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.IN_PROGRESS).length,
+      closed: alarms.filter((item) => isClosedStatus(item.lifecycleStatus)).length,
     }),
     [alarms]
   );
@@ -100,10 +281,12 @@ const AlarmsPage: React.FC = () => {
       if (!zoneMap.has(zone)) {
         zoneMap.set(zone, { zone, critical: 0, major: 0, minor: 0 });
       }
+
       const entry = zoneMap.get(zone);
       if (!entry) {
         return;
       }
+
       if (alarm.severity === AlarmSeverity.CRITICAL) {
         entry.critical += 1;
       } else if (alarm.severity === AlarmSeverity.MAJOR) {
@@ -127,14 +310,17 @@ const AlarmsPage: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" fontWeight={800} color="white">
-            Alarmes et événements
+            Alarmes et evenements
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Type, sévérité, statut, horodatage et localisation du défaut.
+            Type, severite, statut, horodatage et localisation du defaut.
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {formatRealtimeUpdate(lastRealtimeUpdateAt)}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }}>
-          Créer un incident
+        <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }} disabled>
+          Creer un incident
         </Button>
       </Stack>
 
@@ -142,7 +328,7 @@ const AlarmsPage: React.FC = () => {
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-        setError("Impossible de charger les données d'alarmes depuis le backend.");
+            Chargement des alarmes...
           </Typography>
         </Stack>
       )}
@@ -197,20 +383,20 @@ const AlarmsPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2e3948', border: '1px solid #516782' }}>
             <Typography variant="caption" color="text.secondary">
-              Pris en compte
+              En cours
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#9cc6ff">
-              {summary.acknowledged}
+              {summary.inProgress}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
           <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2a373a', border: '1px solid #587a7f' }}>
             <Typography variant="caption" color="text.secondary">
-              Clôturées
+              Cloturees
             </Typography>
             <Typography variant="h5" fontWeight={700} color="#8ae8ef">
-              {summary.cleared}
+              {summary.closed}
             </Typography>
           </Paper>
         </Grid>
@@ -219,7 +405,7 @@ const AlarmsPage: React.FC = () => {
       <Stack direction="row" spacing={1} mb={1.4} flexWrap="wrap" useFlexGap>
         <Chip
           clickable
-          label="Toutes les sévérités"
+          label="Toutes les severites"
           color={severityFilter === 'all' ? 'primary' : 'default'}
           onClick={() => setSeverityFilter('all')}
         />
@@ -264,9 +450,15 @@ const AlarmsPage: React.FC = () => {
         />
         <Chip
           clickable
-          label="Clôturées"
-          color={statusFilter === AlarmLifecycleStatus.CLEARED ? 'success' : 'default'}
-          onClick={() => setStatusFilter(AlarmLifecycleStatus.CLEARED)}
+          label="En cours"
+          color={statusFilter === AlarmLifecycleStatus.IN_PROGRESS ? 'warning' : 'default'}
+          onClick={() => setStatusFilter(AlarmLifecycleStatus.IN_PROGRESS)}
+        />
+        <Chip
+          clickable
+          label="Cloturees"
+          color={statusFilter === AlarmLifecycleStatus.CLOSED ? 'success' : 'default'}
+          onClick={() => setStatusFilter(AlarmLifecycleStatus.CLOSED)}
         />
       </Stack>
 
@@ -282,7 +474,7 @@ const AlarmsPage: React.FC = () => {
                   <TableRow>
                     <TableCell>ID</TableCell>
                     <TableCell>Type</TableCell>
-                    <TableCell>Sévérité</TableCell>
+                    <TableCell>Severite</TableCell>
                     <TableCell>Statut</TableCell>
                     <TableCell>Message</TableCell>
                     <TableCell>RTU</TableCell>
@@ -292,32 +484,48 @@ const AlarmsPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredAlarms.map((alarm) => (
-                    <TableRow key={alarm.id} hover>
-                      <TableCell>{alarm.id}</TableCell>
-                      <TableCell>{alarm.alarmType}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={alarm.severity} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
-                      </TableCell>
-                      <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
-                      <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
-                      <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
-                      <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <Button size="small" variant="outlined" disabled>
-                            Pris en compte
-                          </Button>
-                          <Button size="small" variant="contained" disabled>
-                            Résoudre
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredAlarms.map((alarm) => {
+                    const loadingAction = actionLoadingId === alarm.id;
+                    const closed = isClosedStatus(alarm.lifecycleStatus);
+                    const isInProgress = alarm.lifecycleStatus === AlarmLifecycleStatus.IN_PROGRESS;
+
+                    return (
+                      <TableRow key={alarm.id} hover>
+                        <TableCell>{alarm.id}</TableCell>
+                        <TableCell>{alarm.alarmType}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={alarm.severity} />
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
+                        <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
+                        <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
+                        <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              disabled={loadingAction || closed || isInProgress}
+                              onClick={() => handleInProgress(alarm.id)}
+                            >
+                              Prise en charge
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={loadingAction || closed}
+                              onClick={() => handleClose(alarm.id)}
+                            >
+                              Cloturer
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -328,7 +536,7 @@ const AlarmsPage: React.FC = () => {
           <Stack spacing={3}>
             <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={2}>
-                Répartition de sévérité par zone
+                Repartition de severite par zone
               </Typography>
               <Box sx={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -344,22 +552,23 @@ const AlarmsPage: React.FC = () => {
                 </ResponsiveContainer>
               </Box>
             </Paper>
+
             <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
               <Typography variant="h6" color="white" mb={1.4}>
-                Procédure
+                Procedure
               </Typography>
               <Stack spacing={1.2}>
                 <Typography variant="body2" color="text.secondary">
-                  1. Vérifiez la localisation et isolez le segment impacté.
+                  1. Verifiez la localisation et isolez le segment impacte.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  2. Lancez un test OTDR manuel à 1550 nm et comparez la trace de référence.
+                  2. Cliquez sur Prise en charge pour passer directement en cours de traitement.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  3. Prenez en compte l'alarme au NOC et désignez un responsable.
+                  3. Une fois l intervention terminee, cloturez l alarme.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  4. Marquez l'alarme comme clôturée uniquement lorsque le budget optique repasse sous le seuil.
+                  4. Une alarme cloturee manuellement n est plus recreee automatiquement.
                 </Typography>
               </Stack>
             </Paper>

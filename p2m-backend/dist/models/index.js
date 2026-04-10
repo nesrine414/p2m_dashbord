@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuditLog = exports.ReportJob = exports.DashboardSnapshot = exports.HealthScore = exports.Prediction = exports.Performance = exports.OtdrTestResult = exports.Measurement = exports.Alarm = exports.FiberRoute = exports.Fibre = exports.RTU = exports.User = void 0;
+exports.AuditLog = exports.ReportJob = exports.DashboardSnapshot = exports.HealthScore = exports.Prediction = exports.Performance = exports.OtdrTestResult = exports.Measurement = exports.Notification = exports.Alarm = exports.FiberRoute = exports.Fibre = exports.RTU = exports.User = void 0;
 const Alarm_1 = __importDefault(require("./Alarm"));
 exports.Alarm = Alarm_1.default;
 const AuditLog_1 = __importDefault(require("./AuditLog"));
@@ -18,6 +18,8 @@ const HealthScore_1 = __importDefault(require("./HealthScore"));
 exports.HealthScore = HealthScore_1.default;
 const Measurement_1 = __importDefault(require("./Measurement"));
 exports.Measurement = Measurement_1.default;
+const Notification_1 = __importDefault(require("./Notification"));
+exports.Notification = Notification_1.default;
 const OtdrTestResult_1 = __importDefault(require("./OtdrTestResult"));
 exports.OtdrTestResult = OtdrTestResult_1.default;
 const Performance_1 = __importDefault(require("./Performance"));
@@ -40,6 +42,8 @@ Fibre_1.default.hasMany(Alarm_1.default, { foreignKey: 'fibreId', as: 'fibreAlar
 Alarm_1.default.belongsTo(Fibre_1.default, { foreignKey: 'fibreId', as: 'fibre' });
 FiberRoute_1.default.hasMany(Alarm_1.default, { foreignKey: 'routeId', as: 'alarms' });
 Alarm_1.default.belongsTo(FiberRoute_1.default, { foreignKey: 'routeId', as: 'route' });
+Alarm_1.default.hasMany(Notification_1.default, { foreignKey: 'alarmId', as: 'notifications' });
+Notification_1.default.belongsTo(Alarm_1.default, { foreignKey: 'alarmId', as: 'alarm' });
 Fibre_1.default.hasMany(Measurement_1.default, { foreignKey: 'fibreId', as: 'measurements' });
 Measurement_1.default.belongsTo(Fibre_1.default, { foreignKey: 'fibreId', as: 'fibre' });
 Fibre_1.default.hasMany(Performance_1.default, { foreignKey: 'fibreId', as: 'performances' });

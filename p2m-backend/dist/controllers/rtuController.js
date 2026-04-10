@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteRTU = exports.updateRTU = exports.createRTU = exports.getRTUById = exports.getRTUs = void 0;
+exports.deleteRTU = exports.updateRTU = exports.createRTU = exports.updateRtuEmulatorThresholdsController = exports.getRtuEmulatorThresholdsController = exports.queryRtuEmulator = exports.getRTUById = exports.getRTUs = void 0;
 const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
 const demoData_1 = require("../data/demoData");
+const rtuEmulatorService_1 = require("../services/rtuEmulatorService");
+const rtuEmulatorThresholdsService_1 = require("../services/rtuEmulatorThresholdsService");
 const getRTUs = async (req, res) => {
     try {
         const { status, search } = req.query;
@@ -80,6 +82,45 @@ const getRTUById = async (req, res) => {
     }
 };
 exports.getRTUById = getRTUById;
+const queryRtuEmulator = async (req, res) => {
+    try {
+        const rawIpAddress = String(req.body?.ipAddress || req.query?.ipAddress || '').trim();
+        if (!rawIpAddress) {
+            res.status(400).json({ error: 'ipAddress is required' });
+            return;
+        }
+        const result = await (0, rtuEmulatorService_1.runRtuEmulatorQuery)(rawIpAddress);
+        if (!result) {
+            res.status(404).json({ error: `No RTU found for IP ${rawIpAddress}` });
+            return;
+        }
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to run RTU emulator query' });
+    }
+};
+exports.queryRtuEmulator = queryRtuEmulator;
+const getRtuEmulatorThresholdsController = async (_req, res) => {
+    try {
+        res.json((0, rtuEmulatorThresholdsService_1.getRtuEmulatorThresholds)());
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to load emulator thresholds' });
+    }
+};
+exports.getRtuEmulatorThresholdsController = getRtuEmulatorThresholdsController;
+const updateRtuEmulatorThresholdsController = async (req, res) => {
+    try {
+        const updated = await (0, rtuEmulatorThresholdsService_1.updateRtuEmulatorThresholds)(req.body);
+        res.json(updated);
+    }
+    catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update emulator thresholds';
+        res.status(400).json({ error: message });
+    }
+};
+exports.updateRtuEmulatorThresholdsController = updateRtuEmulatorThresholdsController;
 const createRTU = async (req, res) => {
     try {
         if (!database_1.databaseState.connected) {

@@ -3,8 +3,12 @@ import {
   Alert,
   Box,
   CircularProgress,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -14,28 +18,26 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
 import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
   BackendAlarm,
   BackendFiberRoute,
-  BackendRTU,
   BackendOtdrTest,
+  BackendRTU,
+  EmulatorThresholdsConfig,
+  getEmulatorThresholds,
   getAlarms,
   getRecentOtdrTests,
   getRTUs,
+  getRouteAttenuationTrend,
   getTopology,
+  RouteAttenuationTrendPoint,
 } from '../services/api';
 import { FiberStatus, TestResult } from '../types';
-
-interface AttenuationPoint {
-  slot: string;
-  backboneNorth: number;
-  backboneSouth: number;
-  metroRing: number;
-}
+import getSocket from '../utils/socket';
 
 interface LiveEventItem {
   id: string;
@@ -44,6 +46,27 @@ interface LiveEventItem {
   message: string;
   source: string;
 }
+
+interface TrendChartPoint {
+  timestamp: string;
+  timestampMs: number;
+  attenuationDb: number | null;
+  wavelengthNm: number;
+  testResult: 'pass' | 'fail';
+}
+
+interface TrendWindowOption {
+  label: string;
+  minutes: number;
+}
+
+const TREND_WINDOW_OPTIONS: TrendWindowOption[] = [
+  { label: '1h', minutes: 60 },
+  { label: '24h', minutes: 24 * 60 },
+  { label: '7j', minutes: 7 * 24 * 60 },
+];
+
+const DEFAULT_TREND_WINDOW_MINUTES = TREND_WINDOW_OPTIONS[0].minutes;
 
 const formatDateTime = (value?: string | null): string => {
   if (!value) {
@@ -64,21 +87,160 @@ const toTimeString = (value: string): string => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-const buildAttenuationSeries = (routes: BackendFiberRoute[]): AttenuationPoint[] => {
-  const valid = routes.filter((route) => typeof route.attenuationDb === 'number' && route.attenuationDb > 0);
-  const base = valid.map((item) => Number(item.attenuationDb || 0));
-  const north = base[0] || 15.8;
-  const south = base[1] || 17.3;
-  const metro = base[2] || 14.6;
-  const slots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
-  const deltas = [-0.7, -0.4, 0.1, 0.4, 0.9, 1.1, 0.5, 0];
+const toTrendChartPoints = (points: RouteAttenuationTrendPoint[]): TrendChartPoint[] =>
+  points.map((point) => ({
+    timestampMs: new Date(point.timestamp).getTime(),
+    timestamp: point.timestamp,
+    attenuationDb: point.attenuationDb,
+    wavelengthNm: point.wavelengthNm,
+    testResult: point.testResult,
+  }))
+  .filter((point) => Number.isFinite(point.timestampMs));
 
-  return slots.map((slot, index) => ({
-    slot,
-    backboneNorth: Number((north + deltas[index]).toFixed(1)),
-    backboneSouth: Number((south + deltas[index] + 0.4).toFixed(1)),
-    metroRing: Number((metro + deltas[index] - 0.3).toFixed(1)),
-  }));
+const getTrendWindowLabel = (minutes: number): string =>
+  TREND_WINDOW_OPTIONS.find((option) => option.minutes === minutes)?.label || `${minutes} min`;
+
+const getTrendLimit = (windowMinutes: number): number => {
+  if (windowMinutes <= 60) {
+    return 240;
+  }
+
+  if (windowMinutes <= 24 * 60) {
+    return 1200;
+  }
+
+  return 5000;
+};
+
+const formatTrendTick = (timestampMs: number, windowMinutes: number): string => {
+  const date = new Date(timestampMs);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  if (windowMinutes <= 60) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  if (windowMinutes <= 24 * 60) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  return date.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' });
+};
+
+const getTrendTimeDomain = (windowMinutes: number): [number, number] => {
+  const now = new Date();
+
+  if (windowMinutes === 24 * 60) {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(24, 0, 0, 0);
+    return [start.getTime(), end.getTime()];
+  }
+
+  if (windowMinutes === 7 * 24 * 60) {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 6);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return [start.getTime(), end.getTime()];
+  }
+
+  return [now.getTime() - windowMinutes * 60_000, now.getTime()];
+};
+
+const getTrendTimeTicks = (windowMinutes: number, domain: [number, number]): number[] => {
+  const [start, end] = domain;
+  if (end <= start) {
+    return [start, end];
+  }
+
+  const stepMs =
+    windowMinutes === 24 * 60
+      ? 2 * 60 * 60 * 1000
+      : windowMinutes === 7 * 24 * 60
+        ? 24 * 60 * 60 * 1000
+        : 10 * 60 * 1000;
+
+  const ticks: number[] = [];
+  for (let current = start; current <= end; current += stepMs) {
+    ticks.push(current);
+  }
+
+  if (ticks[ticks.length - 1] !== end) {
+    ticks.push(end);
+  }
+
+  return ticks;
+};
+
+const getBucketStartMs = (timestampMs: number, windowMinutes: number): number => {
+  const date = new Date(timestampMs);
+  if (windowMinutes <= 24 * 60) {
+    date.setMinutes(0, 0, 0);
+    return date.getTime();
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+};
+
+const aggregateTrendPoints = (points: TrendChartPoint[], windowMinutes: number): TrendChartPoint[] => {
+  const sorted = points
+    .slice()
+    .sort((left, right) => left.timestampMs - right.timestampMs);
+
+  if (windowMinutes <= 60) {
+    return sorted;
+  }
+
+  const bucketMap = new Map<
+    number,
+    {
+      sum: number;
+      count: number;
+      wavelengthNm: number;
+      hasFail: boolean;
+    }
+  >();
+
+  sorted.forEach((point) => {
+    const bucketStart = getBucketStartMs(point.timestampMs, windowMinutes);
+    const existing = bucketMap.get(bucketStart);
+    const value = point.attenuationDb;
+    const hasNumeric = typeof value === 'number' && Number.isFinite(value);
+
+    if (!existing) {
+      bucketMap.set(bucketStart, {
+        sum: hasNumeric ? value : 0,
+        count: hasNumeric ? 1 : 0,
+        wavelengthNm: point.wavelengthNm,
+        hasFail: point.testResult === 'fail',
+      });
+      return;
+    }
+
+    if (hasNumeric) {
+      existing.sum += value;
+      existing.count += 1;
+    }
+
+    existing.wavelengthNm = point.wavelengthNm;
+    existing.hasFail = existing.hasFail || point.testResult === 'fail';
+  });
+
+  return Array.from(bucketMap.entries())
+    .sort((left, right) => left[0] - right[0])
+    .map(([timestampMs, value]) => ({
+      timestampMs,
+      timestamp: new Date(timestampMs).toISOString(),
+      attenuationDb: value.count > 0 ? Number((value.sum / value.count).toFixed(2)) : null,
+      wavelengthNm: value.wavelengthNm,
+      testResult: value.hasFail ? 'fail' : 'pass',
+    }));
 };
 
 const MonitoringPage: React.FC = () => {
@@ -86,16 +248,26 @@ const MonitoringPage: React.FC = () => {
   const [otdrTests, setOtdrTests] = useState<BackendOtdrTest[]>([]);
   const [alarms, setAlarms] = useState<BackendAlarm[]>([]);
   const [rtus, setRtus] = useState<BackendRTU[]>([]);
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [trendWindowMinutes, setTrendWindowMinutes] = useState<number>(DEFAULT_TREND_WINDOW_MINUTES);
+  const [trendRouteName, setTrendRouteName] = useState<string>('Route selectionnee');
+  const [trendPoints, setTrendPoints] = useState<TrendChartPoint[]>([]);
+  const [trendThresholds, setTrendThresholds] = useState<EmulatorThresholdsConfig['fibre']['attenuationDb'] | null>(
+    null
+  );
+  const [trendLoading, setTrendLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    const load = async () => {
+    const loadBaseData = async (showLoader = false) => {
       try {
-        setLoading(true);
-        setError(null);
+        if (showLoader) {
+          setLoading(true);
+          setError(null);
+        }
 
         const [topologyResponse, otdrResponse, alarmResponse, rtuResponse] = await Promise.all([
           getTopology(),
@@ -112,24 +284,175 @@ const MonitoringPage: React.FC = () => {
         setOtdrTests(otdrResponse.data);
         setAlarms(alarmResponse.data);
         setRtus(rtuResponse);
-      } catch (apiError) {
+      } catch {
         if (!active) {
           return;
         }
-        setError('Impossible de charger les données de supervision depuis le backend.');
+        if (showLoader) {
+          setError('Impossible de charger les donnees de supervision depuis le backend.');
+        }
       } finally {
-        if (active) {
+        if (active && showLoader) {
           setLoading(false);
         }
       }
     };
 
-    void load();
+    void loadBaseData(true);
+
+    const socket = getSocket();
+    const onRealtimeUpdate = () => {
+      void loadBaseData(false);
+    };
+
+    socket.on('emulator_cycle_completed', onRealtimeUpdate);
+    socket.on('new_alarm', onRealtimeUpdate);
+    socket.on('alarm_updated', onRealtimeUpdate);
+
+    const refreshInterval = window.setInterval(() => {
+      void loadBaseData(false);
+    }, 15000);
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+      socket.off('emulator_cycle_completed', onRealtimeUpdate);
+      socket.off('new_alarm', onRealtimeUpdate);
+      socket.off('alarm_updated', onRealtimeUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (routes.length === 0) {
+      return;
+    }
+
+    if (selectedRouteId && routes.some((route) => route.id === selectedRouteId)) {
+      return;
+    }
+
+    setSelectedRouteId(routes[0].id);
+  }, [routes, selectedRouteId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadThresholds = async () => {
+      try {
+        const thresholds = await getEmulatorThresholds();
+        if (!active) {
+          return;
+        }
+
+        setTrendThresholds(thresholds.fibre.attenuationDb);
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setTrendThresholds(null);
+      }
+    };
+
+    void loadThresholds();
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedRouteId) {
+      setTrendPoints([]);
+      return;
+    }
+
+    let active = true;
+
+    const loadTrend = async () => {
+      try {
+        setTrendLoading(true);
+        const response = await getRouteAttenuationTrend(selectedRouteId, {
+          windowMinutes: trendWindowMinutes,
+          limit: getTrendLimit(trendWindowMinutes),
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setTrendRouteName(response.routeName);
+        setTrendPoints(toTrendChartPoints(response.points));
+      } catch {
+        if (!active) {
+          return;
+        }
+        setTrendPoints([]);
+      } finally {
+        if (active) {
+          setTrendLoading(false);
+        }
+      }
+    };
+
+    void loadTrend();
+
+    const socket = getSocket();
+    const onRealtimeUpdate = () => {
+      void loadTrend();
+    };
+
+    socket.on('emulator_cycle_completed', onRealtimeUpdate);
+    socket.on('new_alarm', onRealtimeUpdate);
+    socket.on('alarm_updated', onRealtimeUpdate);
+
+    const refreshInterval = window.setInterval(() => {
+      void loadTrend();
+    }, 15000);
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+      socket.off('emulator_cycle_completed', onRealtimeUpdate);
+      socket.off('new_alarm', onRealtimeUpdate);
+      socket.off('alarm_updated', onRealtimeUpdate);
+    };
+  }, [selectedRouteId, trendWindowMinutes]);
+
+  const trendDisplayPoints = useMemo<TrendChartPoint[]>(
+    () => aggregateTrendPoints(trendPoints, trendWindowMinutes),
+    [trendPoints, trendWindowMinutes]
+  );
+
+  const trendDomain = useMemo<[number, number]>(() => {
+    const numericValues = trendDisplayPoints
+      .map((point) => point.attenuationDb)
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+
+    if (trendThresholds) {
+      numericValues.push(trendThresholds.warning, trendThresholds.critical);
+    }
+
+    if (numericValues.length === 0) {
+      return [0, 5];
+    }
+
+    const minValue = Math.min(...numericValues);
+    const maxValue = Math.max(...numericValues);
+    const margin = Math.max(0.5, (maxValue - minValue) * 0.15);
+
+    return [Math.max(0, Number((minValue - margin).toFixed(2))), Number((maxValue + margin).toFixed(2))];
+  }, [trendDisplayPoints, trendThresholds]);
+
+  const trendTimeDomain = useMemo<[number, number]>(
+    () => getTrendTimeDomain(trendWindowMinutes),
+    [trendWindowMinutes]
+  );
+
+  const trendTimeTicks = useMemo<number[]>(
+    () => getTrendTimeTicks(trendWindowMinutes, trendTimeDomain),
+    [trendWindowMinutes, trendTimeDomain]
+  );
 
   const summary = useMemo(() => {
     const normal = routes.filter((route) => route.fiberStatus === FiberStatus.NORMAL).length;
@@ -154,8 +477,6 @@ const MonitoringPage: React.FC = () => {
     };
   }, [routes, otdrTests]);
 
-  const attenuationSeries = useMemo(() => buildAttenuationSeries(routes), [routes]);
-
   const liveEvents: LiveEventItem[] = useMemo(
     () =>
       alarms.slice(0, 4).map((alarm) => ({
@@ -168,20 +489,25 @@ const MonitoringPage: React.FC = () => {
     [alarms]
   );
 
+  const selectedRoute = useMemo(
+    () => routes.find((route) => route.id === selectedRouteId) || null,
+    [routes, selectedRouteId]
+  );
+
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>
-        Vue 2 - Réseau
+        Vue 2 - Reseau
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Topologie optique, atténuation et résultats OTDR.
+        Topologie optique, attenuation et resultats OTDR.
       </Typography>
 
       {loading && (
         <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
           <CircularProgress size={18} />
           <Typography variant="body2" color="text.secondary">
-            Chargement des données de supervision...
+            Chargement des donnees de supervision...
           </Typography>
         </Stack>
       )}
@@ -206,7 +532,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#3a3228', border: '1px solid #7c6646' }}>
             <Typography variant="caption" color="text.secondary">
-              Fibre dégradée
+              Fibre degradee
             </Typography>
             <Typography variant="h5" color="#ffc98c" fontWeight={700}>
               {summary.degraded}
@@ -226,7 +552,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#252d40', border: '1px solid #46546c' }}>
             <Typography variant="caption" color="text.secondary">
-              Atténuation moyenne
+              Attenuation moyenne
             </Typography>
             <Typography variant="h5" color="white" fontWeight={700}>
               {summary.avgAttenuation} dB
@@ -248,55 +574,139 @@ const MonitoringPage: React.FC = () => {
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-              <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
-              <Typography variant="h6" color="white">
-                Tendance d’atténuation
-              </Typography>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={1.2}
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+              justifyContent="space-between"
+              mb={2}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
+                <Typography variant="h6" color="white">
+                  Tendance attenuation par route
+                </Typography>
+              </Stack>
+              <FormControl size="small" sx={{ minWidth: 260 }}>
+                <InputLabel id="route-trend-label">Route optique</InputLabel>
+                <Select
+                  labelId="route-trend-label"
+                  value={selectedRouteId ?? ''}
+                  label="Route optique"
+                  onChange={(event) => setSelectedRouteId(Number(event.target.value))}
+                >
+                  {routes.map((route) => (
+                    <MenuItem key={route.id} value={route.id}>
+                      {route.routeName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel id="route-trend-window-label">Periode</InputLabel>
+                <Select
+                  labelId="route-trend-window-label"
+                  value={trendWindowMinutes}
+                  label="Periode"
+                  onChange={(event) => setTrendWindowMinutes(Number(event.target.value))}
+                >
+                  {TREND_WINDOW_OPTIONS.map((option) => (
+                    <MenuItem key={option.minutes} value={option.minutes}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Stack>
+
+            <Typography variant="body2" color="text.secondary" mb={1.5}>
+              {selectedRoute ? `${selectedRoute.source} -> ${selectedRoute.destination}` : 'Aucune route selectionnee'}
+              {' | '}
+              Fenetre: {getTrendWindowLabel(trendWindowMinutes)}
+              {' | '}
+              Points: {trendDisplayPoints.length}
+              {trendThresholds
+                ? ` | Seuils: warning ${trendThresholds.warning} ${trendThresholds.unit}, critical ${trendThresholds.critical} ${trendThresholds.unit}`
+                : ''}
+            </Typography>
+
             <Box sx={{ height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={attenuationSeries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
-                  <XAxis dataKey="slot" stroke="#9aa9bd" />
-                  <YAxis stroke="#9aa9bd" />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="backboneNorth"
-                    stroke="#55c2ff"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Noyau Nord"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="backboneSouth"
-                    stroke="#ff9f5a"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Noyau Sud"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="metroRing"
-                    stroke="#92e7a9"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Anneau métropolitain"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {trendLoading ? (
+                <Stack height="100%" direction="row" alignItems="center" justifyContent="center">
+                  <CircularProgress size={20} />
+                </Stack>
+              ) : trendDisplayPoints.length === 0 ? (
+                <Stack height="100%" direction="row" alignItems="center" justifyContent="center">
+                  <Typography variant="body2" color="text.secondary">
+                    Aucune mesure attenuation disponible pour {trendRouteName}.
+                  </Typography>
+                </Stack>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendDisplayPoints}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
+                    <XAxis
+                      type="number"
+                      scale="time"
+                      dataKey="timestampMs"
+                      domain={trendTimeDomain}
+                      ticks={trendTimeTicks}
+                      stroke="#9aa9bd"
+                      tickFormatter={(value: number) => formatTrendTick(value, trendWindowMinutes)}
+                      minTickGap={40}
+                      interval={0}
+                    />
+                    <YAxis stroke="#9aa9bd" domain={trendDomain} />
+                    <Tooltip
+                      formatter={(value: number | string | null) =>
+                        typeof value === 'number' ? `${value.toFixed(2)} dB` : 'N/D'
+                      }
+                      labelFormatter={(_label: string, payload: Array<{ payload: TrendChartPoint }>) => {
+                        const item = payload?.[0]?.payload;
+                        return item ? formatDateTime(item.timestamp) : '';
+                      }}
+                    />
+                    {trendThresholds && (
+                      <>
+                        <Line
+                          type="linear"
+                          dataKey={() => trendThresholds.warning}
+                          stroke="#ffb347"
+                          strokeWidth={1.5}
+                          dot={false}
+                          name={`Seuil warning (${trendThresholds.warning} ${trendThresholds.unit})`}
+                        />
+                        <Line
+                          type="linear"
+                          dataKey={() => trendThresholds.critical}
+                          stroke="#ff6f7a"
+                          strokeWidth={1.5}
+                          strokeDasharray="4 4"
+                          dot={false}
+                          name={`Seuil critical (${trendThresholds.critical} ${trendThresholds.unit})`}
+                        />
+                      </>
+                    )}
+                    <Line
+                      type="monotoneX"
+                      dataKey="attenuationDb"
+                      stroke="#55c2ff"
+                      strokeWidth={2}
+                      dot={false}
+                      name="Attenuation"
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </Box>
           </Paper>
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper
-            sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}
-          >
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
             <Typography variant="h6" color="white" mb={2}>
-              Flux d’événements
+              Flux d'evenements
             </Typography>
             <Stack spacing={1.5}>
               {liveEvents.map((event) => (
@@ -335,11 +745,11 @@ const MonitoringPage: React.FC = () => {
                   <TableRow>
                     <TableCell>Route</TableCell>
                     <TableCell>Trajet</TableCell>
-                    <TableCell>État de la fibre</TableCell>
-                    <TableCell>État de la route</TableCell>
+                    <TableCell>Etat fibre</TableCell>
+                    <TableCell>Etat route</TableCell>
                     <TableCell>Longueur</TableCell>
-                    <TableCell>Atténuation</TableCell>
-                    <TableCell>Événements de réflexion</TableCell>
+                    <TableCell>Attenuation</TableCell>
+                    <TableCell>Reflexion</TableCell>
                     <TableCell>Dernier test</TableCell>
                   </TableRow>
                 </TableHead>
@@ -358,9 +768,7 @@ const MonitoringPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
                       <TableCell>
-                        {route.attenuationDb && route.attenuationDb > 0
-                          ? `${route.attenuationDb.toFixed(1)} dB`
-                          : 'N/D'}
+                        {route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(1)} dB` : 'N/D'}
                       </TableCell>
                       <TableCell>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
                       <TableCell>{formatDateTime(route.lastTestTime)}</TableCell>
@@ -373,13 +781,11 @@ const MonitoringPage: React.FC = () => {
         </Grid>
 
         <Grid size={{ xs: 12, xl: 4 }}>
-          <Paper
-            sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}
-          >
+          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <DeviceHubOutlined sx={{ color: '#9bb9ff' }} />
               <Typography variant="h6" color="white">
-                Tests OTDR récents ({summary.failedTests} échecs)
+                Tests OTDR recents ({summary.failedTests} echecs)
               </Typography>
             </Stack>
             <TableContainer>
@@ -390,8 +796,8 @@ const MonitoringPage: React.FC = () => {
                     <TableCell>Mode</TableCell>
                     <TableCell>Impulsion</TableCell>
                     <TableCell>Plage</TableCell>
-                    <TableCell>Longueur d’onde</TableCell>
-                    <TableCell>Résultat</TableCell>
+                    <TableCell>Lambda</TableCell>
+                    <TableCell>Resultat</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

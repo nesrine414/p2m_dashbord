@@ -3,6 +3,11 @@ import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { Alarm, Fibre, HealthScore, Measurement, OtdrTestResult, Prediction, RTU } from '../models';
 import { demoRtus } from '../data/demoData';
+import { runRtuEmulatorQuery } from '../services/rtuEmulatorService';
+import {
+  getRtuEmulatorThresholds,
+  updateRtuEmulatorThresholds,
+} from '../services/rtuEmulatorThresholdsService';
 
 export const getRTUs = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -82,6 +87,46 @@ export const getRTUById = async (req: Request, res: Response): Promise<void> => 
     res.json(rtu);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch RTU' });
+  }
+};
+
+export const queryRtuEmulator = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawIpAddress = String(req.body?.ipAddress || req.query?.ipAddress || '').trim();
+
+    if (!rawIpAddress) {
+      res.status(400).json({ error: 'ipAddress is required' });
+      return;
+    }
+
+    const result = await runRtuEmulatorQuery(rawIpAddress);
+
+    if (!result) {
+      res.status(404).json({ error: `No RTU found for IP ${rawIpAddress}` });
+      return;
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to run RTU emulator query' });
+  }
+};
+
+export const getRtuEmulatorThresholdsController = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    res.json(getRtuEmulatorThresholds());
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load emulator thresholds' });
+  }
+};
+
+export const updateRtuEmulatorThresholdsController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const updated = await updateRtuEmulatorThresholds(req.body);
+    res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update emulator thresholds';
+    res.status(400).json({ error: message });
   }
 };
 

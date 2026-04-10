@@ -271,7 +271,12 @@ const RTUInventoryPage: React.FC = () => {
         const activeAlarmCount = new Map<number, number>();
 
         alarmsResponse.data
-          .filter((alarm) => alarm.lifecycleStatus !== AlarmLifecycleStatus.CLEARED && alarm.rtuId)
+          .filter(
+            (alarm) =>
+              ![AlarmLifecycleStatus.CLEARED, AlarmLifecycleStatus.RESOLVED, AlarmLifecycleStatus.CLOSED].includes(
+                alarm.lifecycleStatus as AlarmLifecycleStatus
+              ) && alarm.rtuId
+          )
           .forEach((alarm) => {
             const key = Number(alarm.rtuId);
             activeAlarmCount.set(key, (activeAlarmCount.get(key) || 0) + 1);
@@ -283,7 +288,7 @@ const RTUInventoryPage: React.FC = () => {
 
         setRtuItems(mappableRtus);
         setRecords(mappedRecords);
-        setRoutes(topologyResponse.routes.slice(0, MAX_RELATED_ROUTES));
+        setRoutes(topologyResponse.routes);
         setOtdrTests(otdrResponse.data);
         setSelectedRtuId((current) => current ?? mappedRecords[0]?.id ?? null);
       } catch (apiError) {

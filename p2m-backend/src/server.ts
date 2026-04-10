@@ -11,6 +11,7 @@ import {
   FiberRoute,
   HealthScore,
   Measurement,
+  Notification,
   OtdrTestResult,
   Performance,
   Prediction,
@@ -172,6 +173,7 @@ const seedDefaultData = async (): Promise<void> => {
   }
 
   if (resetDemoDataOnBoot) {
+    await Notification.destroy({ where: {} });
     await Alarm.destroy({ where: {} });
     await Measurement.destroy({ where: {} });
     await Performance.destroy({ where: {} });
@@ -183,6 +185,8 @@ const seedDefaultData = async (): Promise<void> => {
     await RTU.destroy({ where: {} });
     console.log('Reset demo operational data on boot');
   }
+
+  const bulkCreateOptions = { ignoreDuplicates: !resetDemoDataOnBoot };
 
   await RTU.bulkCreate(
     demoRtus.map((rtu) => ({
@@ -202,7 +206,7 @@ const seedDefaultData = async (): Promise<void> => {
       lastSeen: new Date(rtu.lastSeen),
       userId: undefined,
     })),
-    { ignoreDuplicates: false }
+    bulkCreateOptions
   );
   console.log('Synced Tunisia RTU demo inventory');
 
@@ -214,7 +218,7 @@ const seedDefaultData = async (): Promise<void> => {
       length: fibre.length,
       status: fibre.status,
     })),
-    { ignoreDuplicates: false }
+    bulkCreateOptions
   );
   console.log('Seeded fibre demo data');
 
@@ -227,7 +231,7 @@ const seedDefaultData = async (): Promise<void> => {
       wavelength: measurement.wavelength,
       timestamp: new Date(measurement.timestamp),
     })),
-    { ignoreDuplicates: false }
+    bulkCreateOptions
   );
   console.log('Seeded measurement demo data');
 
@@ -239,7 +243,7 @@ const seedDefaultData = async (): Promise<void> => {
       mtbf: item.mtbf,
       recordedAt: new Date(item.recordedAt),
     })),
-    { ignoreDuplicates: false }
+    bulkCreateOptions
   );
   console.log('Seeded performance demo data');
 
@@ -248,7 +252,7 @@ const seedDefaultData = async (): Promise<void> => {
       ...route,
       lastTestTime: new Date(route.lastTestTime),
     })),
-    { ignoreDuplicates: false }
+    bulkCreateOptions
   );
   console.log('Seeded Tunisia fiber route demo data');
 
@@ -256,7 +260,8 @@ const seedDefaultData = async (): Promise<void> => {
     demoAlarms.map((alarm) => ({
       ...alarm,
       occurredAt: new Date(alarm.occurredAt),
-    }))
+    })),
+    bulkCreateOptions
   );
   console.log('Seeded alarm demo data');
 
@@ -264,7 +269,8 @@ const seedDefaultData = async (): Promise<void> => {
     demoOtdrTests.map((test) => ({
       ...test,
       testedAt: new Date(test.testedAt),
-    }))
+    })),
+    bulkCreateOptions
   );
   console.log('Seeded OTDR demo data');
 };

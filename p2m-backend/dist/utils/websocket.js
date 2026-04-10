@@ -8,17 +8,41 @@ const socket_io_1 = require("socket.io");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 let io = null;
+const isAllowedDevOrigin = (origin) => {
+    try {
+        const { hostname, protocol } = new URL(origin);
+        if (protocol !== 'http:' && protocol !== 'https:') {
+            return false;
+        }
+        return (hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '::1' ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('10.') ||
+            hostname.startsWith('172.'));
+    }
+    catch {
+        return false;
+    }
+};
 const initWebSocket = (httpServer) => {
+    const configuredFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     io = new socket_io_1.Server(httpServer, {
         cors: {
-            origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+            origin: (origin, callback) => {
+                if (!origin || origin === configuredFrontendUrl || isAllowedDevOrigin(origin)) {
+                    callback(null, true);
+                    return;
+                }
+                callback(new Error(`WebSocket CORS blocked for origin: ${origin}`));
+            },
             credentials: true,
         },
     });
     io.on('connection', (socket) => {
-        console.log(`🔌 WebSocket client connected: ${socket.id}`);
+        console.log(`WebSocket client connected: ${socket.id}`);
         socket.on('disconnect', () => {
-            console.log(`🔌 WebSocket client disconnected: ${socket.id}`);
+            console.log(`WebSocket client disconnected: ${socket.id}`);
         });
     });
     return io;

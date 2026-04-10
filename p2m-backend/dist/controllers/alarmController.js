@@ -5,8 +5,16 @@ const sequelize_1 = require("sequelize");
 const database_1 = require("../config/database");
 const models_1 = require("../models");
 const demoData_1 = require("../data/demoData");
-const websocket_1 = require("../utils/websocket");
+const alarmRealtimeService_1 = require("../services/alarmRealtimeService");
+const dashboardStatsService_1 = require("../services/dashboardStatsService");
+const notificationService_1 = require("../services/notificationService");
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'];
+const getActionPayload = (req) => req.body && typeof req.body === 'object'
+    ? req.body
+    : {};
+const triggerDashboardStatsRealtime = () => {
+    void (0, dashboardStatsService_1.emitDashboardKpiUpdate)();
+};
 const mapDemoAlarm = (alarm) => {
     const rtu = demoData_1.demoRtus.find((item) => item.id === alarm.rtuId);
     return {
@@ -33,6 +41,47 @@ const mapDbAlarm = (alarm, rtu) => ({
     acknowledgedAt: alarm.get('acknowledgedAt') || null,
     resolvedAt: alarm.get('resolvedAt') || null,
 });
+const respondWithMappedAlarm = async (alarm, res) => {
+    const rtu = await resolveAlarmRtu(alarm);
+    res.json(mapDbAlarm(alarm, rtu));
+};
+const restoreNetworkAfterClosure = async (alarm) => {
+    const alarmType = alarm.get('alarmType');
+    const fibreId = alarm.get('fibreId') ?? null;
+    const rtu = await resolveAlarmRtu(alarm);
+    if (rtu) {
+        const currentPower = rtu.get('power') ?? null;
+        const currentTemperature = rtu.get('temperature') ?? null;
+        const currentOtdr = rtu.get('otdrStatus') ?? null;
+        await rtu.update({
+            status: 'online',
+            power: currentPower === 'failure' ? 'normal' : currentPower ?? 'normal',
+            temperature: alarmType === 'Temperature'
+                ? 30
+                : typeof currentTemperature === 'number' && currentTemperature > 40
+                    ? 36
+                    : currentTemperature ?? 30,
+            otdrStatus: currentOtdr === 'fault' ? 'ready' : currentOtdr ?? 'ready',
+            lastSeen: new Date(),
+        });
+    }
+    if (fibreId) {
+        const fibre = await models_1.Fibre.findByPk(fibreId);
+        if (fibre) {
+            const lengthKm = fibre.get('length') ?? 10;
+            await fibre.update({ status: 'normal' });
+            const nextMeasurementId = ((await models_1.Measurement.max('id')) ?? 0) + 1;
+            await models_1.Measurement.create({
+                id: nextMeasurementId,
+                fibreId: fibre.get('id'),
+                attenuation: Number(Math.max(2.5, Math.min(5.5, lengthKm / 4)).toFixed(1)),
+                testResult: 'pass',
+                wavelength: 1550,
+                timestamp: new Date(),
+            });
+        }
+    }
+};
 const resolveAlarmRtu = async (alarm) => {
     const alarmRtuId = alarm.get('rtuId') ?? null;
     if (alarmRtuId) {
@@ -146,8 +195,11 @@ const createAlarm = async (req, res) => {
             occurredAt: req.body.occurredAt || new Date(),
         };
         const alarm = await models_1.Alarm.create(payload);
-        (0, websocket_1.emitEvent)('new_alarm', alarm);
-        res.status(201).json(alarm);
+        await (0, alarmRealtimeService_1.emitNewAlarmRealtime)(alarm);
+        await (0, notificationService_1.createNotificationForAlarm)(alarm);
+        triggerDashboardStatsRealtime();
+        res.status(201);
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to create alarm' });
@@ -166,13 +218,15 @@ const acknowledgeAlarm = async (req, res) => {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
+        const payload = getActionPayload(req);
         await alarm.update({
             lifecycleStatus: 'acknowledged',
             acknowledgedAt: new Date(),
-            owner: req.body.owner || alarm.owner,
+            owner: payload.owner || alarm.owner,
         });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
+        await (0, alarmRealtimeService_1.emitAlarmUpdatedRealtime)(alarm);
+        triggerDashboardStatsRealtime();
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to acknowledge alarm' });
@@ -191,13 +245,15 @@ const resolveAlarm = async (req, res) => {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
+        const payload = getActionPayload(req);
         await alarm.update({
             lifecycleStatus: 'closed',
             resolvedAt: new Date(),
-            owner: req.body.owner || alarm.owner,
+            owner: payload.owner || alarm.owner,
         });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
+        await (0, alarmRealtimeService_1.emitAlarmUpdatedRealtime)(alarm);
+        triggerDashboardStatsRealtime();
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to resolve alarm' });
@@ -216,12 +272,14 @@ const inProgressAlarm = async (req, res) => {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
+        const payload = getActionPayload(req);
         await alarm.update({
             lifecycleStatus: 'in_progress',
-            owner: req.body.owner || alarm.owner,
+            owner: payload.owner || alarm.owner,
         });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
+        await (0, alarmRealtimeService_1.emitAlarmUpdatedRealtime)(alarm);
+        triggerDashboardStatsRealtime();
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to mark alarm in progress' });
@@ -240,14 +298,16 @@ const resolvedAlarm = async (req, res) => {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
+        const payload = getActionPayload(req);
         await alarm.update({
             lifecycleStatus: 'resolved',
             resolvedAt: new Date(),
-            resolutionComment: req.body.comment || undefined,
-            owner: req.body.owner || alarm.owner,
+            resolutionComment: payload.comment || undefined,
+            owner: payload.owner || alarm.owner,
         });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
+        await (0, alarmRealtimeService_1.emitAlarmUpdatedRealtime)(alarm);
+        triggerDashboardStatsRealtime();
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to resolve alarm' });
@@ -266,12 +326,16 @@ const closeAlarm = async (req, res) => {
             res.status(404).json({ error: 'Alarm not found' });
             return;
         }
+        const payload = getActionPayload(req);
         await alarm.update({
             lifecycleStatus: 'closed',
-            owner: req.body.owner || alarm.owner,
+            resolvedAt: new Date(),
+            owner: payload.owner || alarm.owner,
         });
-        (0, websocket_1.emitEvent)('alarm_updated', alarm);
-        res.json(alarm);
+        await restoreNetworkAfterClosure(alarm);
+        await (0, alarmRealtimeService_1.emitAlarmUpdatedRealtime)(alarm);
+        triggerDashboardStatsRealtime();
+        await respondWithMappedAlarm(alarm, res);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to close alarm' });

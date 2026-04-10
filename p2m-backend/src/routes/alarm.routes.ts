@@ -15,11 +15,11 @@ const router = Router();
 
 router.get('/', getAlarms);
 router.get('/:id', getAlarmById);
-router.post('/', authMiddleware, requireRole(['admin', 'user']), createAlarm);
-router.patch('/:id/acknowledge', authMiddleware, requireRole(['admin', 'user']), acknowledgeAlarm);
-router.patch('/:id/resolve', authMiddleware, requireRole(['admin', 'user']), resolveAlarm);
-router.patch('/:id/in-progress', authMiddleware, requireRole(['admin', 'user']), inProgressAlarm);
-router.patch('/:id/resolved', authMiddleware, requireRole(['admin', 'user']), resolvedAlarm);
-router.patch('/:id/close', authMiddleware, requireRole(['admin', 'user']), closeAlarm);
+router.post('/', authMiddleware, requireRole(['admin', 'user', 'customer']), createAlarm);
+router.patch('/:id/acknowledge', authMiddleware, requireRole(['admin', 'user', 'customer']), acknowledgeAlarm);
+router.patch('/:id/resolve', authMiddleware, requireRole(['admin', 'user', 'customer']), resolveAlarm);
+router.patch('/:id/in-progress', authMiddleware, requireRole(['admin', 'user', 'customer']), inProgressAlarm);
+router.patch('/:id/resolved', authMiddleware, requireRole(['admin', 'user', 'customer']), resolvedAlarm);
+router.patch('/:id/close', authMiddleware, requireRole(['admin', 'user', 'customer']), closeAlarm);
 
 export default router;

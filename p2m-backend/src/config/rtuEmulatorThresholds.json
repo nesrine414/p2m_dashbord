@@ -1,0 +1,31 @@
+{
+  "rtu": {
+    "temperatureC": {
+      "warning": 38,
+      "critical": 45,
+      "unit": "C"
+    },
+    "heartbeatAgeMinutes": {
+      "warning": 10,
+      "critical": 30,
+      "unit": "min"
+    },
+    "averageAttenuationDb": {
+      "warning": 7,
+      "critical": 12,
+      "unit": "dB"
+    }
+  },
+  "fibre": {
+    "attenuationDb": {
+      "warning": 7,
+      "critical": 12,
+      "unit": "dB"
+    },
+    "measurementAgeMinutes": {
+      "warning": 20,
+      "critical": 60,
+      "unit": "min"
+    }
+  }
+}

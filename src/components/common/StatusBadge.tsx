@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chip } from '@mui/material';
-import { RTUStatus, AlarmSeverity } from '../../types';
+import { AlarmSeverity, RTUStatus } from '../../types';
 
 interface StatusBadgeProps {
   status: RTUStatus | AlarmSeverity | string;
@@ -11,45 +11,55 @@ const getFrenchLabel = (value: string): string => {
   const labels: Record<string, string> = {
     online: 'En ligne',
     normal: 'Normal',
-    connected: 'Connecté',
-    ready: 'Prêt',
-    pass: 'Réussi',
-    cleared: 'Clôturé',
+    connected: 'Connecte',
+    ready: 'Pret',
+    pass: 'Reussi',
+    cleared: 'Cloture',
+    resolved: 'Resolu',
+    closed: 'Cloture',
     offline: 'Hors ligne',
     critical: 'Critique',
-    broken: 'Cassé',
+    broken: 'Casse',
     failure: 'Panne',
-    fault: 'Défaut',
-    disconnected: 'Déconnecté',
+    fault: 'Defaut',
+    disconnected: 'Deconnecte',
     unreachable: 'Injoignable',
-    fail: 'Échec',
+    fail: 'Echec',
     warning: 'Avertissement',
     major: 'Majeur',
-    degraded: 'Dégradé',
-    busy: 'Occupé',
+    degraded: 'Degrade',
+    busy: 'Occupe',
     active: 'Actif',
+    in_progress: 'En cours',
     inactive: 'Inactif',
     minor: 'Mineur',
     info: 'Info',
     acknowledged: 'Pris en compte',
-    scheduled: 'Planifié',
+    scheduled: 'Planifie',
   };
 
-  return labels[value.toLowerCase()] || value
-    .split(/[_-\s]+/)
-    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
-    .join(' ');
+  return (
+    labels[value.toLowerCase()] ||
+    value
+      .split(/[_-\s]+/)
+      .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
+      .join(' ')
+  );
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' }) => {
+  const normalizedStatus = String(status).toLowerCase();
+
   const getColor = (): 'success' | 'error' | 'warning' | 'info' | 'default' => {
-    switch (status.toLowerCase()) {
+    switch (normalizedStatus) {
       case 'online':
       case 'normal':
       case 'connected':
       case 'ready':
       case 'pass':
       case 'cleared':
+      case 'resolved':
+      case 'closed':
         return 'success';
       case 'offline':
       case 'critical':
@@ -65,6 +75,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' })
       case 'degraded':
       case 'busy':
       case 'active':
+      case 'in_progress':
       case 'inactive':
         return 'warning';
       case 'minor':

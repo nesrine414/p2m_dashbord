@@ -4,8 +4,9 @@ import Alarm from '../models/Alarm';
 import Fibre from '../models/Fibre';
 import Measurement from '../models/Measurement';
 import RTU from '../models/RTU';
-import { emitEvent } from '../utils/websocket';
 import { HEARTBEAT_STALE_MINUTES } from '../utils/rtuHealth';
+import { emitNewAlarmRealtime } from './alarmRealtimeService';
+import { createNotificationForAlarm } from './notificationService';
 
 const OPEN_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
 const TEMPERATURE_WARNING_C = 40;
@@ -34,6 +35,11 @@ const formatRouteKm = (value?: number | null): string | undefined => {
 };
 
 export class AlarmDetectionService {
+  private async getNextAlarmId(): Promise<number> {
+    const currentMax = (await Alarm.max('id')) as number | null;
+    return (currentMax ?? 0) + 1;
+  }
+
   async detectAlarms(): Promise<void> {
     if (!databaseState.connected) {
       return;
@@ -182,9 +188,6 @@ export class AlarmDetectionService {
   private async createAlarm(alarmData: AlarmPayload): Promise<void> {
     const where: Record<string | symbol, unknown> = {
       alarmType: alarmData.alarmType,
-      lifecycleStatus: {
-        [Op.in]: [...OPEN_LIFECYCLE_STATUSES],
-      },
     };
 
     if (typeof alarmData.rtuId === 'number') {
@@ -199,18 +202,27 @@ export class AlarmDetectionService {
       where.routeId = alarmData.routeId;
     }
 
-    const existing = await Alarm.findOne({ where });
-    if (existing) {
+    const existingOpenAlarm = await Alarm.findOne({
+      where: {
+        ...where,
+        lifecycleStatus: {
+          [Op.in]: [...OPEN_LIFECYCLE_STATUSES],
+        },
+      },
+    });
+    if (existingOpenAlarm) {
       return;
     }
 
     const alarm = await Alarm.create({
+      id: await this.getNextAlarmId(),
       ...alarmData,
       lifecycleStatus: 'active',
       occurredAt: new Date(),
     });
 
-    emitEvent('new_alarm', alarm);
+    await emitNewAlarmRealtime(alarm);
+    await createNotificationForAlarm(alarm);
     console.log(`New alarm: ${alarm.message}`);
   }
 }

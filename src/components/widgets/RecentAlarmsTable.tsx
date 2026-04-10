@@ -20,7 +20,7 @@ export interface AlarmRow {
   rtu: string;
   zone: string;
   severity: 'critical' | 'major' | 'minor' | 'info';
-  status: 'active' | 'acknowledged' | 'resolved';
+  status: 'active' | 'acknowledged' | 'in_progress' | 'resolved';
   timestamp: string;
   location: string;
 }
@@ -56,11 +56,13 @@ const getSeverityLabel = (severity: AlarmRow['severity']) => {
 };
 
 const getStatusChip = (status: AlarmRow['status']) => {
-  const colors = {
+  const colors: Record<AlarmRow['status'], { bg: string; label: string }> = {
     active: { bg: '#FF3366', label: 'ACTIF' },
     acknowledged: { bg: '#2196F3', label: 'PRIS EN COMPTE' },
-    resolved: { bg: '#4CAF50', label: 'RÉSOLU' },
+    in_progress: { bg: '#FF9800', label: 'EN COURS' },
+    resolved: { bg: '#4CAF50', label: 'RESOLU' },
   };
+
   const config = colors[status];
   return (
     <Chip
@@ -119,7 +121,7 @@ const RecentAlarmsTable: React.FC<RecentAlarmsTableProps> = ({ alarms }) => {
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>Type</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>RTU</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>Zone</TableCell>
-              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>SÉVÉRITÉ</TableCell>
+              <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>SEVERITE</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>Statut</TableCell>
               <TableCell sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>Localisation</TableCell>
               <TableCell

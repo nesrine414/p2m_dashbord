@@ -2,10 +2,13 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { Alarm, Fibre, Measurement, RTU } from '../models';
-import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from '../data/demoData';
+import { demoAlarms, demoFiberRoutes, demoFibres, demoMeasurements, demoOtdrTests, demoRtus } from '../data/demoData';
+import { getDashboardStatsSnapshot } from '../services/dashboardStatsService';
 
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
 const RESOLVED_ALARM_LIFECYCLE_STATUSES = ['resolved', 'closed', 'cleared'] as const;
+const DEFAULT_TREND_WINDOW_MINUTES = 180;
+const DEFAULT_TREND_LIMIT = 120;
 
 const ROUTE_TARGETS_BY_SOURCE: Record<number, number[]> = {
   1: [6, 2, 5],
@@ -136,85 +139,127 @@ const calculateMTTR = async (): Promise<number> => {
     return 0;
   }
 
-  const totalHours = resolvedAlarms.reduce((acc, alarm) => {
-    if (!alarm.resolvedAt || !alarm.occurredAt) {
-      return acc;
-    }
-    const diffMs = alarm.resolvedAt.getTime() - alarm.occurredAt.getTime();
-    return acc + diffMs / (1000 * 60 * 60);
-  }, 0);
+  const validDurationsHours = resolvedAlarms
+    .map((alarm) => {
+      if (!alarm.resolvedAt || !alarm.occurredAt) {
+        return null;
+      }
 
-  return Number((totalHours / resolvedAlarms.length).toFixed(2));
+      const diffMs = alarm.resolvedAt.getTime() - alarm.occurredAt.getTime();
+      if (!Number.isFinite(diffMs) || diffMs < 0) {
+        return null;
+      }
+
+      return diffMs / (1000 * 60 * 60);
+    })
+    .filter((duration): duration is number => typeof duration === 'number');
+
+  if (validDurationsHours.length === 0) {
+    return 0;
+  }
+
+  const totalHours = validDurationsHours.reduce((acc, value) => acc + value, 0);
+  return Number((totalHours / validDurationsHours.length).toFixed(4));
+};
+
+const parseBoundedNumber = (
+  value: string | undefined,
+  fallback: number,
+  min: number,
+  max: number
+): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, Math.floor(parsed)));
+};
+
+const getTrendStartTimestamp = (windowMinutes: number): Date => {
+  if (windowMinutes === 24 * 60) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  if (windowMinutes === 7 * 24 * 60) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 6);
+    return start;
+  }
+
+  return new Date(Date.now() - windowMinutes * 60_000);
+};
+
+const calculateAverageAttenuation = async (): Promise<number> => {
+  const measurements = await Measurement.findAll({
+    order: [['timestamp', 'DESC']],
+    attributes: ['fibreId', 'attenuation'],
+  });
+
+  const latestByFibre = new Map<number, number>();
+  measurements.forEach((measurement) => {
+    const fibreId = measurement.get('fibreId') as number;
+    const attenuation = measurement.get('attenuation') as number | null;
+
+    if (latestByFibre.has(fibreId)) {
+      return;
+    }
+
+    if (typeof attenuation === 'number' && attenuation > 0) {
+      latestByFibre.set(fibreId, attenuation);
+    }
+  });
+
+  if (latestByFibre.size === 0) {
+    return 0;
+  }
+
+  const sum = Array.from(latestByFibre.values()).reduce((acc, value) => acc + value, 0);
+  return Number((sum / latestByFibre.size).toFixed(1));
+};
+
+const calculateEstimatedMTBF = async (rtuTotal: number): Promise<number> => {
+  const [openAlarmCount, degradedOrBrokenFibres, measurements] = await Promise.all([
+    Alarm.count({
+      where: {
+        lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES },
+      },
+    }),
+    Fibre.count({
+      where: {
+        status: { [Op.in]: ['degraded', 'broken'] },
+      },
+    }),
+    Measurement.findAll({
+      order: [['timestamp', 'DESC']],
+      attributes: ['fibreId', 'testResult'],
+    }),
+  ]);
+
+  const latestByFibre = new Map<number, string | null>();
+  measurements.forEach((measurement) => {
+    const fibreId = measurement.get('fibreId') as number;
+    if (latestByFibre.has(fibreId)) {
+      return;
+    }
+
+    latestByFibre.set(fibreId, (measurement.get('testResult') as string | null) ?? null);
+  });
+
+  const failedLatestTests = Array.from(latestByFibre.values()).filter((result) => result === 'fail').length;
+  const incidentLoad = Math.max(1, openAlarmCount + degradedOrBrokenFibres + failedLatestTests);
+  const networkScale = Math.max(1, rtuTotal);
+
+  return Number(((networkScale * 168) / incidentLoad).toFixed(1));
 };
 
 export const getDashboardStats = async (_req: Request, res: Response): Promise<void> => {
   try {
-    if (!databaseState.connected) {
-      const rtuOnline = demoRtus.filter((item) => item.status === 'online').length;
-      const rtuOffline = demoRtus.filter((item) => item.status === 'offline').length;
-      const rtuUnreachable = demoRtus.filter((item) => item.status === 'unreachable').length;
-      const rtuWarning = 0;
-      const rtuTotal = demoRtus.length;
-      const criticalAlarms = demoAlarms.filter(
-        (item) =>
-          item.severity === 'critical' &&
-          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
-      ).length;
-      const majorAlarms = demoAlarms.filter(
-        (item) =>
-          item.severity === 'major' &&
-          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
-      ).length;
-      const minorAlarms = demoAlarms.filter(
-        (item) =>
-          item.severity === 'minor' &&
-          OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
-      ).length;
-      const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
-
-      res.json({
-        rtuOnline,
-        rtuOffline,
-        rtuWarning,
-        rtuUnreachable,
-        rtuTotal,
-        criticalAlarms,
-        majorAlarms,
-        minorAlarms,
-        mttr: 2.4,
-        availability,
-        degradedMode: true,
-      });
-      return;
-    }
-
-    const [rtuOnline, rtuOffline, rtuWarning, rtuUnreachable, criticalAlarms, majorAlarms, minorAlarms] = await Promise.all([
-      RTU.count({ where: { status: 'online' } }),
-      RTU.count({ where: { status: 'offline' } }),
-      Promise.resolve(0),
-      RTU.count({ where: { status: { [Op.in]: ['unreachable', 'warning'] } } }),
-      Alarm.count({ where: { severity: 'critical', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
-      Alarm.count({ where: { severity: 'major', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
-      Alarm.count({ where: { severity: 'minor', lifecycleStatus: { [Op.in]: OPEN_ALARM_LIFECYCLE_STATUSES } } }),
-    ]);
-
-    const rtuTotal = rtuOnline + rtuOffline + rtuWarning + rtuUnreachable;
-
-    const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
-    const mttr = await calculateMTTR();
-
-    res.json({
-      rtuOnline,
-      rtuOffline,
-      rtuWarning,
-      rtuUnreachable,
-      rtuTotal,
-      criticalAlarms,
-      majorAlarms,
-      minorAlarms,
-      mttr,
-      availability,
-    });
+    const stats = await getDashboardStatsSnapshot();
+    res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch dashboard stats' });
   }
@@ -354,5 +399,102 @@ export const getRecentOtdrTests = async (_req: Request, res: Response): Promise<
     res.json({ data: mapped });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch OTDR tests' });
+  }
+};
+
+export const getRouteAttenuationTrend = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const routeId = Number(req.params.routeId);
+    if (!Number.isFinite(routeId) || routeId <= 0) {
+      res.status(400).json({ error: 'Invalid route id' });
+      return;
+    }
+
+    const query = req.query as Record<string, string | undefined>;
+    const windowMinutes = parseBoundedNumber(
+      query.windowMinutes,
+      DEFAULT_TREND_WINDOW_MINUTES,
+      5,
+      7 * 24 * 60
+    );
+    const limit = parseBoundedNumber(query.limit, DEFAULT_TREND_LIMIT, 10, 5000);
+    const fromTimestamp = getTrendStartTimestamp(windowMinutes);
+
+    if (!databaseState.connected) {
+      const route = demoFiberRoutes.find((item) => item.id === routeId);
+      if (!route) {
+        res.status(404).json({ error: 'Route not found' });
+        return;
+      }
+
+      const points = demoMeasurements
+        .filter((measurement) => measurement.fibreId === routeId)
+        .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime())
+        .slice(-limit)
+        .map((measurement) => ({
+          timestamp: measurement.timestamp,
+          attenuationDb: measurement.attenuation,
+          wavelengthNm: measurement.wavelength,
+          testResult: measurement.testResult,
+        }));
+
+      res.json({
+        routeId: route.id,
+        routeName: route.routeName,
+        source: route.source,
+        destination: route.destination,
+        windowMinutes,
+        sampledAt: new Date().toISOString(),
+        points,
+        degradedMode: true,
+      });
+      return;
+    }
+
+    const fibre = await Fibre.findByPk(routeId, {
+      include: [{ model: RTU, as: 'rtu', attributes: ['id', 'name'] }],
+    });
+    if (!fibre) {
+      res.status(404).json({ error: 'Route not found' });
+      return;
+    }
+
+    const sourceRtu = fibre.get('rtu') as RTU | undefined;
+    const sourceName = sourceRtu ? ((sourceRtu.get('name') as string) || `RTU-${fibre.get('rtuId') as number}`) : `RTU-${fibre.get('rtuId') as number}`;
+    const destinationName = (fibre.get('name') as string) || `Fibre-${fibre.get('id') as number}`;
+    const routeName = buildRouteName(sourceName, destinationName, fibre.get('name') as string);
+
+    const measurements = await Measurement.findAll({
+      where: {
+        fibreId: routeId,
+        timestamp: {
+          [Op.gte]: fromTimestamp,
+        },
+      },
+      order: [['timestamp', 'DESC']],
+      limit,
+    });
+
+    const points = measurements
+      .slice()
+      .reverse()
+      .map((measurement) => ({
+        timestamp: measurement.get('timestamp') as Date,
+        attenuationDb: (measurement.get('attenuation') as number | null) ?? null,
+        wavelengthNm: Number(measurement.get('wavelength') as unknown as string),
+        testResult: measurement.get('testResult') as string,
+      }));
+
+    res.json({
+      routeId,
+      routeName,
+      source: sourceName,
+      destination: destinationName,
+      windowMinutes,
+      sampledAt: new Date().toISOString(),
+      points,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch attenuation trend' });
   }
 };

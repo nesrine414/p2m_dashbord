@@ -133,6 +133,7 @@ const seedDefaultData = async () => {
         console.log('Seeded default admin user (admin / Admin@1234)');
     }
     if (resetDemoDataOnBoot) {
+        await models_1.Notification.destroy({ where: {} });
         await models_1.Alarm.destroy({ where: {} });
         await models_1.Measurement.destroy({ where: {} });
         await models_1.Performance.destroy({ where: {} });
@@ -144,6 +145,7 @@ const seedDefaultData = async () => {
         await models_1.RTU.destroy({ where: {} });
         console.log('Reset demo operational data on boot');
     }
+    const bulkCreateOptions = { ignoreDuplicates: !resetDemoDataOnBoot };
     await models_1.RTU.bulkCreate(demoData_1.demoRtus.map((rtu) => ({
         id: rtu.id,
         name: rtu.name,
@@ -160,9 +162,15 @@ const seedDefaultData = async () => {
         installationDate: undefined,
         lastSeen: new Date(rtu.lastSeen),
         userId: undefined,
-    })), { ignoreDuplicates: false });
+    })), bulkCreateOptions);
     console.log('Synced Tunisia RTU demo inventory');
-    await models_1.Fibre.bulkCreate(demoData_1.demoFibres, { ignoreDuplicates: false });
+    await models_1.Fibre.bulkCreate(demoData_1.demoFibres.map((fibre) => ({
+        id: fibre.id,
+        rtuId: fibre.fromRtuId,
+        name: fibre.name,
+        length: fibre.length,
+        status: fibre.status,
+    })), bulkCreateOptions);
     console.log('Seeded fibre demo data');
     await models_1.Measurement.bulkCreate(demoData_1.demoMeasurements.map((measurement) => ({
         id: measurement.id,
@@ -171,7 +179,7 @@ const seedDefaultData = async () => {
         testResult: measurement.testResult,
         wavelength: measurement.wavelength,
         timestamp: new Date(measurement.timestamp),
-    })), { ignoreDuplicates: false });
+    })), bulkCreateOptions);
     console.log('Seeded measurement demo data');
     await models_1.Performance.bulkCreate(demoData_1.demoPerformances.map((item) => ({
         id: item.id,
@@ -179,22 +187,22 @@ const seedDefaultData = async () => {
         mttr: item.mttr,
         mtbf: item.mtbf,
         recordedAt: new Date(item.recordedAt),
-    })), { ignoreDuplicates: false });
+    })), bulkCreateOptions);
     console.log('Seeded performance demo data');
     await models_1.FiberRoute.bulkCreate(demoData_1.demoFiberRoutes.map(({ path: _path, ...route }) => ({
         ...route,
         lastTestTime: new Date(route.lastTestTime),
-    })), { ignoreDuplicates: false });
+    })), bulkCreateOptions);
     console.log('Seeded Tunisia fiber route demo data');
     await models_1.Alarm.bulkCreate(demoData_1.demoAlarms.map((alarm) => ({
         ...alarm,
         occurredAt: new Date(alarm.occurredAt),
-    })));
+    })), bulkCreateOptions);
     console.log('Seeded alarm demo data');
     await models_1.OtdrTestResult.bulkCreate(demoData_1.demoOtdrTests.map((test) => ({
         ...test,
         testedAt: new Date(test.testedAt),
-    })));
+    })), bulkCreateOptions);
     console.log('Seeded OTDR demo data');
 };
 const startServer = async () => {

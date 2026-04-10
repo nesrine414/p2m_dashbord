@@ -10,11 +10,28 @@ interface AlarmNotificationProps {
 const AlarmNotification: React.FC<AlarmNotificationProps> = ({ alarm, onClose }) => {
   const [open, setOpen] = useState(true);
 
+  const occurredAtLabel = (() => {
+    const date = new Date(alarm.occurredAt);
+    if (Number.isNaN(date.getTime())) {
+      return 'maintenant';
+    }
+    return date.toLocaleTimeString();
+  })();
+
   useEffect(() => {
     if (alarm.severity === 'critical') {
       // Uncomment to play a sound: new Audio('/alert.mp3').play();
     }
   }, [alarm]);
+
+  useEffect(() => {
+    setOpen(true);
+  }, [alarm.id]);
+
+  const handleClose = () => {
+    setOpen(false);
+    onClose();
+  };
 
   const getSeverityColor = () => {
     switch (alarm.severity) {
@@ -34,15 +51,12 @@ const AlarmNotification: React.FC<AlarmNotificationProps> = ({ alarm, onClose })
     <Snackbar
       open={open}
       autoHideDuration={10000}
-      onClose={() => {
-        setOpen(false);
-        onClose();
-      }}
+      onClose={handleClose}
       anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
     >
-      <Alert severity={getSeverityColor()} onClose={() => setOpen(false)}>
+      <Alert severity={getSeverityColor()} onClose={handleClose}>
         <AlertTitle>Nouvelle alarme {severityLabel}</AlertTitle>
-        <strong>{alarm.rtuName || alarm.rtuId}</strong>: {alarm.message}
+        <strong>{alarm.rtuName || alarm.rtuId}</strong>: {alarm.message} ({occurredAtLabel})
       </Alert>
     </Snackbar>
   );

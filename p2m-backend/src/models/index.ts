@@ -5,6 +5,7 @@ import Fibre from './Fibre';
 import FiberRoute from './FiberRoute';
 import HealthScore from './HealthScore';
 import Measurement from './Measurement';
+import Notification from './Notification';
 import OtdrTestResult from './OtdrTestResult';
 import Performance from './Performance';
 import Prediction from './Prediction';
@@ -26,6 +27,9 @@ Alarm.belongsTo(Fibre, { foreignKey: 'fibreId', as: 'fibre' });
 
 FiberRoute.hasMany(Alarm, { foreignKey: 'routeId', as: 'alarms' });
 Alarm.belongsTo(FiberRoute, { foreignKey: 'routeId', as: 'route' });
+
+Alarm.hasMany(Notification, { foreignKey: 'alarmId', as: 'notifications' });
+Notification.belongsTo(Alarm, { foreignKey: 'alarmId', as: 'alarm' });
 
 Fibre.hasMany(Measurement, { foreignKey: 'fibreId', as: 'measurements' });
 Measurement.belongsTo(Fibre, { foreignKey: 'fibreId', as: 'fibre' });
@@ -57,6 +61,7 @@ export {
   Fibre,
   FiberRoute,
   Alarm,
+  Notification,
   Measurement,
   OtdrTestResult,
   Performance,

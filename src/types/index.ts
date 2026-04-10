@@ -63,6 +63,9 @@ export enum TestResult {
 export enum AlarmLifecycleStatus {
   ACTIVE = 'active',
   ACKNOWLEDGED = 'acknowledged',
+  IN_PROGRESS = 'in_progress',
+  RESOLVED = 'resolved',
+  CLOSED = 'closed',
   CLEARED = 'cleared',
 }
 
@@ -151,6 +154,8 @@ export interface DashboardStats {
   majorAlarms: number;
   minorAlarms: number;
   mttr: number;
+  mtbf: number;
+  averageAttenuation: number;
   availability: number;
   degradedMode?: boolean;
 }
