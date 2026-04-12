@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import { databaseState } from '../config/database';
 import { Alarm, Fibre, Measurement, RTU } from '../models';
 import { demoAlarms, demoFiberRoutes, demoOtdrTests, demoRtus } from '../data/demoData';
+import { classifyFibreAgingStatus, computeAttenuationPerKm } from '../utils/fibreAging';
 import { emitEvent } from '../utils/websocket';
 
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
@@ -20,6 +21,7 @@ export interface DashboardStatsSnapshot {
   mtbf: number;
   averageAttenuation: number;
   availability: number;
+  agingFibresCount: number;
   degradedMode?: boolean;
 }
 
@@ -130,6 +132,46 @@ const calculateEstimatedMTBF = async (rtuTotal: number): Promise<number> => {
   return Number(((networkScale * 168) / incidentLoad).toFixed(1));
 };
 
+const calculateAgingFibresCount = async (): Promise<number> => {
+  const [fibres, measurements] = await Promise.all([
+    Fibre.findAll({
+      attributes: ['id', 'length', 'status'],
+      order: [['id', 'ASC']],
+    }),
+    Measurement.findAll({
+      order: [['timestamp', 'DESC']],
+      attributes: ['fibreId', 'attenuation'],
+    }),
+  ]);
+
+  const latestByFibre = new Map<number, number | null>();
+  measurements.forEach((measurement) => {
+    const fibreId = measurement.get('fibreId') as number;
+    if (latestByFibre.has(fibreId)) {
+      return;
+    }
+
+    latestByFibre.set(fibreId, (measurement.get('attenuation') as number | null) ?? null);
+  });
+
+  let agingCount = 0;
+  fibres.forEach((fibre) => {
+    const fibreId = fibre.get('id') as number;
+    const fibreStatus = (fibre.get('status') as string | null) ?? null;
+    const ratio = computeAttenuationPerKm(
+      latestByFibre.get(fibreId) ?? null,
+      (fibre.get('length') as number | null) ?? null
+    );
+    const agingStatus = classifyFibreAgingStatus(ratio, fibreStatus);
+
+    if (agingStatus === 'aging' || agingStatus === 'critical') {
+      agingCount += 1;
+    }
+  });
+
+  return agingCount;
+};
+
 const getDemoStatsSnapshot = (): DashboardStatsSnapshot => {
   const rtuOnline = demoRtus.filter((item) => item.status === 'online').length;
   const rtuOffline = demoRtus.filter((item) => item.status === 'offline').length;
@@ -151,7 +193,7 @@ const getDemoStatsSnapshot = (): DashboardStatsSnapshot => {
       item.severity === 'minor' &&
       OPEN_ALARM_LIFECYCLE_STATUSES.includes(item.lifecycleStatus as (typeof OPEN_ALARM_LIFECYCLE_STATUSES)[number])
   ).length;
-  const availability = rtuTotal > 0 ? Number((((rtuOnline + rtuWarning) / rtuTotal) * 100).toFixed(2)) : 0;
+  const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
   const averageAttenuation = Number(
     (
       demoFiberRoutes
@@ -170,6 +212,13 @@ const getDemoStatsSnapshot = (): DashboardStatsSnapshot => {
       demoOtdrTests.filter((test) => test.result === 'fail').length
   );
   const mtbf = Number(((Math.max(1, rtuTotal) * 168) / incidentLoad).toFixed(1));
+  const agingFibresCount = demoFiberRoutes.filter((route) => {
+    const length = typeof route.lengthKm === 'number' ? route.lengthKm : null;
+    const attenuation = typeof route.attenuationDb === 'number' ? route.attenuationDb : null;
+    const ratio = computeAttenuationPerKm(attenuation, length);
+    const status = classifyFibreAgingStatus(ratio, route.fiberStatus);
+    return status === 'aging' || status === 'critical';
+  }).length;
 
   return {
     rtuOnline,
@@ -184,6 +233,7 @@ const getDemoStatsSnapshot = (): DashboardStatsSnapshot => {
     mtbf,
     averageAttenuation,
     availability,
+    agingFibresCount,
     degradedMode: true,
   };
 };
@@ -204,11 +254,12 @@ export const getDashboardStatsSnapshot = async (): Promise<DashboardStatsSnapsho
   ]);
 
   const rtuTotal = rtuOnline + rtuOffline + rtuWarning + rtuUnreachable;
-  const availability = rtuTotal > 0 ? Number((((rtuOnline + rtuWarning) / rtuTotal) * 100).toFixed(2)) : 0;
-  const [mttr, mtbf, averageAttenuation] = await Promise.all([
+  const availability = rtuTotal > 0 ? Number(((rtuOnline / rtuTotal) * 100).toFixed(2)) : 0;
+  const [mttr, mtbf, averageAttenuation, agingFibresCount] = await Promise.all([
     calculateMTTR(),
     calculateEstimatedMTBF(rtuTotal),
     calculateAverageAttenuation(),
+    calculateAgingFibresCount(),
   ]);
 
   return {
@@ -224,6 +275,7 @@ export const getDashboardStatsSnapshot = async (): Promise<DashboardStatsSnapsho
     mtbf,
     averageAttenuation,
     availability,
+    agingFibresCount,
   };
 };
 

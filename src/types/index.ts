@@ -157,5 +157,6 @@ export interface DashboardStats {
   mtbf: number;
   averageAttenuation: number;
   availability: number;
+  agingFibresCount?: number;
   degradedMode?: boolean;
 }

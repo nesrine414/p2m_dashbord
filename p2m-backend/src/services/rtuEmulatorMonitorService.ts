@@ -19,6 +19,7 @@ export class RtuEmulatorMonitorService {
 
   async runCycle(): Promise<EmulatorCycleSummary> {
     const sampledAt = new Date().toISOString();
+    const sampledAtDate = new Date(sampledAt);
 
     if (!databaseState.connected) {
       console.warn('RTU emulator monitor skipped: database not connected.');
@@ -85,7 +86,7 @@ export class RtuEmulatorMonitorService {
           testResult:
             fibreResult.metrics.testResult ?? (fibreResult.status === 'normal' ? 'pass' : 'fail'),
           wavelength: fibreResult.metrics.wavelength ?? DEFAULT_WAVELENGTH,
-          timestamp: new Date(Date.now() - fibreResult.metrics.measurementAgeMinutes * 60_000),
+          timestamp: sampledAtDate,
         });
         nextMeasurementId += 1;
       }

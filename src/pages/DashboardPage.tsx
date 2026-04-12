@@ -5,6 +5,7 @@ import {
   CheckCircleOutline,
   CrisisAlertOutlined,
   DeviceHubOutlined,
+  InsightsOutlined,
   RouterOutlined,
   Timeline,
   TrendingDown,
@@ -114,6 +115,13 @@ const toDashboardStatsPayload = (payload: unknown): DashboardStats | null => {
     return null;
   }
 
+  const agingFibresCount =
+    source.agingFibresCount === undefined
+      ? undefined
+      : isFiniteNumber(source.agingFibresCount)
+        ? Number(source.agingFibresCount)
+        : undefined;
+
   return {
     rtuOnline: Number(source.rtuOnline),
     rtuOffline: Number(source.rtuOffline),
@@ -127,6 +135,7 @@ const toDashboardStatsPayload = (payload: unknown): DashboardStats | null => {
     mtbf: Number(source.mtbf),
     averageAttenuation: Number(source.averageAttenuation),
     availability: Number(source.availability),
+    agingFibresCount,
     degradedMode: typeof source.degradedMode === 'boolean' ? source.degradedMode : undefined,
   };
 };
@@ -238,6 +247,11 @@ const DashboardPage: React.FC = () => {
     const activeCritical = stats?.criticalAlarms || 0;
     const brokenFibers = routes.filter((item) => item.fiberStatus === FiberStatus.BROKEN).length;
     const testsFailed = otdrTests.filter((item) => item.result === 'fail').length;
+    const computedAgingFibres = routes.filter(
+      (route) => route.agingStatus === 'aging' || route.agingStatus === 'critical'
+    ).length;
+    const agingFibres =
+      typeof stats?.agingFibresCount === 'number' ? stats.agingFibresCount : computedAgingFibres;
 
     return {
       online,
@@ -246,6 +260,7 @@ const DashboardPage: React.FC = () => {
       activeCritical,
       brokenFibers,
       testsFailed,
+      agingFibres,
       totalRtus: stats?.rtuTotal || 0,
       availability: stats?.availability || 0,
       degradedMode: Boolean(stats?.degradedMode),
@@ -394,6 +409,15 @@ const DashboardPage: React.FC = () => {
       </Grid>
 
       <Grid container spacing={2.5} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <WidgetCard
+            title="FIBRES VIEILLISSANTES"
+            value={summary.agingFibres}
+            subtitle="Ratio attenuation/km eleve"
+            icon={<InsightsOutlined sx={{ color: 'white', fontSize: 30 }} />}
+            color="#c38a2f"
+          />
+        </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="MTTR (temps de reparation)"

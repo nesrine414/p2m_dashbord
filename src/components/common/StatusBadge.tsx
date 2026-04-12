@@ -29,6 +29,7 @@ const getFrenchLabel = (value: string): string => {
     warning: 'Avertissement',
     major: 'Majeur',
     degraded: 'Degrade',
+    aging: 'Vieillissement',
     busy: 'Occupe',
     active: 'Actif',
     in_progress: 'En cours',
@@ -74,6 +75,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled', l
       case 'warning':
       case 'major':
       case 'degraded':
+      case 'aging':
       case 'busy':
       case 'active':
       case 'in_progress':

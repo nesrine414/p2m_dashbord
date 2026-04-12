@@ -161,6 +161,8 @@ export interface BackendFiberRoute {
   path?: Array<[number, number]> | null;
   lengthKm?: number | null;
   attenuationDb?: number | null;
+  attenuationPerKm?: number | null;
+  agingStatus?: 'normal' | 'aging' | 'critical';
   reflectionEvents: boolean;
   lastTestTime?: string | null;
 }

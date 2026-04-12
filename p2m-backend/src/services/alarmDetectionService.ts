@@ -4,6 +4,12 @@ import Alarm from '../models/Alarm';
 import Fibre from '../models/Fibre';
 import Measurement from '../models/Measurement';
 import RTU from '../models/RTU';
+import {
+  classifyFibreAgingStatus,
+  computeAttenuationPerKm,
+  getFibreAgingCriticalThreshold,
+  getFibreAgingWarningThreshold,
+} from '../utils/fibreAging';
 import { HEARTBEAT_STALE_MINUTES } from '../utils/rtuHealth';
 import { emitNewAlarmRealtime } from './alarmRealtimeService';
 import { createNotificationForAlarm } from './notificationService';
@@ -125,6 +131,8 @@ export class AlarmDetectionService {
     const attenuation = (measurement?.get('attenuation') as number | null) ?? null;
     const testResult = (measurement?.get('testResult') as string | null) ?? null;
     const length = (fibre.get('length') as number | null) ?? null;
+    const attenuationPerKm = computeAttenuationPerKm(attenuation, length);
+    const agingStatus = classifyFibreAgingStatus(attenuationPerKm, fibreStatus);
     const location = (rtu?.get('locationAddress') as string | null) || rtu?.name || label;
 
     if (fibreStatus === 'broken') {
@@ -168,6 +176,27 @@ export class AlarmDetectionService {
           owner: 'NQMS Rule Engine',
         });
       }
+    }
+
+    if (agingStatus === 'aging' || agingStatus === 'critical') {
+      const warningThreshold = getFibreAgingWarningThreshold();
+      const criticalThreshold = getFibreAgingCriticalThreshold();
+      const severity = agingStatus === 'critical' ? 'critical' : 'major';
+
+      await this.createAlarm({
+        rtuId,
+        fibreId: fibre.id,
+        routeId: fibre.id,
+        severity,
+        alarmType: 'Maintenance',
+        message:
+          attenuationPerKm !== null
+            ? `Fiber aging trend on ${label}: ${attenuationPerKm.toFixed(3)} dB/km (warning>${warningThreshold.toFixed(2)}, critical>${criticalThreshold.toFixed(2)}).`
+            : `Fiber aging trend on ${label}: attenuation ratio unavailable.`,
+        location,
+        localizationKm: formatRouteKm(length),
+        owner: 'NQMS Rule Engine',
+      });
     }
 
     if (testResult === 'fail' && typeof attenuation === 'number' && attenuation > ATTENUATION_WARNING_DB) {
