@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box, Typography, Stack, Grid, Chip } from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import PulseStatusIcon from '../common/PulseStatusIcon';

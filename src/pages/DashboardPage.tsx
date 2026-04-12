@@ -13,7 +13,6 @@ import {
 import WidgetCard from '../components/common/WidgetCard';
 import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
-import RTUCardsWidget, { RTUCard } from '../components/widgets/RTUCardsWidget';
 import HardwareAlertsWidget from '../components/widgets/HardwareAlertsWidget';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {
