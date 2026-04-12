@@ -67,6 +67,8 @@ const TREND_WINDOW_OPTIONS: TrendWindowOption[] = [
 ];
 
 const DEFAULT_TREND_WINDOW_MINUTES = TREND_WINDOW_OPTIONS[0].minutes;
+const AGING_WARNING_DB_PER_KM = 0.3;
+const AGING_CRITICAL_DB_PER_KM = 0.4;
 
 const formatDateTime = (value?: string | null): string => {
   if (!value) {
@@ -77,6 +79,49 @@ const formatDateTime = (value?: string | null): string => {
     return value;
   }
   return date.toLocaleString();
+};
+
+const computeAttenuationPerKm = (route: BackendFiberRoute): number | null => {
+  if (typeof route.attenuationPerKm === 'number' && Number.isFinite(route.attenuationPerKm)) {
+    return route.attenuationPerKm;
+  }
+
+  if (
+    typeof route.attenuationDb !== 'number' ||
+    !Number.isFinite(route.attenuationDb) ||
+    typeof route.lengthKm !== 'number' ||
+    !Number.isFinite(route.lengthKm) ||
+    route.lengthKm <= 0
+  ) {
+    return null;
+  }
+
+  return Number((route.attenuationDb / route.lengthKm).toFixed(4));
+};
+
+const getAgingStatus = (route: BackendFiberRoute): 'normal' | 'aging' | 'critical' | null => {
+  if (route.agingStatus === 'normal' || route.agingStatus === 'aging' || route.agingStatus === 'critical') {
+    return route.agingStatus;
+  }
+
+  if (route.fiberStatus === FiberStatus.BROKEN) {
+    return 'critical';
+  }
+
+  const ratio = computeAttenuationPerKm(route);
+  if (ratio === null) {
+    return null;
+  }
+
+  if (ratio > AGING_CRITICAL_DB_PER_KM) {
+    return 'critical';
+  }
+
+  if (ratio > AGING_WARNING_DB_PER_KM) {
+    return 'aging';
+  }
+
+  return 'normal';
 };
 
 const toTimeString = (value: string): string => {
@@ -746,15 +791,21 @@ const MonitoringPage: React.FC = () => {
                     <TableCell>Route</TableCell>
                     <TableCell>Trajet</TableCell>
                     <TableCell>Etat fibre</TableCell>
+                    <TableCell>Vieillissement</TableCell>
                     <TableCell>Etat route</TableCell>
                     <TableCell>Longueur</TableCell>
                     <TableCell>Attenuation</TableCell>
+                    <TableCell>Attenuation/km</TableCell>
                     <TableCell>Reflexion</TableCell>
                     <TableCell>Dernier test</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {routes.map((route) => (
+                  {routes.map((route) => {
+                    const agingStatus = getAgingStatus(route);
+                    const attenuationPerKm = computeAttenuationPerKm(route);
+
+                    return (
                     <TableRow key={route.id} hover>
                       <TableCell>{route.routeName}</TableCell>
                       <TableCell>
@@ -764,16 +815,22 @@ const MonitoringPage: React.FC = () => {
                         <StatusBadge status={route.fiberStatus} />
                       </TableCell>
                       <TableCell>
+                        {agingStatus ? <StatusBadge status={agingStatus} /> : 'N/D'}
+                      </TableCell>
+                      <TableCell>
                         <StatusBadge status={route.routeStatus} variant="outlined" />
                       </TableCell>
                       <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
                       <TableCell>
                         {route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(1)} dB` : 'N/D'}
                       </TableCell>
+                      <TableCell>
+                        {typeof attenuationPerKm === 'number' ? `${attenuationPerKm.toFixed(3)} dB/km` : 'N/D'}
+                      </TableCell>
                       <TableCell>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
                       <TableCell>{formatDateTime(route.lastTestTime)}</TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </TableContainer>

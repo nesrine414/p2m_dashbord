@@ -4,6 +4,7 @@ import { databaseState } from '../config/database';
 import { Alarm, Fibre, Measurement, RTU } from '../models';
 import { demoAlarms, demoFiberRoutes, demoFibres, demoMeasurements, demoOtdrTests, demoRtus } from '../data/demoData';
 import { getDashboardStatsSnapshot } from '../services/dashboardStatsService';
+import { classifyFibreAgingStatus, computeAttenuationPerKm } from '../utils/fibreAging';
 
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
 const RESOLVED_ALARM_LIFECYCLE_STATUSES = ['resolved', 'closed', 'cleared'] as const;
@@ -312,6 +313,10 @@ export const getTopology = async (_req: Request, res: Response): Promise<void> =
         ? ((destinationRtu.get('name') as string) || `RTU-${destinationRtuId}`)
         : `RTU-${destinationRtuId ?? index + 1}`;
       const routeName = buildRouteName(sourceName, destinationName, fibreName);
+      const attenuationDb = latestMeasurement ? ((latestMeasurement.get('attenuation') as number | null) ?? null) : null;
+      const lengthKm = (fibre.get('length') as number | null) ?? null;
+      const attenuationPerKm = computeAttenuationPerKm(attenuationDb, lengthKm);
+      const agingStatus = classifyFibreAgingStatus(attenuationPerKm, fibre.get('status') as string);
 
       return {
         id: fibre.get('id') as number,
@@ -331,8 +336,10 @@ export const getTopology = async (_req: Request, res: Response): Promise<void> =
                 destinationRtu.get('locationLongitude') as string | number | null
               )
             : null,
-        lengthKm: (fibre.get('length') as number | null) ?? null,
-        attenuationDb: latestMeasurement ? ((latestMeasurement.get('attenuation') as number | null) ?? null) : null,
+        lengthKm,
+        attenuationDb,
+        attenuationPerKm,
+        agingStatus,
         reflectionEvents: latestMeasurement ? (latestMeasurement.get('testResult') as string) === 'fail' : false,
         lastTestTime: latestMeasurement ? (latestMeasurement.get('timestamp') as Date) : null,
       };

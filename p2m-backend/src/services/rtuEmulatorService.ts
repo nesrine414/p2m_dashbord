@@ -175,13 +175,17 @@ const buildSimulatedTemperature = (baseTemperature: number | null, status: RtuSt
 const buildSimulatedAttenuation = (
   baseAttenuation: number | null,
   status: FibreStatus,
-  seed: number
+  seed: number,
+  sampledAtMs: number
 ): number | null => {
-  const baseline =
-    baseAttenuation ?? (status === 'broken' ? 14.5 : status === 'degraded' ? 8.4 : 4.2);
-  const jitter = ((seed % 9) - 4) * 0.2;
-  const uplift = status === 'broken' ? 2.4 : status === 'degraded' ? 0.9 : 0;
-  return roundTo(clamp(baseline + jitter + uplift, 0.2, 40));
+  const statusTarget = status === 'broken' ? 15.5 : status === 'degraded' ? 8.6 : 4.2;
+  const baseline = baseAttenuation ?? statusTarget;
+  const meanReversion = (statusTarget - baseline) * 0.18;
+  const primaryWave = Math.sin(sampledAtMs / 90_000 + seed) * 0.35;
+  const secondaryWave = Math.cos(sampledAtMs / 45_000 + seed / 3) * 0.15;
+  const deterministicNoise = (((Math.floor(sampledAtMs / 5_000) + seed) % 11) - 5) * 0.04;
+
+  return roundTo(clamp(baseline + meanReversion + primaryWave + secondaryWave + deterministicNoise, 0.2, 40));
 };
 
 const combineFibreStatus = (baseStatus: FibreStatus, evaluations: EvaluatedMetric[], testResult: TestResult | null): FibreStatus => {
@@ -338,6 +342,7 @@ const loadEmulatorDataFromDemo = (
 
 export const runRtuEmulatorQuery = async (ipAddress: string): Promise<EmulatorQueryResult | null> => {
   const normalizedIpAddress = ipAddress.trim();
+  const sampledAtMs = Date.now();
   const thresholds = await refreshRtuEmulatorThresholds();
   const rtuThresholds = thresholds.rtu;
   const fibreThresholds = thresholds.fibre;
@@ -352,7 +357,12 @@ export const runRtuEmulatorQuery = async (ipAddress: string): Promise<EmulatorQu
 
   const simulatedFibres = sourceData.fibres.map((fibre) => {
     const fibreSeed = seed + fibre.id;
-    const attenuationDb = buildSimulatedAttenuation(fibre.measurement?.attenuationDb ?? null, fibre.status, fibreSeed);
+    const attenuationDb = buildSimulatedAttenuation(
+      fibre.measurement?.attenuationDb ?? null,
+      fibre.status,
+      fibreSeed,
+      sampledAtMs
+    );
     const measurementAgeMinutes = buildMeasurementAgeMinutes(fibre.status, fibreSeed);
     const evaluations = [
       evaluateNumericMetric('attenuationDb', 'Attenuation', attenuationDb, fibreThresholds.attenuationDb),
@@ -434,7 +444,7 @@ export const runRtuEmulatorQuery = async (ipAddress: string): Promise<EmulatorQu
 
   return {
     requestedIpAddress: normalizedIpAddress,
-    sampledAt: new Date().toISOString(),
+    sampledAt: new Date(sampledAtMs).toISOString(),
     thresholdSource: getRtuEmulatorThresholdSource(),
     rtu: {
       id: sourceData.rtu.id,
