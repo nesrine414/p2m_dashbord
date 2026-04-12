@@ -10,9 +10,10 @@ import {
   Timeline,
   TrendingDown,
 } from '@mui/icons-material';
-import WidgetCard from '../components/common/WidgetCard';
+import { WidgetCard } from '../components/common';
 import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
+import { RTUCard } from '../components/widgets/RTUCardsWidget';
 import HardwareAlertsWidget from '../components/widgets/HardwareAlertsWidget';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {

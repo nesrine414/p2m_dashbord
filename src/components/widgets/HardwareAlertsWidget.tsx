@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Stack, Grid, Chip } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
-import PulseStatusIcon from '../common/PulseStatusIcon';
+import { PulseStatusIcon } from '../common';
 
 export interface AlertRTU {
   id: number;

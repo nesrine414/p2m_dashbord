@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import StatusBadge from '../components/common/StatusBadge';
+import { StatusBadge } from '../components/common';
 import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
   BackendAlarm,
@@ -824,7 +824,6 @@ const MonitoringPage: React.FC = () => {
                       <TableCell>
                         <StatusBadge status={route.fiberStatus} label={getStatusTranslation(route.fiberStatus)} />
                       </TableCell>
-                      <TableCell>
                       <TableCell>
                         {agingStatus ? <StatusBadge status={agingStatus} /> : 'N/D'}
                       </TableCell>
