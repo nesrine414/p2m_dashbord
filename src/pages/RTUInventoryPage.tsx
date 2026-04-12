@@ -89,13 +89,24 @@ const getVendor = (id: number): string => VENDORS[id % VENDORS.length];
 const getFiberStatusText = (status: BackendFiberRoute['fiberStatus']): string => {
   switch (status) {
     case FiberStatus.BROKEN:
-      return 'Broken';
+      return 'Coupée';
     case FiberStatus.DEGRADED:
       return 'Degraded';
     case FiberStatus.NORMAL:
     default:
       return 'Normal';
   }
+};
+
+const getStatusTranslation = (status: string): string => {
+  const s = status.toLowerCase();
+  if (s === 'normal') return 'Normale';
+  if (s === 'degraded' || s === 'dégradée') return 'Dégradée';
+  if (s === 'broken' || s === 'rompue') return 'Rompue';
+  if (s === 'online') return 'En ligne';
+  if (s === 'offline') return 'Hors ligne';
+  if (s === 'unreachable') return 'Injoignable';
+  return status;
 };
 
 const parseCoordinate = (value?: number | string | null): number | null => {
@@ -687,20 +698,20 @@ const RTUInventoryPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{record.zone}</TableCell>
                       <TableCell>
-                        <StatusBadge status={record.status} />
+                        <StatusBadge status={record.status} label={getStatusTranslation(record.status)} />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={record.powerSupply} variant="outlined" />
+                        <StatusBadge status={record.powerSupply} variant="outlined" label={record.powerSupply === 'normal' ? 'Normale' : 'Echec'} />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={record.communication} variant="outlined" />
+                        <StatusBadge status={record.communication} variant="outlined" label={record.communication === 'connected' ? 'Connecté' : 'Déconnecté'} />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={record.otdrAvailability} variant="outlined" />
+                        <StatusBadge status={record.otdrAvailability} variant="outlined" label={record.otdrAvailability === 'ready' ? 'Prêt' : record.otdrAvailability === 'busy' ? 'Occupé' : 'Défaut'} />
                       </TableCell>
                       <TableCell sx={{ minWidth: 150 }}>
                         <Typography variant="body2" color="white">
-                          {record.temperature === 0 ? 'N/D' : `${record.temperature} C`}
+                          {record.temperature === null || record.temperature === undefined ? 'N/D' : `${record.temperature} C`}
                         </Typography>
                         <LinearProgress
                           variant="determinate"

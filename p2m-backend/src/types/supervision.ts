@@ -9,7 +9,7 @@ export type SupervisionOtdrMode = 'auto' | 'manual' | 'scheduled';
 export type SupervisionOtdrResult = 'pass' | 'fail';
 export type SupervisionAlarmSeverity = 'critical' | 'major' | 'minor' | 'info';
 export type SupervisionAlarmLifecycle = 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
-export type SupervisionAlarmType = 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
+export type SupervisionAlarmType = 'Coupure Fibre' | 'Perte Elevée' | 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
 export type SupervisionAttenuationTrend = 'rising' | 'stable' | 'falling';
 
 export interface SupervisionCoordinates {
@@ -98,6 +98,7 @@ export interface SupervisionTelemetryFibre {
   testResult: SupervisionOtdrResult;
   lastTestTime?: Date | string | null;
   reflectionEvents: boolean;
+  agingStatus: 'Stable' | 'Dégradé';
   path?: SupervisionRoutePathPoint[] | null;
 }
 
@@ -128,7 +129,7 @@ export interface SupervisionDashboardSnapshot {
   degradedFibres: number;
   otdrFailures: number;
   averageAttenuationDb: number;
-  mttrHours: number;
+  mttrHours: number | null;
   mtbfHours: number;
   availabilityPercent: number;
   incidentLoad: number;

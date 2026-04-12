@@ -16,14 +16,14 @@ export interface DashboardStatsSnapshot {
   criticalAlarms: number;
   majorAlarms: number;
   minorAlarms: number;
-  mttr: number;
+  mttr: number | null;
   mtbf: number;
   averageAttenuation: number;
   availability: number;
   degradedMode?: boolean;
 }
 
-const calculateMTTR = async (): Promise<number> => {
+const calculateMTTR = async (): Promise<number | null> => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -37,11 +37,11 @@ const calculateMTTR = async (): Promise<number> => {
       },
     },
     order: [['resolvedAt', 'DESC']],
-    limit: 50, // Keep it highly reactive to recent closures
+    limit: 50,
   });
 
   if (resolvedAlarms.length === 0) {
-    return 0;
+    return null;
   }
 
   const validDurationsHours = resolvedAlarms
@@ -57,10 +57,10 @@ const calculateMTTR = async (): Promise<number> => {
 
       return diffMs / (1000 * 60 * 60);
     })
-    .filter((duration): duration is number => typeof duration === 'number');
+    .filter((duration): duration is number => duration !== null);
 
   if (validDurationsHours.length === 0) {
-    return 0;
+    return null;
   }
 
   const totalHours = validDurationsHours.reduce((acc, value) => acc + value, 0);

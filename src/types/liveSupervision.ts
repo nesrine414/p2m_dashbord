@@ -95,6 +95,7 @@ export interface SupervisionTelemetryFibre {
   testResult: SupervisionOtdrResult;
   lastTestTime?: string | Date | null;
   reflectionEvents: boolean;
+  agingStatus: 'Stable' | 'Dégradé';
   path?: SupervisionCoordinates[] | null;
 }
 

@@ -6,7 +6,7 @@ interface AlarmAttributes {
   rtuId?: number;
   fibreId?: number;
   routeId?: number;
-  alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
+  alarmType: 'Coupure Fibre' | 'Perte Elevée' | 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   severity: 'critical' | 'major' | 'minor' | 'info';
   lifecycleStatus: 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
   message: string;
@@ -28,7 +28,7 @@ class Alarm extends Model<AlarmAttributes, AlarmCreationAttributes> implements A
   declare rtuId?: number;
   declare fibreId?: number;
   declare routeId?: number;
-  declare alarmType: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
+  declare alarmType: 'Coupure Fibre' | 'Perte Elevée' | 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
   declare severity: 'critical' | 'major' | 'minor' | 'info';
   declare lifecycleStatus: 'active' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
   declare message: string;
@@ -66,7 +66,7 @@ Alarm.init(
       field: 'route_id',
     },
     alarmType: {
-      type: DataTypes.ENUM('Fiber Cut', 'High Loss', 'RTU Down', 'Temperature', 'Maintenance'),
+      type: DataTypes.ENUM('Coupure Fibre', 'Perte Elevée', 'Fiber Cut', 'High Loss', 'RTU Down', 'Temperature', 'Maintenance'),
       allowNull: false,
       field: 'alarm_type',
     },

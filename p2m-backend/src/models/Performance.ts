@@ -4,8 +4,8 @@ import sequelize from '../config/database';
 interface PerformanceAttributes {
   id: number;
   fibreId: number;
-  mttr?: number;
-  mtbf?: number;
+  mttr?: number | null;
+  mtbf?: number | null;
   recordedAt: Date;
   created_at?: Date;
   updated_at?: Date;
@@ -19,8 +19,8 @@ class Performance
 {
   declare id: number;
   declare fibreId: number;
-  declare mttr?: number;
-  declare mtbf?: number;
+  declare mttr?: number | null;
+  declare mtbf?: number | null;
   declare recordedAt: Date;
   declare readonly created_at: Date;
   declare readonly updated_at: Date;

@@ -9,7 +9,7 @@ interface DashboardSnapshotAttributes {
   criticalAlarms: number;
   majorAlarms: number;
   minorAlarms: number;
-  mttrHours: number;
+  mttrHours?: number | null;
   mtbfHours: number;
   availabilityPercent: number;
   capturedAt: Date;
@@ -30,7 +30,7 @@ class DashboardSnapshot
   declare criticalAlarms: number;
   declare majorAlarms: number;
   declare minorAlarms: number;
-  declare mttrHours: number;
+  declare mttrHours?: number | null;
   declare mtbfHours: number;
   declare availabilityPercent: number;
   declare capturedAt: Date;
@@ -83,8 +83,7 @@ DashboardSnapshot.init(
     },
     mttrHours: {
       type: DataTypes.FLOAT,
-      allowNull: false,
-      defaultValue: 0,
+      allowNull: true,
       field: 'mttr_hours',
     },
     mtbfHours: {

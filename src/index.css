@@ -190,3 +190,27 @@ code {
     animation: none;
   }
 }
+
+/* Premium NOC Styles */
+.glass-card-premium {
+  background: linear-gradient(135deg, rgba(23, 31, 56, 0.7) 0%, rgba(13, 18, 36, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 51, 102, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
+}

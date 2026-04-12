@@ -21,7 +21,7 @@ export interface DiagnosticMeasurementRow {
   threshold: number;
   thresholdLabel: string;
   status: 'pass' | 'warning' | 'critical';
-  alarmType?: 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
+  alarmType?: 'Coupure Fibre' | 'Perte Elevée' | 'Fiber Cut' | 'High Loss' | 'RTU Down' | 'Temperature' | 'Maintenance';
 }
 
 export interface DiagnosticOtdrParams {
@@ -251,13 +251,13 @@ export const runDiagnosticTest = async (
 
     // Raise alarm if threshold exceeded
     if (attStatus !== 'pass' && !alarmCreated) {
-      const alarmType = attenuation >= thresholds.attenuationCriticalDb ? 'Fiber Cut' : 'High Loss';
+      const alarmType = attenuation >= thresholds.attenuationCriticalDb ? 'Coupure Fibre' : 'Perte Elevée';
       const severity = attStatus === 'critical' ? 'critical' : 'major';
       const label = fibre ? `${rtu.name} ${fibre.name}` : rtu.name;
       const message =
-        alarmType === 'Fiber Cut'
-          ? `Fiber cut detected on ${label}. Measured attenuation: ${attenuation} dB (threshold: ${thresholds.attenuationCriticalDb} dB).`
-          : `High loss detected on ${label}. Measured attenuation: ${attenuation} dB (threshold: ${thresholds.attenuationWarningDb} dB).`;
+        alarmType === 'Coupure Fibre'
+          ? `Coupure de fibre détectée sur ${label}. Atténuation mesurée: ${attenuation} dB (seuil: ${thresholds.attenuationCriticalDb} dB).`
+          : `Perte élevée détectée sur ${label}. Atténuation mesurée: ${attenuation} dB (seuil: ${thresholds.attenuationWarningDb} dB).`;
 
       const alarm = await Alarm.create({
         rtuId: rtu.id,

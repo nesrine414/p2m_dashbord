@@ -81,7 +81,7 @@ export const calculateDashboardSnapshot = (input: SupervisionKpiInput): Supervis
       const end = toDate(alarm.resolvedAt);
       if (!start || !end) return null;
       const diff = end.getTime() - start.getTime();
-      return diff > 0 ? diff / 36e5 : null;
+      return diff >= 0 ? diff / 36e5 : null;
     })
     .filter((value): value is number => value !== null);
 
@@ -93,7 +93,7 @@ export const calculateDashboardSnapshot = (input: SupervisionKpiInput): Supervis
     .filter((value): value is number => value !== null);
 
   let mttrSource = 'none';
-  let mttrHours = 0;
+  let mttrHours: number | null = null;
   if (resolvedDurations.length) {
     mttrHours = avg(resolvedDurations);
     mttrSource = 'resolved_alarms';
@@ -256,7 +256,7 @@ export const persistDashboardSnapshot = async (snapshot: SupervisionDashboardSna
 
 export const persistPerformanceSnapshot = async (input: {
   fibreId: number;
-  mttrHours: number;
+  mttrHours: number | null;
   mtbfHours: number;
   recordedAt?: Date;
 }): Promise<Performance | null> => {

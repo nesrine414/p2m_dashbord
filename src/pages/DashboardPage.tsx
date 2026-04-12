@@ -13,6 +13,7 @@ import WidgetCard from '../components/common/WidgetCard';
 import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsTable';
 import CriticalRoutesWidget, { CriticalRoute } from '../components/widgets/CriticalRoutesWidget';
 import RTUCardsWidget, { RTUCard } from '../components/widgets/RTUCardsWidget';
+import HardwareAlertsWidget from '../components/widgets/HardwareAlertsWidget';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {
   BackendAlarm,
@@ -74,8 +75,12 @@ const toAlarmRowStatus = (status: BackendAlarm['lifecycleStatus']): AlarmRow['st
   return 'active';
 };
 
-const formatMttrValue = (hours: number): string => {
-  if (!Number.isFinite(hours) || hours <= 0) {
+const formatMttrValue = (hours: number | null): string => {
+  if (hours === null || !Number.isFinite(hours) || hours < 0) {
+    return 'N/D';
+  }
+
+  if (hours === 0) {
     return '0.0 min';
   }
 
@@ -101,7 +106,7 @@ const toDashboardStatsPayload = (payload: unknown): DashboardStats | null => {
     !isFiniteNumber(source.criticalAlarms) ||
     !isFiniteNumber(source.majorAlarms) ||
     !isFiniteNumber(source.minorAlarms) ||
-    !isFiniteNumber(source.mttr) ||
+    (!isFiniteNumber(source.mttr) && source.mttr !== null) ||
     !isFiniteNumber(source.mtbf) ||
     !isFiniteNumber(source.averageAttenuation) ||
     !isFiniteNumber(source.availability)
@@ -118,7 +123,7 @@ const toDashboardStatsPayload = (payload: unknown): DashboardStats | null => {
     criticalAlarms: Number(source.criticalAlarms),
     majorAlarms: Number(source.majorAlarms),
     minorAlarms: Number(source.minorAlarms),
-    mttr: Number(source.mttr),
+    mttr: source.mttr === null ? null : Number(source.mttr),
     mtbf: Number(source.mtbf),
     averageAttenuation: Number(source.averageAttenuation),
     availability: Number(source.availability),
@@ -319,8 +324,8 @@ const DashboardPage: React.FC = () => {
       <Typography variant="h4" fontWeight={800} color="white" mb={0.7}>
         Vue 1 - Supervision temps reel
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={2}>
-        Supervision temps reel des RTU, alarmes critiques et routes fibre.
+      <Typography variant="body2" color="text.secondary" mb={3} sx={{ opacity: 0.8 }}>
+        Centre d'Opérations Réseau (NOC) - Suivi en temps réel des infrastructures critiques.
       </Typography>
 
       {loading && (
@@ -436,7 +441,11 @@ const DashboardPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      <RTUCardsWidget rtus={dashboardRtus} />
+      <Grid container spacing={3} mb={3}>
+        <Grid size={{ xs: 12 }}>
+          <HardwareAlertsWidget rtus={dashboardRtus} />
+        </Grid>
+      </Grid>
     </Box>
   );
 };

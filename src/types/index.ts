@@ -153,7 +153,7 @@ export interface DashboardStats {
   criticalAlarms: number;
   majorAlarms: number;
   minorAlarms: number;
-  mttr: number;
+  mttr: number | null;
   mtbf: number;
   averageAttenuation: number;
   availability: number;

@@ -5,6 +5,7 @@ import { AlarmSeverity, RTUStatus } from '../../types';
 interface StatusBadgeProps {
   status: RTUStatus | AlarmSeverity | string;
   variant?: 'filled' | 'outlined';
+  label?: string;
 }
 
 const getFrenchLabel = (value: string): string => {
@@ -19,7 +20,7 @@ const getFrenchLabel = (value: string): string => {
     closed: 'Cloture',
     offline: 'Hors ligne',
     critical: 'Critique',
-    broken: 'Casse',
+    broken: 'Coupee',
     failure: 'Panne',
     fault: 'Defaut',
     disconnected: 'Deconnecte',
@@ -47,7 +48,7 @@ const getFrenchLabel = (value: string): string => {
   );
 };
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled', label }) => {
   const normalizedStatus = String(status).toLowerCase();
 
   const getColor = (): 'success' | 'error' | 'warning' | 'info' | 'default' => {
@@ -90,7 +91,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = 'filled' })
 
   return (
     <Chip
-      label={getFrenchLabel(String(status))}
+      label={label || getFrenchLabel(String(status))}
       color={getColor()}
       variant={variant}
       size="small"

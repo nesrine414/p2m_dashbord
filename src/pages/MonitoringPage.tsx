@@ -97,6 +97,14 @@ const toTrendChartPoints = (points: RouteAttenuationTrendPoint[]): TrendChartPoi
   }))
   .filter((point) => Number.isFinite(point.timestampMs));
 
+const getStatusTranslation = (status: string): string => {
+  const s = status.toLowerCase();
+  if (s === 'normal') return 'Normale';
+  if (s === 'degraded' || s === 'dégradée') return 'Dégradée';
+  if (s === 'broken' || s === 'rompue') return 'Coupée';
+  return status;
+};
+
 const getTrendWindowLabel = (minutes: number): string =>
   TREND_WINDOW_OPTIONS.find((option) => option.minutes === minutes)?.label || `${minutes} min`;
 
@@ -542,7 +550,7 @@ const MonitoringPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
             <Typography variant="caption" color="text.secondary">
-              Fibre rompue
+              Fibre coupée
             </Typography>
             <Typography variant="h5" color="#ff8d9a" fontWeight={700}>
               {summary.broken}
@@ -763,16 +771,22 @@ const MonitoringPage: React.FC = () => {
                         {route.source} to {route.destination}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={route.fiberStatus} />
+                        <StatusBadge status={route.fiberStatus} label={getStatusTranslation(route.fiberStatus)} />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={route.routeStatus} variant="outlined" />
+                        <StatusBadge status={route.routeStatus} variant="outlined" label={getStatusTranslation(route.routeStatus)} />
                       </TableCell>
                       <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
                       <TableCell>
                         {route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(1)} dB` : 'N/D'}
                       </TableCell>
-                      <TableCell>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
+                      <TableCell>
+                        <StatusBadge 
+                          status={route.reflectionEvents ? 'critical' : 'normal'} 
+                          variant="outlined"
+                          label={route.reflectionEvents ? 'Oui' : 'Non'}
+                        />
+                      </TableCell>
                       <TableCell>{formatDateTime(route.lastTestTime)}</TableCell>
                     </TableRow>
                   ))}

@@ -17,7 +17,7 @@ interface CriticalRoutesWidgetProps {
 
 const getStatusColor = (status: CriticalRoute['status']) => (status === 'broken' ? '#FF3366' : '#FFB800');
 
-const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Cassée' : 'Dégradée');
+const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Coupée' : 'Dégradée');
 
 const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) => {
   if (!routes || routes.length === 0) {
