@@ -127,12 +127,20 @@ const buildFibrePath = (
 };
 
 const calculateMTTR = async (): Promise<number> => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const resolvedAlarms = await Alarm.findAll({
     where: {
       lifecycleStatus: {
         [Op.in]: RESOLVED_ALARM_LIFECYCLE_STATUSES,
       },
+      resolvedAt: {
+        [Op.gte]: thirtyDaysAgo,
+      },
     },
+    order: [['resolvedAt', 'DESC']],
+    limit: 50,
   });
 
   if (resolvedAlarms.length === 0) {

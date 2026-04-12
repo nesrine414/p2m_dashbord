@@ -24,12 +24,20 @@ export interface DashboardStatsSnapshot {
 }
 
 const calculateMTTR = async (): Promise<number> => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const resolvedAlarms = await Alarm.findAll({
     where: {
       lifecycleStatus: {
         [Op.in]: RESOLVED_ALARM_LIFECYCLE_STATUSES,
       },
+      resolvedAt: {
+        [Op.gte]: thirtyDaysAgo,
+      },
     },
+    order: [['resolvedAt', 'DESC']],
+    limit: 50, // Keep it highly reactive to recent closures
   });
 
   if (resolvedAlarms.length === 0) {

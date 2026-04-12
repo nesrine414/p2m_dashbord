@@ -1,0 +1,26 @@
+src/pages/DashboardPage.tsx(113,16): error TS2345: Argument of type '(rtu: BackendRTU, sourceLabel?: string) => RTUCard' is not assignable to parameter of type '(value: BackendRTU, index: number, array: BackendRTU[]) => RTUCard'.
+  Types of parameters 'sourceLabel' and 'index' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+src/pages/MonitoringPage.tsx(233,31): error TS2345: Argument of type 'SupervisionDataOrigin' is not assignable to parameter of type 'SetStateAction<"database" | "demo" | null>'.
+  Type '"emulator"' is not assignable to type 'SetStateAction<"database" | "demo" | null>'.
+src/pages/MonitoringPage.tsx(259,7): error TS2322: Type '{ timestamp: string; attenuation: number; wavelength: 1310 | 1550 | 1625; testResult: SupervisionOtdrResult; }[]' is not assignable to type 'AttenuationPoint[]'.
+  Type '{ timestamp: string; attenuation: number; wavelength: 1310 | 1550 | 1625; testResult: SupervisionOtdrResult; }' is not assignable to type 'AttenuationPoint'.
+    Types of property 'testResult' are incompatible.
+      Type 'SupervisionOtdrResult' is not assignable to type 'TestResult'.
+        Type '"pass"' is not assignable to type 'TestResult'.
+src/pages/MonitoringPage.tsx(406,19): error TS2322: Type '(event: SelectChangeEvent) => void' is not assignable to type '(event: ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number; }, Element> | (Event & { target: { value: number; name: string; }; }), child: ReactNode) => void'.
+  Types of parameters 'event' and 'event' are incompatible.
+    Type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number; }, Element> | (Event & { target: { value: number; name: string; }; })' is not assignable to type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: string; }, Element> | (Event & { target: { value: string; name: string; }; })'.
+      Type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number; }, Element>' is not assignable to type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: string; }, Element> | (Event & { target: { value: string; name: string; }; })'.
+        Type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number; }, Element>' is not assignable to type 'ChangeEvent<Omit<HTMLInputElement, "value"> & { value: string; }, Element>'.
+          Type 'Omit<HTMLInputElement, "value"> & { value: number; }' is not assignable to type 'Omit<HTMLInputElement, "value"> & { value: string; }'.
+            Type 'Omit<HTMLInputElement, "value"> & { value: number; }' is not assignable to type '{ value: string; }'.
+              Types of property 'value' are incompatible.
+                Type 'number' is not assignable to type 'string'.
+src/pages/MonitoringPage.tsx(449,23): error TS2322: Type '(value: number | string) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+  Type '(value: number | string) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType>'.
+    Types of parameters 'value' and 'value' are incompatible.
+      Type 'ValueType | undefined' is not assignable to type 'string | number'.
+        Type 'undefined' is not assignable to type 'string | number'.
+src/pages/RTUInventoryPage.tsx(287,26): error TS2345: Argument of type '"active" | "acknowledged" | "in_progress" | "resolved" | "closed" | "cleared"' is not assignable to parameter of type 'AlarmLifecycleStatus'.
+  Type '"active"' is not assignable to type 'AlarmLifecycleStatus'.

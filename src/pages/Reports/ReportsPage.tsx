@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import StatusBadge from '../../components/common/StatusBadge';
 import { BackendAlarm, getAlarms, getDashboardStats } from '../../services/api';
 import { DashboardStats } from '../../types';
@@ -152,6 +153,24 @@ const ReportsPage: React.FC = () => {
       open,
       closed,
     };
+  }, [filteredAlarms]);
+
+  const severityData = useMemo(() => [
+    { name: 'Critique', value: reportSummary.critical, color: '#ff6f7a' },
+    { name: 'Majeure', value: reportSummary.major, color: '#ffb347' },
+    { name: 'Mineur/Autre', value: filteredAlarms.length - reportSummary.critical - reportSummary.major, color: '#55c2ff' },
+  ].filter(d => d.value > 0), [reportSummary, filteredAlarms.length]);
+
+  const rtuData = useMemo(() => {
+    const counts = new Map<string, number>();
+    filteredAlarms.forEach(alarm => {
+      const name = alarm.rtuName || `RTU-${alarm.rtuId || 'Inconnu'}`;
+      counts.set(name, (counts.get(name) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
   }, [filteredAlarms]);
 
   const exportCsv = () => {
@@ -299,6 +318,49 @@ const ReportsPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {filteredAlarms.length > 0 && (
+        <Grid container spacing={2.5} mb={3}>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: 320 }}>
+              <Typography variant="subtitle1" fontWeight="bold" color="white" mb={1}>Répartition par Sévérité</Typography>
+              <ResponsiveContainer width="100%" height="85%">
+                <PieChart>
+                  <Pie
+                    data={severityData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {severityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ backgroundColor: '#1a1f2e', border: 'none', borderRadius: 8, color: 'white' }} itemStyle={{ color: 'white' }} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </Paper>
+          </Grid>
+          
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: 320 }}>
+              <Typography variant="subtitle1" fontWeight="bold" color="white" mb={1}>Top 5 RTU les plus impactés</Typography>
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart data={rtuData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                  <XAxis type="number" stroke="#9aa9bd" />
+                  <YAxis dataKey="name" type="category" stroke="#9aa9bd" width={170} tick={{ fontSize: 12 }} />
+                  <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: '#1a1f2e', border: 'none', borderRadius: 8, color: 'white' }} />
+                  <Bar dataKey="count" name="Alarmes" fill="#86c8ff" radius={[0, 4, 4, 0]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Paper>
+          </Grid>
+        </Grid>
+      )}
 
       <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
         <Typography variant="h6" color="white" mb={2}>

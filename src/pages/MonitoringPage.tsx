@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
 import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
@@ -658,10 +658,10 @@ const MonitoringPage: React.FC = () => {
                     />
                     <YAxis stroke="#9aa9bd" domain={trendDomain} />
                     <Tooltip
-                      formatter={(value: number | string | null) =>
+                      formatter={(value: any) =>
                         typeof value === 'number' ? `${value.toFixed(2)} dB` : 'N/D'
                       }
-                      labelFormatter={(_label: string, payload: Array<{ payload: TrendChartPoint }>) => {
+                      labelFormatter={(_label: any, payload: readonly any[]) => {
                         const item = payload?.[0]?.payload;
                         return item ? formatDateTime(item.timestamp) : '';
                       }}
@@ -692,10 +692,12 @@ const MonitoringPage: React.FC = () => {
                       dataKey="attenuationDb"
                       stroke="#55c2ff"
                       strokeWidth={2}
-                      dot={false}
-                      name="Attenuation"
+                      dot={{ r: 3, fill: '#55c2ff', strokeWidth: 0 }}
+                      activeDot={{ r: 5 }}
+                      name="Atténuation mesurée"
                       connectNulls
                     />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '20px' }} />
                   </LineChart>
                 </ResponsiveContainer>
               )}

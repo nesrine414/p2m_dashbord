@@ -1,0 +1,9 @@
+src/pages/MonitoringPage.tsx(232,25): error TS2345: Argument of type 'SupervisionRouteAttenuationHistoryPoint[]' is not assignable to parameter of type 'SetStateAction<BackendOtdrTest[]>'.
+  Type 'SupervisionRouteAttenuationHistoryPoint[]' is not assignable to type 'BackendOtdrTest[]'.
+    Type 'SupervisionRouteAttenuationHistoryPoint' is missing the following properties from type 'BackendOtdrTest': routeName, mode, wavelengthNm, result, testedAt
+src/pages/MonitoringPage.tsx(260,53): error TS2339: Property 'attenuation' does not exist on type 'BackendOtdrTest'.
+src/pages/MonitoringPage.tsx(260,109): error TS2339: Property 'attenuation' does not exist on type 'BackendOtdrTest'.
+src/pages/MonitoringPage.tsx(262,34): error TS2339: Property 'timestamp' does not exist on type 'BackendOtdrTest'.
+src/pages/MonitoringPage.tsx(263,50): error TS2339: Property 'attenuation' does not exist on type 'BackendOtdrTest'.
+src/pages/MonitoringPage.tsx(264,35): error TS2551: Property 'wavelength' does not exist on type 'BackendOtdrTest'. Did you mean 'wavelengthNm'?
+src/pages/MonitoringPage.tsx(265,35): error TS2339: Property 'testResult' does not exist on type 'BackendOtdrTest'.

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { DashboardStats } from '../types';
 import { getStoredToken } from './auth';
+import { SupervisionTelemetryBundle } from '../types/liveSupervision';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const AUTH_TOKEN_KEY = 'nqms_auth_token';
@@ -335,6 +336,76 @@ export const closeAlarm = async (id: number): Promise<BackendAlarm> => {
 
 export const sendAiChatMessage = async (message: string): Promise<AiChatResponse> => {
   const response = await apiClient.post<AiChatResponse>('/ai/chat', { message }, { timeout: 65000 });
+  return response.data;
+};
+
+export const getRTUById = async (id: number): Promise<BackendRTU> => {
+  const response = await apiClient.get<BackendRTU>(`/rtu/${id}`);
+  return response.data;
+};
+
+export const getRTUByIp = async (ip: string): Promise<BackendRTU> => {
+  const response = await apiClient.get<BackendRTU[]>('/rtu', { params: { search: ip } });
+  if (response.data && response.data.length > 0) {
+    const exactMatch = response.data.find(r => r.ipAddress === ip);
+    if (exactMatch) return exactMatch;
+    return response.data[0];
+  }
+  throw new Error('RTU not found for IP');
+};
+
+export const getTelemetryBundleByIp = async (ip: string): Promise<SupervisionTelemetryBundle> => {
+  const response = await apiClient.get<SupervisionTelemetryBundle>(`/emulator/bundle/${ip}`);
+  return response.data;
+};
+
+export type DiagnosticTestType = 'quick' | 'full' | 'otdr' | 'temperature';
+
+export interface DiagnosticThresholds {
+  attenuationWarningDb: number;
+  attenuationCriticalDb: number;
+  temperatureWarningC: number;
+  temperatureCriticalC: number;
+}
+
+export interface DiagnosticTestResult {
+  ipAddress: string;
+  rtuName: string;
+  verdict: 'pass' | 'alarm';
+  testedAt: string;
+  fibreName?: string;
+  fibreLengthKm?: number;
+  measurements: Array<{
+    parameter: string;
+    unit: string;
+    value: number;
+    status: 'pass' | 'warning' | 'critical';
+    threshold: number;
+    thresholdLabel: string;
+    alarmType?: string;
+  }>;
+  otdr?: {
+    wavelengthNm: number;
+    pulseWidth: string;
+    dynamicRangeDb: number;
+    mode: string;
+    result: string;
+  };
+  alarmCreated?: {
+    id: number;
+    message: string;
+    alarmType: string;
+    severity: string;
+  };
+  thresholds: DiagnosticThresholds;
+}
+
+export const runDiagnosticTest = async (payload: {
+  ipAddress: string;
+  testType: DiagnosticTestType;
+  thresholds: DiagnosticThresholds;
+}): Promise<DiagnosticTestResult> => {
+  const response = await apiClient.post<DiagnosticTestResult>('/emulator/run-test', payload);
   return response.data;
 };
 
