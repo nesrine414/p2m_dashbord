@@ -1,0 +1,124 @@
+{
+  "task_mode": "multiclass",
+  "prediction_mode": "anticipation",
+  "model_type": "RandomForestClassifier",
+  "model_params": {
+    "n_estimators": 200,
+    "max_depth": 15,
+    "min_samples_leaf": 2,
+    "max_features": "sqrt",
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": 1
+  },
+  "class_weights": {
+    "0": 0.2779266670637048,
+    "1": 1.6542597187758479,
+    "2": 1.3883379611265372,
+    "3": 2.7381185214159984,
+    "4": 2.087994034302759,
+    "5": 4.291845493562231
+  },
+  "labels": {
+    "0": "Normal",
+    "1": "Fiber_Cut",
+    "2": "High_Loss",
+    "3": "RTU_Down",
+    "4": "Degraded",
+    "5": "Broken"
+  },
+  "n_features": 31,
+  "used_features": [
+    "temperature_c",
+    "test_mode",
+    "supplier",
+    "wavelength_nm",
+    "fiber_type",
+    "pulse_width_ns",
+    "length_km",
+    "range_km",
+    "resolution_m",
+    "index_refraction",
+    "attenuation_db",
+    "total_loss_db",
+    "orl_db",
+    "slope_avg_db_km",
+    "num_events",
+    "splice_loss_max",
+    "refl_loss_min",
+    "end_loss_db",
+    "num_averages",
+    "num_data_points",
+    "dynamic_range_db",
+    "noise_floor",
+    "user_offset_m",
+    "build_condition",
+    "att_per_km",
+    "slope_deviation",
+    "splice_end_ratio",
+    "refl_abs",
+    "orl_per_km",
+    "checksum_int",
+    "event_density"
+  ],
+  "dropped_columns": [
+    "rtu_status",
+    "power_supply",
+    "otdr_avail",
+    "fiber_status",
+    "route_status",
+    "test_result",
+    "alarm_type",
+    "severity",
+    "alarm_status",
+    "mttr_hours"
+  ],
+  "cross_validation": {
+    "accuracy": {
+      "mean": 0.9950196078431373,
+      "std": 0.00030407965527981865
+    },
+    "precision_macro": {
+      "mean": 0.9815911927501072,
+      "std": 0.0008538432343705812
+    },
+    "recall_macro": {
+      "mean": 0.9906494700576479,
+      "std": 0.0009152401220435479
+    },
+    "f1_macro": {
+      "mean": 0.9856473456047891,
+      "std": 0.000877572120239565
+    },
+    "precision_weighted": {
+      "mean": 0.9954405905803098,
+      "std": 0.00029680879963037984
+    },
+    "recall_weighted": {
+      "mean": 0.9950196078431373,
+      "std": 0.00030407965527981865
+    },
+    "f1_weighted": {
+      "mean": 0.9950933451827214,
+      "std": 0.0002996663105803333
+    }
+  },
+  "validation_metrics": {
+    "accuracy": 0.9952222222222222,
+    "precision_macro": 0.9821764732122942,
+    "recall_macro": 0.9912191459527157,
+    "f1_macro": 0.9862296667156011,
+    "precision_weighted": 0.9956335167258973,
+    "recall_weighted": 0.9952222222222222,
+    "f1_weighted": 0.9952925753097823
+  },
+  "test_metrics": {
+    "accuracy": 0.9941111111111111,
+    "precision_macro": 0.9784624282523734,
+    "recall_macro": 0.9892300113023595,
+    "f1_macro": 0.9831441199520414,
+    "precision_weighted": 0.9947300187507158,
+    "recall_weighted": 0.9941111111111111,
+    "f1_weighted": 0.9942162635305398
+  }
+}

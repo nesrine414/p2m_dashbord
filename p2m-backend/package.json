@@ -7,7 +7,8 @@
     "dev": "ts-node src/server.ts",
     "build": "tsc",
     "start": "ts-node src/server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ml": "python ml_model/serve_xgboost.py"
   },
   "keywords": [],
   "author": "",

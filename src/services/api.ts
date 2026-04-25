@@ -226,6 +226,26 @@ export interface AiChatResponse {
   timestamp: string;
 }
 
+export interface PanneRiskPredictionRow {
+  [key: string]: unknown;
+  prediction_binary: number | string;
+  prediction_label: 'Normal' | 'Panne' | string;
+  probability_panne: number | string;
+  probability_normal: number | string;
+}
+
+export interface PanneRiskPredictionResponse {
+  predictions: PanneRiskPredictionRow[];
+  provider: 'xgboost' | 'fallback';
+  summary: {
+    total: number;
+    normal: number;
+    panne: number;
+  };
+  requestedBy: string;
+  timestamp: string;
+}
+
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   const response = await apiClient.get<DashboardStats>('/dashboard/stats');
   return response.data;
@@ -335,6 +355,17 @@ export const closeAlarm = async (id: number): Promise<BackendAlarm> => {
 
 export const sendAiChatMessage = async (message: string): Promise<AiChatResponse> => {
   const response = await apiClient.post<AiChatResponse>('/ai/chat', { message }, { timeout: 65000 });
+  return response.data;
+};
+
+export const postPanneRiskPrediction = async (
+  rows: Array<Record<string, unknown>>
+): Promise<PanneRiskPredictionResponse> => {
+  const response = await apiClient.post<PanneRiskPredictionResponse>(
+    '/predictions/panne-risk',
+    { rows },
+    { timeout: 65000 }
+  );
   return response.data;
 };
 

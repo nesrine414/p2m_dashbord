@@ -1,0 +1,117 @@
+{
+  "task_mode": "binary",
+  "prediction_mode": "anticipation",
+  "anticipation_profile": "strict",
+  "model_type": "RandomForestClassifier",
+  "model_params": {
+    "n_estimators": 200,
+    "max_depth": 15,
+    "min_samples_leaf": 2,
+    "max_features": "sqrt",
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": 1
+  },
+  "class_weights": {
+    "0": 0.8337800011911143,
+    "1": 1.2489963422249977
+  },
+  "labels": {
+    "0": "Normal",
+    "1": "Panne"
+  },
+  "n_features": 14,
+  "used_features": [
+    "temperature_c",
+    "test_mode",
+    "supplier",
+    "wavelength_nm",
+    "fiber_type",
+    "pulse_width_ns",
+    "length_km",
+    "range_km",
+    "resolution_m",
+    "index_refraction",
+    "num_averages",
+    "num_data_points",
+    "user_offset_m",
+    "build_condition"
+  ],
+  "dropped_columns": [
+    "rtu_status",
+    "power_supply",
+    "otdr_avail",
+    "fiber_status",
+    "route_status",
+    "test_result",
+    "alarm_type",
+    "severity",
+    "alarm_status",
+    "mttr_hours",
+    "splice_loss_max",
+    "splice_end_ratio",
+    "checksum_int",
+    "orl_db",
+    "refl_loss_min",
+    "refl_abs",
+    "att_per_km",
+    "end_loss_db",
+    "dynamic_range_db",
+    "total_loss_db",
+    "attenuation_db",
+    "orl_per_km",
+    "noise_floor",
+    "slope_avg_db_km",
+    "slope_deviation",
+    "event_density",
+    "num_events"
+  ],
+  "cross_validation": {
+    "accuracy": {
+      "mean": 0.6575980392156863,
+      "std": 0.0017187367838784437
+    },
+    "precision_macro": {
+      "mean": 0.7730832441197686,
+      "std": 0.00796295744515763
+    },
+    "recall_macro": {
+      "mean": 0.575070786916224,
+      "std": 0.001696747800039235
+    },
+    "f1_macro": {
+      "mean": 0.5248141624012778,
+      "std": 0.0021007276548575663
+    },
+    "precision_weighted": {
+      "mean": 0.7462490766192656,
+      "std": 0.00653813628691387
+    },
+    "recall_weighted": {
+      "mean": 0.6575980392156863,
+      "std": 0.0017187367838784437
+    },
+    "f1_weighted": {
+      "mean": 0.5748898113324817,
+      "std": 0.0019121594635575082
+    }
+  },
+  "validation_metrics": {
+    "accuracy": 0.6596666666666666,
+    "precision_macro": 0.7966874310557395,
+    "recall_macro": 0.5761830399810423,
+    "f1_macro": 0.5241423570939531,
+    "precision_weighted": 0.7652210650401229,
+    "recall_weighted": 0.6596666666666666,
+    "f1_weighted": 0.5747629299387268
+  },
+  "test_metrics": {
+    "accuracy": 0.6587777777777778,
+    "precision_macro": 0.7919820451776913,
+    "recall_macro": 0.5753265645314101,
+    "f1_macro": 0.5231366459627329,
+    "precision_weighted": 0.7613686124701017,
+    "recall_weighted": 0.6587777777777778,
+    "f1_weighted": 0.573832518978606
+  }
+}
