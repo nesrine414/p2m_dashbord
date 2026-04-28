@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
+  Chip,
   CircularProgress,
+  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -10,7 +12,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Stack,
   Table,
   TableBody,
@@ -20,32 +21,29 @@ import {
   TableRow,
   TextField,
   Typography,
+  Breadcrumbs,
+  Link,
+  IconButton,
+  Tooltip as MuiTooltip
 } from '@mui/material';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { RouteOutlined } from '@mui/icons-material';
+import { InfoOutlined, Home, Storage, RouterOutlined, SpeedOutlined, VisibilityOutlined } from '@mui/icons-material';
 import StatusBadge from '../components/common/StatusBadge';
 import {
-  AlarmLifecycleStatus,
   CommunicationStatus,
-  FiberStatus,
   OtdrAvailabilityStatus,
   PowerSupplyStatus,
   RTUStatus,
 } from '../types';
 import {
-  BackendFiberRoute,
-  BackendOtdrTest,
   BackendRTU,
+  BackendFiberRoute,
   getAlarms,
-  getRecentOtdrTests,
   getRTUs,
   getTopology,
 } from '../services/api';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 
-const PIE_COLORS = ['#4caf50', '#ff9800', '#ef4444', '#b43bf2'];
 const VENDORS = ['EXFO', 'Viavi', 'Yokogawa', 'Anritsu'];
-const MAX_RELATED_ROUTES = 8;
 
 interface RtuInventoryRecord {
   id: number;
@@ -64,170 +62,30 @@ interface RtuInventoryRecord {
   lastSeen: string;
 }
 
-interface SelectedDetailRow {
-  id: string;
-  domain: string;
-  parameter: string;
-  description: string;
-  currentValue: React.ReactNode;
-  widgetType: string;
-  criticality: 'Critique' | 'Moyenne' | 'Faible';
-}
-
 const getTemperatureColor = (temperature: number): 'success' | 'warning' | 'error' => {
-  if (temperature >= 40) {
-    return 'error';
-  }
-  if (temperature >= 35) {
-    return 'warning';
-  }
+  if (temperature >= 40) return 'error';
+  if (temperature >= 35) return 'warning';
   return 'success';
 };
 
 const getVendor = (id: number): string => VENDORS[id % VENDORS.length];
 
-const getFiberStatusText = (status: BackendFiberRoute['fiberStatus']): string => {
-  switch (status) {
-    case FiberStatus.BROKEN:
-      return 'Coupée';
-    case FiberStatus.DEGRADED:
-      return 'Degraded';
-    case FiberStatus.NORMAL:
-    default:
-      return 'Normal';
-  }
-};
-
-const getStatusTranslation = (status: string): string => {
-  const s = status.toLowerCase();
-  if (s === 'normal') return 'Normale';
-  if (s === 'degraded' || s === 'dégradée') return 'Dégradée';
-  if (s === 'broken' || s === 'rompue') return 'Rompue';
-  if (s === 'online') return 'En ligne';
-  if (s === 'offline') return 'Hors ligne';
-  if (s === 'unreachable') return 'Injoignable';
-  return status;
-};
-
-const parseCoordinate = (value?: number | string | null): number | null => {
-  if (value === undefined || value === null) {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const hasCoordinates = (rtu: BackendRTU): boolean =>
-  parseCoordinate(rtu.locationLatitude) !== null && parseCoordinate(rtu.locationLongitude) !== null;
-
 const formatLastSeen = (value?: string | Date | null): string => {
-  if (!value) {
-    return 'N/D';
-  }
-
+  if (!value) return 'N/D';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
+  if (isNaN(date.getTime())) return String(value);
   const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
-  if (diffMinutes <= 1) {
-    return "A l'instant";
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes} min`;
-  }
+  if (diffMinutes <= 1) return "Instantané";
+  if (diffMinutes < 60) return `${diffMinutes} min`;
   const hours = Math.floor(diffMinutes / 60);
-  if (hours < 24) {
-    return `${hours} h`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days} j`;
-};
-
-const normalizeEntityLabel = (value?: string | null): string => {
-  if (!value) {
-    return '';
-  }
-
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/^rtu[-_\s]*/i, '')
-    .replace(/[-_]/g, ' ')
-    .replace(/[^a-zA-Z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-};
-
-const createRtuAliases = (rtu: BackendRTU): string[] => {
-  const rawName = rtu.name || '';
-  const aliases = new Set<string>();
-
-  [
-    rawName,
-    rawName.replace(/^RTU[-_\s]*/i, ''),
-    rawName.replace(/-/g, ' '),
-    rtu.locationAddress || '',
-  ]
-    .map((value) => normalizeEntityLabel(value))
-    .filter(Boolean)
-    .forEach((value) => aliases.add(value));
-
-  return Array.from(aliases);
-};
-
-const routeMatchesRtu = (route: BackendFiberRoute, rtu: BackendRTU): boolean => {
-  const aliases = createRtuAliases(rtu);
-  const source = normalizeEntityLabel(route.source);
-  const destination = normalizeEntityLabel(route.destination);
-
-  return aliases.some(
-    (alias) =>
-      alias === source ||
-      alias === destination ||
-      source.includes(alias) ||
-      destination.includes(alias) ||
-      alias.includes(source) ||
-      alias.includes(destination)
-  );
-};
-
-const getRoutePriority = (route: BackendFiberRoute): number => {
-  switch (route.fiberStatus) {
-    case FiberStatus.BROKEN:
-      return 3;
-    case FiberStatus.DEGRADED:
-      return 2;
-    default:
-      return 1;
-  }
+  if (hours < 24) return `${hours} h`;
+  return `${Math.floor(hours / 24)} j`;
 };
 
 const toInventoryRecord = (item: BackendRTU, activeAlarms: number): RtuInventoryRecord => {
   const status = normalizeRtuStatus(item.status);
   const isDisconnected = status === RTUStatus.OFFLINE || status === RTUStatus.UNREACHABLE;
   const temperature = item.temperature ?? 0;
-
-  const powerSupply =
-    status === RTUStatus.OFFLINE ? PowerSupplyStatus.FAILURE : PowerSupplyStatus.NORMAL;
-  const communication = isDisconnected
-    ? CommunicationStatus.DISCONNECTED
-    : CommunicationStatus.CONNECTED;
-  const otdrAvailability =
-    status === RTUStatus.ONLINE ? OtdrAvailabilityStatus.READY : OtdrAvailabilityStatus.FAULT;
-
-  const uptimePercent = isDisconnected
-    ? status === RTUStatus.UNREACHABLE
-      ? 82.4
-      : 87.2
-    : 99.3;
-
-  const opticalBudgetDb = isDisconnected
-    ? 0
-    : Number((16 + ((item.id % 6) + 1) * 0.8 + (temperature >= 38 ? 1.8 : 0)).toFixed(1));
 
   return {
     id: item.id,
@@ -236,598 +94,298 @@ const toInventoryRecord = (item: BackendRTU, activeAlarms: number): RtuInventory
     vendor: getVendor(item.id),
     ipAddress: item.ipAddress || 'N/D',
     status,
-    powerSupply,
-    communication,
-    otdrAvailability,
+    powerSupply: status === RTUStatus.OFFLINE ? PowerSupplyStatus.FAILURE : PowerSupplyStatus.NORMAL,
+    communication: isDisconnected ? CommunicationStatus.DISCONNECTED : CommunicationStatus.CONNECTED,
+    otdrAvailability: status === RTUStatus.ONLINE ? OtdrAvailabilityStatus.READY : OtdrAvailabilityStatus.FAULT,
     temperature,
-    uptimePercent,
-    opticalBudgetDb,
+    uptimePercent: isDisconnected ? (status === RTUStatus.UNREACHABLE ? 82.4 : 87.2) : 99.3,
+    opticalBudgetDb: isDisconnected ? 0 : Number((16 + ((item.id % 6) + 1) * 0.8 + (temperature >= 38 ? 1.8 : 0)).toFixed(1)),
     activeAlarms,
     lastSeen: formatLastSeen(item.lastSeen),
   };
 };
 
 const RTUInventoryPage: React.FC = () => {
-  const [rtuItems, setRtuItems] = useState<BackendRTU[]>([]);
   const [records, setRecords] = useState<RtuInventoryRecord[]>([]);
   const [routes, setRoutes] = useState<BackendFiberRoute[]>([]);
-  const [otdrTests, setOtdrTests] = useState<BackendOtdrTest[]>([]);
   const [selectedRtuId, setSelectedRtuId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<'all' | RTUStatus>('all');
-  const [zone, setZone] = useState<'all' | string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | RTUStatus>('all');
 
   useEffect(() => {
     let active = true;
-
     const load = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        const [rtuResponse, alarmsResponse, topologyResponse, otdrResponse] = await Promise.all([
+        const [rtuResponse, alarmsResponse, topologyResponse] = await Promise.all([
           getRTUs(),
           getAlarms({ page: 1, pageSize: 500 }),
           getTopology(),
-          getRecentOtdrTests(),
         ]);
+        if (!active) return;
 
-        if (!active) {
-          return;
-        }
-
-        const mappableRtus = rtuResponse.filter(hasCoordinates);
         const activeAlarmCount = new Map<number, number>();
+        alarmsResponse.data.forEach(alarm => {
+            if (!['cleared', 'resolved', 'closed'].includes(alarm.lifecycleStatus) && alarm.rtuId) {
+                const key = Number(alarm.rtuId);
+                activeAlarmCount.set(key, (activeAlarmCount.get(key) || 0) + 1);
+            }
+        });
 
-        alarmsResponse.data
-          .filter(
-            (alarm) =>
-              ![AlarmLifecycleStatus.CLEARED, AlarmLifecycleStatus.RESOLVED, AlarmLifecycleStatus.CLOSED].includes(
-                alarm.lifecycleStatus as AlarmLifecycleStatus
-              ) && alarm.rtuId
-          )
-          .forEach((alarm) => {
-            const key = Number(alarm.rtuId);
-            activeAlarmCount.set(key, (activeAlarmCount.get(key) || 0) + 1);
-          });
-
-        const mappedRecords = mappableRtus.map((item) =>
-          toInventoryRecord(item, activeAlarmCount.get(item.id) || 0)
-        );
-
-        setRtuItems(mappableRtus);
+        const mappedRecords = rtuResponse.map(item => toInventoryRecord(item, activeAlarmCount.get(item.id) || 0));
         setRecords(mappedRecords);
         setRoutes(topologyResponse.routes);
-        setOtdrTests(otdrResponse.data);
-        setSelectedRtuId((current) => current ?? mappedRecords[0]?.id ?? null);
-      } catch (apiError) {
-        if (!active) {
-          return;
-        }
-        setError('Impossible de charger les RTU et les routes optiques depuis le backend.');
+        if (mappedRecords.length > 0) setSelectedRtuId(mappedRecords[0].id);
+      } catch {
+        if (active) setError('Erreur de connexion au registre RTU.');
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
-
     void load();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
-  const zoneOptions = useMemo(
-    () => ['all', ...Array.from(new Set(records.map((item) => item.zone)))],
-    [records]
-  );
+  const filteredRecords = useMemo(() => records.filter(r => {
+    const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.ipAddress.includes(search);
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }), [records, search, statusFilter]);
 
-  const filteredRecords = useMemo(
-    () =>
-      records.filter((record) => {
-        const query = search.toLowerCase();
-        const matchesSearch =
-          record.name.toLowerCase().includes(query) ||
-          record.ipAddress.toLowerCase().includes(query) ||
-          record.zone.toLowerCase().includes(query);
-        const matchesStatus = status === 'all' || record.status === status;
-        const matchesZone = zone === 'all' || record.zone === zone;
-        return matchesSearch && matchesStatus && matchesZone;
-      }),
-    [records, search, status, zone]
-  );
-
-  useEffect(() => {
-    if (filteredRecords.length === 0) {
-      setSelectedRtuId(null);
-      return;
-    }
-
-    const stillVisible = filteredRecords.some((record) => record.id === selectedRtuId);
-    if (!stillVisible) {
-      setSelectedRtuId(filteredRecords[0].id);
-    }
-  }, [filteredRecords, selectedRtuId]);
-
-  const selectedRtu = useMemo(
-    () => rtuItems.find((item) => item.id === selectedRtuId) || null,
-    [rtuItems, selectedRtuId]
-  );
-
-  const selectedRecord = useMemo(
-    () => records.find((item) => item.id === selectedRtuId) || null,
-    [records, selectedRtuId]
-  );
-
+  const selectedRecord = useMemo(() => records.find(r => r.id === selectedRtuId), [records, selectedRtuId]);
+  
   const relatedRoutes = useMemo(() => {
-    if (!selectedRtu) {
-      return [];
-    }
-
-    return routes
-      .filter((route) => routeMatchesRtu(route, selectedRtu))
-      .sort((left, right) => getRoutePriority(right) - getRoutePriority(left))
-      .slice(0, MAX_RELATED_ROUTES);
-  }, [routes, selectedRtu]);
-
-  const selectedDetailRows = useMemo<SelectedDetailRow[]>(() => {
-    if (!selectedRecord) {
-      return [];
-    }
-
-    const rows: SelectedDetailRow[] = [
-      {
-        id: `rtu-status-${selectedRecord.id}`,
-        domain: 'RTU',
-        parameter: 'RTU Status',
-        description: `Etat global de ${selectedRecord.name}`,
-        currentValue: <StatusBadge status={selectedRecord.status} />,
-        widgetType: 'Tuile / LED',
-        criticality: 'Critique',
-      },
-      {
-        id: `rtu-power-${selectedRecord.id}`,
-        domain: 'RTU',
-        parameter: 'Power Supply',
-        description: 'Etat alimentation RTU',
-        currentValue: <StatusBadge status={selectedRecord.powerSupply} variant="outlined" />,
-        widgetType: 'Tuile',
-        criticality: 'Critique',
-      },
-      {
-        id: `rtu-temp-${selectedRecord.id}`,
-        domain: 'RTU',
-        parameter: 'Temperature',
-        description: 'Temperature interne RTU',
-        currentValue:
-          selectedRecord.temperature > 0 ? `${selectedRecord.temperature} C` : 'N/D',
-        widgetType: 'Jauge',
-        criticality: 'Moyenne',
-      },
-      {
-        id: `rtu-otdr-${selectedRecord.id}`,
-        domain: 'RTU',
-        parameter: 'OTDR Availability',
-        description: 'Disponibilite OTDR',
-        currentValue: <StatusBadge status={selectedRecord.otdrAvailability} variant="outlined" />,
-        widgetType: 'Icone statut',
-        criticality: 'Critique',
-      },
-    ];
-
-    relatedRoutes.forEach((route) => {
-      const latestOtdr =
-        otdrTests.find((test) => test.routeId === route.id) ||
-        otdrTests.find((test) => test.routeName === route.routeName);
-
-      rows.push({
-        id: `fiber-${route.id}`,
-        domain: 'Fibre',
-        parameter: route.routeName,
-        description: `${route.source} -> ${route.destination}`,
-        currentValue: (
-          <Stack spacing={0.4}>
-            <Typography variant="caption" color="white">
-              Fibre: {getFiberStatusText(route.fiberStatus)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Route: {route.routeStatus}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Longueur: {route.lengthKm ? `${route.lengthKm.toFixed(2)} km` : 'N/D'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Attenuation: {route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(2)} dB` : 'N/D'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Dernier test: {formatLastSeen(route.lastTestTime)}
-            </Typography>
-          </Stack>
-        ),
-        widgetType: 'Liste / Carte',
-        criticality: route.fiberStatus === FiberStatus.NORMAL ? 'Faible' : 'Critique',
-      });
-
-      rows.push({
-        id: `otdr-${route.id}`,
-        domain: 'OTDR',
-        parameter: `Mesure ${route.routeName}`,
-        description: `Mesure OTDR associee a ${route.routeName}`,
-        currentValue: latestOtdr ? (
-          <Stack spacing={0.4}>
-            <Typography variant="caption" color="white">
-              Resultat: {latestOtdr.result.toUpperCase()}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Mode: {latestOtdr.mode}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Wavelength: {latestOtdr.wavelengthNm} nm
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Pulse: {latestOtdr.pulseWidth || 'N/D'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Dernier test: {formatLastSeen(latestOtdr.testedAt)}
-            </Typography>
-          </Stack>
-        ) : (
-          'Aucune mesure OTDR recente'
-        ),
-        widgetType: 'Tableau',
-        criticality: latestOtdr?.result === 'fail' ? 'Critique' : 'Moyenne',
-      });
-    });
-
-    return rows;
-  }, [otdrTests, relatedRoutes, selectedRecord]);
-
-  const routeCounts = useMemo(() => {
-    const counts = new Map<number, number>();
-
-    rtuItems.forEach((rtu) => {
-      counts.set(
-        rtu.id,
-        routes.filter((route) => routeMatchesRtu(route, rtu)).slice(0, MAX_RELATED_ROUTES).length
-      );
-    });
-
-    return counts;
-  }, [routes, rtuItems]);
-
-  const summary = useMemo(() => {
-    const online = records.filter((item) => item.status === RTUStatus.ONLINE).length;
-    const offline = records.filter((item) => item.status === RTUStatus.OFFLINE).length;
-    const unreachable = records.filter((item) => item.status === RTUStatus.UNREACHABLE).length;
-    const avgTemp =
-      records.length > 0
-        ? records.reduce((acc, item) => acc + item.temperature, 0) / records.length
-        : 0;
-
-    return {
-      total: records.length,
-      online,
-      offline,
-      unreachable,
-      avgTemp: avgTemp.toFixed(1),
-    };
-  }, [records]);
-
-  const statusDistribution = [
-    { name: 'En ligne', value: summary.online },
-    { name: 'Hors ligne', value: summary.offline },
-    { name: 'Injoignable', value: summary.unreachable },
-  ];
-
-  const handleStatusChange = (event: SelectChangeEvent<'all' | RTUStatus>) => {
-    setStatus(event.target.value as 'all' | RTUStatus);
-  };
-
-  const handleZoneChange = (event: SelectChangeEvent<'all' | string>) => {
-    setZone(event.target.value);
-  };
-
-  const handleSelectRtu = (rtuId: number) => {
-    setSelectedRtuId(rtuId);
-  };
+    if (!selectedRtuId) return [];
+    return routes.filter(r => r.sourceRtuId === selectedRtuId || r.destinationRtuId === selectedRtuId);
+  }, [routes, selectedRtuId]);
 
   return (
-    <Box>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        spacing={2}
-        mb={3}
-      >
+    <Box sx={{ p: { xs: 1, md: 2 } }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h4" fontWeight={800} color="white">
-            Inventaire RTU
-          </Typography>
-          
+            <Typography variant="h4" mb={0.5} fontWeight={800}>Registre des Unités RTU</Typography>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link underline="hover" sx={{ display: 'flex', alignItems: 'center' }} color="inherit" href="/">
+                <Home sx={{ mr: 0.5 }} fontSize="inherit" /> Accueil
+              </Link>
+              <Typography color="text.primary">Inventaire & Actifs</Typography>
+            </Breadcrumbs>
         </Box>
-      </Stack>
+        {loading && <CircularProgress size={20} />}
+      </Box>
 
-      {loading && (
-        <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
-          <CircularProgress size={18} />
-          <Typography variant="body2" color="text.secondary">
-            Chargement des RTU et des routes optiques...
-          </Typography>
-        </Stack>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#252d42', border: '1px solid #445069' }}>
-            <Typography variant="caption" color="text.secondary">
-              RTU total
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="white">
-              {summary.total}
-            </Typography>
+      {/* Rétablissement des Widgets de synthèse (Contenu d'origine) */}
+      <Grid container spacing={2} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderTop: '4px solid #17a2b8' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>TOTAL RTU</Typography>
+            <Typography variant="h4" fontWeight={800}>{records.length}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#25362d', border: '1px solid #486957' }}>
-            <Typography variant="caption" color="text.secondary">
-              En ligne
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#6ddf9e">
-              {summary.online}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderTop: '4px solid #28a745' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>EN LIGNE</Typography>
+            <Typography variant="h4" color="success.main" fontWeight={800}>{records.filter(r => r.status === 'online').length}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3b3126', border: '1px solid #7a6442' }}>
-            <Typography variant="caption" color="text.secondary">
-              Hors ligne
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#ffb96b">
-              {summary.offline}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderTop: '4px solid #dc3545' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>HORS LIGNE / INJOIGNABLES</Typography>
+            <Typography variant="h4" color="error.main" fontWeight={800}>{records.filter(r => r.status !== 'online').length}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3a2b31', border: '1px solid #77525b' }}>
-            <Typography variant="caption" color="text.secondary">
-              Injoignables
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#ff9fa9">
-              {summary.unreachable}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2d3250', border: '1px solid #5f6294' }}>
-            <Typography variant="caption" color="text.secondary">
-              Temperature moyenne
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="white">
-              {summary.avgTemp} C
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderTop: '4px solid #ffc107' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>TEMP. MOYENNE</Typography>
+            <Typography variant="h4" fontWeight={800}>
+                {(records.length ? records.reduce((a, b) => a + b.temperature, 0) / records.length : 0).toFixed(1)}°C
             </Typography>
           </Paper>
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Rechercher une RTU ou une IP"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Statut</InputLabel>
-            <Select label="Statut" value={status} onChange={handleStatusChange}>
-              <MenuItem value="all">Tous</MenuItem>
-              <MenuItem value={RTUStatus.ONLINE}>En ligne</MenuItem>
-              <MenuItem value={RTUStatus.OFFLINE}>Hors ligne</MenuItem>
-              <MenuItem value={RTUStatus.UNREACHABLE}>Injoignable</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Zone</InputLabel>
-            <Select label="Zone" value={zone} onChange={handleZoneChange}>
-              {zoneOptions.map((zoneOption) => (
-                <MenuItem key={zoneOption} value={zoneOption}>
-                  {zoneOption === 'all' ? 'Toutes les zones' : zoneOption}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
-      </Paper>
-
-      <Grid container spacing={3} mb={3}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Typography variant="h6" color="white" mb={2}>
-              Tableau de sante RTU
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-              Cliquez sur une ligne pour afficher les routes optiques reliees a cette RTU.
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>RTU</TableCell>
-                    <TableCell>Zone</TableCell>
-                    <TableCell>Etat RTU</TableCell>
-                    <TableCell>Alimentation</TableCell>
-                    <TableCell>Communication</TableCell>
-                    <TableCell>OTDR</TableCell>
-                    <TableCell>Temperature</TableCell>
-                    <TableCell>Routes optiques</TableCell>
-                    <TableCell>Derniere vue</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredRecords.map((record) => (
-                    <TableRow
-                      key={record.id}
-                      hover
-                      selected={record.id === selectedRtuId}
-                      onClick={() => handleSelectRtu(record.id)}
-                      sx={{
-                        cursor: 'pointer',
-                        '&.Mui-selected': { backgroundColor: 'rgba(104, 176, 255, 0.14)' },
-                        '&.Mui-selected:hover': { backgroundColor: 'rgba(104, 176, 255, 0.2)' },
-                      }}
-                    >
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={700} color="white">
-                          {record.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {record.ipAddress}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{record.zone}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.status} label={getStatusTranslation(record.status)} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.powerSupply} variant="outlined" label={record.powerSupply === 'normal' ? 'Normale' : 'Echec'} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.communication} variant="outlined" label={record.communication === 'connected' ? 'Connecté' : 'Déconnecté'} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.otdrAvailability} variant="outlined" label={record.otdrAvailability === 'ready' ? 'Prêt' : record.otdrAvailability === 'busy' ? 'Occupé' : 'Défaut'} />
-                      </TableCell>
-                      <TableCell sx={{ minWidth: 150 }}>
-                        <Typography variant="body2" color="white">
-                          {record.temperature === null || record.temperature === undefined ? 'N/D' : `${record.temperature} C`}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.min(record.temperature * 2, 100)}
-                          color={getTemperatureColor(record.temperature)}
-                          sx={{ mt: 0.6, height: 6, borderRadius: 4 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="white" fontWeight={700}>
-                          {routeCounts.get(record.id) || 0}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          max {MAX_RELATED_ROUTES}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{record.lastSeen}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Stack spacing={3}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Typography variant="h6" color="white" mb={2}>
-                Repartition des statuts du parc
-              </Typography>
-              <Box sx={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={statusDistribution} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80}>
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, lg: 9 }}>
+            <Paper className="card-premium-light" sx={{ p: 2, mb: 3 }}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <TextField 
+                        fullWidth size="small" label="Recherche par Nom, IP ou Zone..." 
+                        value={search} onChange={e => setSearch(e.target.value)} 
+                        variant="outlined"
+                    />
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel>Filtrer par Statut</InputLabel>
+                        <Select value={statusFilter} label="Filtrer par Statut" onChange={e => setStatusFilter(e.target.value as any)}>
+                            <MenuItem value="all">Tous les statuts</MenuItem>
+                            <MenuItem value={RTUStatus.ONLINE}>RTU Opérationnelles</MenuItem>
+                            <MenuItem value={RTUStatus.OFFLINE}>Unités Hors-Ligne</MenuItem>
+                            <MenuItem value={RTUStatus.UNREACHABLE}>Injoignables (Timeout)</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Stack>
             </Paper>
 
-            
-          </Stack>
+            <Paper className="card-premium-light" sx={{ p: 0, overflow: 'hidden' }}>
+                <TableContainer sx={{ maxHeight: '70vh' }}>
+                    <Table stickyHeader size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ÉQUIPEMENT</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ZONE / EMPLACEMENT</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>VENDEUR</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>STATUT</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>BUDGET</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>UPTIME</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ALERTS</TableCell>
+                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', textAlign: 'center' }}>ACTION</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredRecords.map((r) => (
+                                <TableRow 
+                                    key={r.id} hover 
+                                    onClick={() => setSelectedRtuId(r.id)} 
+                                    selected={selectedRtuId === r.id}
+                                    sx={{ cursor: 'pointer', '&.Mui-selected': { bgcolor: '#f1f8ff !important' } }}
+                                >
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight={700}>{r.name}</Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>{r.ipAddress}</Typography>
+                                    </TableCell>
+                                    <TableCell><Typography variant="body2">{r.zone}</Typography></TableCell>
+                                    <TableCell><Chip label={r.vendor} size="small" variant="outlined" sx={{ borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }} /></TableCell>
+                                    <TableCell><StatusBadge status={r.status} /></TableCell>
+                                    <TableCell><Typography variant="body2" fontWeight={600}>{r.opticalBudgetDb} dB</Typography></TableCell>
+                                    <TableCell>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                            <Typography variant="caption" fontWeight={700}>{r.uptimePercent}%</Typography>
+                                            <LinearProgress variant="determinate" value={r.uptimePercent} sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: '#eee' }} />
+                                        </Stack>
+                                    </TableCell>
+                                    <TableCell>
+                                        {r.activeAlarms > 0 ? (
+                                            <Chip label={r.activeAlarms} color="error" size="small" sx={{ fontWeight: 800, height: 20 }} />
+                                        ) : <Typography color="text.disabled">-</Typography>}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <MuiTooltip title="Voir Détails">
+                                            <IconButton size="small" color="primary"><VisibilityOutlined fontSize="small" /></IconButton>
+                                        </MuiTooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+        </Grid>
+
+        <Grid size={{ xs: 12, lg: 3 }}>
+            <Stack spacing={2.5}>
+                <Paper className="card-premium-light" sx={{ p: 2.5 }}>
+                    <Typography variant="h6" fontWeight={800} mb={2}>Inspection Unité</Typography>
+                    {selectedRecord ? (
+                        <Stack spacing={2.5}>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>NOM DE L'UNITÉ</Typography>
+                                <Typography variant="body1" fontWeight={800}>{selectedRecord.name}</Typography>
+                                <Typography variant="caption" color="primary.main" fontWeight={700}>{selectedRecord.ipAddress}</Typography>
+                            </Box>
+                            
+                            <Grid container spacing={1.5}>
+                                <Grid size={{ xs: 6 }}>
+                                    <Box sx={{ p: 1.5, bgcolor: '#f8f9fa', borderRadius: 2, border: '1px solid #dee2e6' }}>
+                                        <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                                            <RouterOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                            <Typography variant="caption" fontWeight={700}>STATUT</Typography>
+                                        </Stack>
+                                        <StatusBadge status={selectedRecord.status} />
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6 }}>
+                                    <Box sx={{ p: 1.5, bgcolor: '#f8f9fa', borderRadius: 2, border: '1px solid #dee2e6' }}>
+                                        <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                                            <SpeedOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                            <Typography variant="caption" fontWeight={700}>BUDGET</Typography>
+                                        </Stack>
+                                        <Typography variant="body2" fontWeight={800}>{selectedRecord.opticalBudgetDb} dB</Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+
+                            <Box>
+                                <Stack direction="row" justifyContent="space-between" mb={1}>
+                                    <Typography variant="caption" fontWeight={700}>Température Châssis</Typography>
+                                    <Typography variant="caption" fontWeight={800} color={getTemperatureColor(selectedRecord.temperature)}>{selectedRecord.temperature}°C</Typography>
+                                </Stack>
+                                <LinearProgress 
+                                    variant="determinate" value={Math.min(selectedRecord.temperature * 1.5, 100)} 
+                                    color={getTemperatureColor(selectedRecord.temperature)} 
+                                    sx={{ height: 6, borderRadius: 3 }}
+                                />
+                            </Box>
+
+                            <Divider />
+
+                            <Box>
+                                <Typography variant="caption" color="text.secondary" fontWeight={800} display="block" mb={1.5}>
+                                    ROUTES OPTIQUES LIÉES ({relatedRoutes.length})
+                                </Typography>
+                                <Stack spacing={1}>
+                                    {relatedRoutes.length === 0 ? (
+                                        <Typography variant="caption" color="text.disabled">Aucune route détectée.</Typography>
+                                    ) : relatedRoutes.map(route => (
+                                        <Box 
+                                            key={route.id} 
+                                            sx={{ 
+                                                p: 1, 
+                                                borderRadius: 1.5, 
+                                                bgcolor: 'white', 
+                                                border: '1px solid #eee',
+                                                borderLeft: `3px solid ${route.fiberStatus === 'broken' ? '#dc3545' : route.fiberStatus === 'degraded' ? '#ffc107' : '#28a745'}`
+                                            }}
+                                        >
+                                            <Typography variant="caption" fontWeight={800} display="block">{route.routeName}</Typography>
+                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                <Typography variant="caption" sx={{ opacity: 0.7 }}>{route.source} → {route.destination}</Typography>
+                                                <StatusBadge status={route.fiberStatus} />
+                                            </Stack>
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            </Box>
+
+                            <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#e7f3ff', border: '1px solid #cce5ff' }}>
+                                <Stack direction="row" spacing={1.5} alignItems="center">
+                                    <InfoOutlined color="primary" fontSize="small" />
+                                    <Typography variant="caption" color="primary.main" fontWeight={700}>
+                                        Dernière communication reçue : {selectedRecord.lastSeen}
+                                    </Typography>
+                                </Stack>
+                            </Box>
+                        </Stack>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary">Sélectionnez une RTU pour voir les détails d'inspection.</Typography>
+                    )}
+                </Paper>
+
+                <Paper className="card-premium-light" sx={{ p: 2.5, bgcolor: '#fff4e5', border: 'none' }}>
+                    <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                        <Storage color="warning" />
+                        <Typography fontWeight={800} color="#856404">Maintenance</Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ opacity: 0.8, color: '#856404' }}>
+                        L'état "Budget Optique" est calculé dynamiquement en fonction de la température et de la charge de l'OTDR. 
+                        Toute valeur sous 15 dB nécessite une inspection préventive.
+                    </Typography>
+                </Paper>
+            </Stack>
         </Grid>
       </Grid>
-
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-          <RouteOutlined sx={{ color: '#8fd3ff' }} />
-          <Typography variant="h6" color="white">
-            Tableau detaille RTU / Fibres
-          </Typography>
-        </Stack>
-        {selectedRecord && (
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            {selectedRecord.name} - chaque RTU peut afficher jusqu'a {MAX_RELATED_ROUTES} fibres associees.
-          </Typography>
-        )}
-
-        {selectedRecord && selectedDetailRows.length > 0 ? (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Domaine</TableCell>
-                  <TableCell>Parametre</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Etat / Valeur actuelle</TableCell>
-                  <TableCell>Type de widget recommande</TableCell>
-                  <TableCell>Criticite</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {selectedDetailRows.map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell>{row.domain}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="white" fontWeight={700}>
-                        {row.parameter}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{row.description}</TableCell>
-                    <TableCell>{row.currentValue}</TableCell>
-                    <TableCell>{row.widgetType}</TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        color={
-                          row.criticality === 'Critique'
-                            ? '#ff9fa9'
-                            : row.criticality === 'Moyenne'
-                              ? '#ffcf86'
-                              : '#9eddb0'
-                        }
-                      >
-                        {row.criticality}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            {selectedRecord
-              ? "Aucune route optique n'a ete rattachee a cette RTU."
-              : 'Selectionnez une RTU pour afficher ses routes optiques.'}
-          </Alert>
-        )}
-      </Paper>
     </Box>
   );
 };

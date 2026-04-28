@@ -48,92 +48,121 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
   const location = useLocation();
 
   const drawerContent = (
-    <>
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography
-          variant="h4"
-          fontWeight={800}
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
+      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box
           sx={{
-            letterSpacing: 0.6,
-            background: 'linear-gradient(120deg, #9de8ff 0%, #d9d0ff 46%, #ffd8e9 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            width: 32,
+            height: 32,
+            bgcolor: 'primary.main',
+            borderRadius: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 800,
+            fontSize: 18,
           }}
         >
-          NQMS
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Poste de supervision fibre
+          N
+        </Box>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 800,
+            color: '#343a40',
+            letterSpacing: -0.5,
+          }}
+        >
+          NQMS Super
         </Typography>
       </Box>
 
-      <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.24)' }} />
+      <Divider sx={{ mx: 2, borderColor: '#dee2e6' }} />
 
-      <List sx={{ px: 1.2, py: 2 }}>
-        {menuItems.map((item) => {
-          const isActive =
-            item.path === ROUTE_PATHS.dashboard
-              ? location.pathname === ROUTE_PATHS.dashboard
-              : location.pathname.startsWith(item.path);
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 1.5, py: 2 }}>
+        <List disablePadding>
+          {menuItems.map((item) => {
+            const isActive =
+              item.path === ROUTE_PATHS.dashboard
+                ? location.pathname === ROUTE_PATHS.dashboard
+                : location.pathname.startsWith(item.path);
 
-          return (
-            <ListItem key={item.path} disablePadding sx={{ mb: 0.7 }}>
-              <ListItemButton
-                onClick={() => {
-                  navigate(item.path);
-                  onMobileClose();
-                }}
-                sx={{
-                  borderRadius: 3,
-                  backgroundColor: isActive ? 'rgba(118, 178, 243, 0.28)' : 'transparent',
-                  border: isActive ? '1px solid rgba(170, 210, 255, 0.4)' : '1px solid transparent',
-                  '&:hover': {
-                    backgroundColor: isActive ? 'rgba(118, 178, 243, 0.36)' : 'rgba(255, 255, 255, 0.08)',
-                  },
-                }}
-              >
-                <ListItemIcon
+            return (
+              <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => {
+                    navigate(item.path);
+                    onMobileClose();
+                  }}
                   sx={{
-                    color: isActive ? '#dff2ff' : '#a5b5d2',
-                    minWidth: 40,
-                    '& .MuiSvgIcon-root': {
-                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.06)',
-                      borderRadius: '10px',
-                      p: 0.4,
+                    borderRadius: 1.5,
+                    py: 1.2,
+                    px: 2,
+                    backgroundColor: isActive ? 'primary.main' : 'transparent',
+                    color: isActive ? '#ffffff' : '#495057',
+                    '&:hover': {
+                      backgroundColor: isActive ? 'primary.dark' : '#f8f9fa',
+                      color: isActive ? '#ffffff' : '#007bff',
                     },
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.title}
-                  primaryTypographyProps={{
-                    fontSize: 14,
-                    fontWeight: isActive ? 700 : 500,
-                  }}
-                />
-                {item.badge && item.badge > 0 && (
-                  <Box
+                  <ListItemIcon
                     sx={{
-                      background: 'linear-gradient(120deg, #f29aaa, #cf6f87)',
-                      color: 'white',
-                      borderRadius: '12px',
-                      px: 1,
-                      py: 0.2,
-                      fontSize: 11,
-                      fontWeight: 700,
+                      color: isActive ? '#ffffff' : 'inherit',
+                      minWidth: 36,
+                      '& .MuiSvgIcon-root': {
+                        fontSize: 20,
+                      },
                     }}
                   >
-                    {item.badge}
-                  </Box>
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
-    </>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.title}
+                    primaryTypographyProps={{
+                      fontSize: '0.875rem',
+                      fontWeight: isActive ? 600 : 500,
+                    }}
+                  />
+                  {item.badge && item.badge > 0 && !isActive && (
+                    <Box
+                      sx={{
+                        bgcolor: 'error.main',
+                        color: 'white',
+                        borderRadius: '10px',
+                        px: 0.8,
+                        py: 0.2,
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {item.badge}
+                    </Box>
+                  )}
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+
+      <Divider sx={{ borderColor: '#dee2e6' }} />
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="caption" sx={{ color: '#adb5bd', fontWeight: 500 }}>
+          v1.2.0 - SUP'COM
+        </Typography>
+      </Box>
+    </Box>
   );
+
+  const drawerStyles = {
+    width: drawerWidth,
+    boxSizing: 'border-box',
+    borderRight: '1px solid #dee2e6',
+    boxShadow: 'none',
+  };
 
   return (
     <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
@@ -144,14 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: 'rgba(26, 35, 56, 0.62)',
-            color: 'white',
-            borderRight: '1px solid rgba(175, 194, 232, 0.22)',
-            backdropFilter: 'blur(16px)',
-          },
+          '& .MuiDrawer-paper': drawerStyles,
         }}
       >
         {drawerContent}
@@ -161,14 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ drawerWidth, mobileOpen, onMobileClos
         variant="permanent"
         sx={{
           display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: 'rgba(26, 35, 56, 0.62)',
-            color: 'white',
-            borderRight: '1px solid rgba(175, 194, 232, 0.22)',
-            backdropFilter: 'blur(16px)',
-          },
+          '& .MuiDrawer-paper': drawerStyles,
         }}
         open
       >

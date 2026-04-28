@@ -15,83 +15,96 @@ interface CriticalRoutesWidgetProps {
   routes: CriticalRoute[];
 }
 
-const getStatusColor = (status: CriticalRoute['status']) => (status === 'broken' ? '#FF3366' : '#FFB800');
+const getStatusColor = (status: CriticalRoute['status']) => (status === 'broken' ? '#dc3545' : '#ffc107');
 
-const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'Coupée' : 'Dégradée');
+const getStatusLabel = (status: CriticalRoute['status']) => (status === 'broken' ? 'COUPÉE' : 'DÉGRADÉE');
 
 const CriticalRoutesWidget: React.FC<CriticalRoutesWidgetProps> = ({ routes }) => {
+  const contentBox = (children: React.ReactNode) => (
+    <Box 
+      className="card-premium-light animate-fadeIn" 
+      sx={{ 
+        p: 2.5,
+        backgroundColor: 'background.paper',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      {children}
+    </Box>
+  );
+
   if (!routes || routes.length === 0) {
-    return (
-      <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
-        <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
+    return contentBox(
+      <>
+        <Typography variant="h6" fontWeight={700} mb={1.5}>
           Routes fibre critiques
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Aucune route disponible pour le moment.
+          Aucune route critique détectée actuellement.
         </Typography>
-      </Box>
+      </>
     );
   }
 
-  return (
-    <Box className="glass-card animate-fadeInUp" sx={{ p: 3, height: '100%' }}>
-      <Typography variant="h6" fontWeight={700} color="white" gutterBottom>
-        Routes fibre critiques
+  return contentBox(
+    <>
+      <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.1rem', mb: 2 }}>
+        Topologie & Alertes Routes
       </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
         {routes.map((route) => (
           <Box
             key={route.id}
             sx={{
-              p: 2,
-              borderRadius: '12px',
-              background: 'rgba(255,255,255,0.03)',
-              border: `1px solid ${getStatusColor(route.status)}`,
+              p: 1.8,
+              borderRadius: 1,
+              backgroundColor: '#f8f9fa',
+              border: '1px solid #dee2e6',
+              borderLeft: `4px solid ${getStatusColor(route.status)}`,
               position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '4px',
-                height: '100%',
-                background: getStatusColor(route.status),
-              },
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: '#ffffff',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }
             }}
           >
-            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-              <Typography variant="subtitle1" fontWeight={700} color="white">
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
+              <Typography variant="body2" fontWeight={700} color="text.primary">
                 {route.name}
               </Typography>
               <Chip
                 label={getStatusLabel(route.status)}
                 size="small"
                 sx={{
-                  backgroundColor: getStatusColor(route.status),
-                  color: 'white',
-                  fontWeight: 'bold',
+                  backgroundColor: `${getStatusColor(route.status)}15`,
+                  color: getStatusColor(route.status),
+                  fontWeight: 800,
+                  fontSize: '0.65rem',
+                  border: `1px solid ${getStatusColor(route.status)}55`
                 }}
               />
             </Box>
 
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 1 }}>
-              {route.from} vers {route.to}
+            <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+              {route.from} ↔ {route.to}
             </Typography>
 
-            <Box display="flex" gap={2}>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                Atténuation: <span style={{ color: 'white', fontWeight: 'bold' }}>{route.attenuation}</span>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                Atténuation: <span style={{ color: '#343a40', fontWeight: 700 }}>{route.attenuation}</span>
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                Dernier test: <span style={{ color: 'white' }}>{route.lastTest}</span>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                Testé il y a: <span style={{ color: '#6c757d' }}>{route.lastTest}</span>
               </Typography>
             </Box>
           </Box>
         ))}
       </Box>
-    </Box>
+    </>
   );
 };
 

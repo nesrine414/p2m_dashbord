@@ -249,7 +249,7 @@ const DashboardIAPage: React.FC = () => {
           {
             label:
               summary.brokenRoutes > 0
-                ? `${summary.brokenRoutes} route fibre cassée${summary.brokenRoutes > 1 ? 's' : ''}`
+                ? `${summary.brokenRoutes} route fibre coupée${summary.brokenRoutes > 1 ? 's' : ''}`
                 : 'Routes fibre stables',
             impact: routePenalty,
           },

@@ -145,7 +145,7 @@ export const runDiagnosticTest = async (
         threshold: attStatus === 'critical' ? thresholds.attenuationCriticalDb : thresholds.attenuationWarningDb,
         thresholdLabel: attStatus === 'critical' ? 'Seuil critique' : 'Seuil avertissement',
         status: attStatus,
-        alarmType: syntheticAttenuation >= thresholds.attenuationCriticalDb ? 'Fiber Cut' : 'High Loss',
+        alarmType: syntheticAttenuation >= thresholds.attenuationCriticalDb ? 'Coupure Fibre' : 'Perte Elevée',
       });
 
       otdr = {
@@ -220,7 +220,7 @@ export const runDiagnosticTest = async (
       threshold: attStatus === 'critical' ? thresholds.attenuationCriticalDb : thresholds.attenuationWarningDb,
       thresholdLabel: attStatus === 'critical' ? 'Seuil critique' : 'Seuil avertissement',
       status: attStatus,
-      alarmType: attenuation >= thresholds.attenuationCriticalDb ? 'Fiber Cut' : 'High Loss',
+      alarmType: attenuation >= thresholds.attenuationCriticalDb ? 'Coupure Fibre' : 'Perte Elevée',
     });
 
     otdr = { wavelengthNm: wavelength, pulseWidth, dynamicRangeDb: dynamicRange, result: otdrResult, mode: 'manual' };
@@ -307,8 +307,8 @@ export const runDiagnosticTest = async (
       const severity = tempStatus === 'critical' ? 'critical' : 'major';
       const message =
         tempStatus === 'critical'
-          ? `Temperature critical on ${rtu.name}: ${temperature}°C (threshold: ${thresholds.temperatureCriticalC}°C).`
-          : `Temperature high on ${rtu.name}: ${temperature}°C (threshold: ${thresholds.temperatureWarningC}°C).`;
+          ? `Température critique sur ${rtu.name} : ${temperature}°C (seuil : ${thresholds.temperatureCriticalC}°C).`
+          : `Température élevée sur ${rtu.name} : ${temperature}°C (seuil : ${thresholds.temperatureWarningC}°C).`;
 
       const alarm = await Alarm.create({
         rtuId: rtu.id,

@@ -6,8 +6,8 @@ interface WidgetCardProps {
   value: string | number;
   subtitle?: string;
   icon?: React.ReactNode;
-  color?: string;
-  gradient?: string;
+  color?: string; // Hex color for the accent
+  gradient?: string; // Optional full background gradient
   trend?: {
     value: number;
     isPositive: boolean;
@@ -19,100 +19,122 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
   value,
   subtitle,
   icon,
-  color = '#2196f3',
+  color = '#007bff',
   gradient,
   trend,
 }) => {
-  const hasGradient = Boolean(gradient);
-  const trendValue = trend ? trend.value : 0;
-  const trendPrefix = trendValue >= 0 ? '+' : '';
-  const trendLabel = trend ? `${trendPrefix}${trendValue}%` : '';
-
+  const isFullColor = Boolean(gradient); // If gradient provided, we use full color style
+  
   return (
     <Card
       sx={{
         height: '100%',
         position: 'relative',
-        borderRadius: 3,
-        overflow: 'hidden',
-        background: gradient ?? undefined,
-        color: hasGradient ? 'white' : 'inherit',
-        border: hasGradient ? '1px solid rgba(255, 255, 255, 0.18)' : undefined,
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          background: `${color}22`,
-          top: -90,
-          right: -70,
-          zIndex: 0,
-          pointerEvents: 'none',
+        borderRadius: 1,
+        border: 'none',
+        borderTop: isFullColor ? 'none' : `3px solid ${color}`,
+        background: gradient || '#ffffff',
+        color: isFullColor ? '#ffffff' : '#343a40',
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+        '&:hover': {
+          transform: 'translateY(-3px)',
+          boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
         },
       }}
     >
-      <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.4 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box sx={{ pr: 1.6 }}>
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box>
             <Typography
-              variant="body2"
-              color={hasGradient ? 'rgba(255, 255, 255, 0.75)' : 'text.secondary'}
-              gutterBottom
-              sx={{ fontWeight: 600 }}
-            >
-              {title}
-            </Typography>
-            <Typography
-              variant="h3"
+              variant="h4"
               component="div"
-              fontWeight={700}
-              sx={{ lineHeight: 1.1, color: hasGradient ? 'white' : 'inherit' }}
+              sx={{ 
+                fontWeight: 700, 
+                mb: 0.5,
+                fontSize: '1.75rem',
+                color: isFullColor ? '#ffffff' : '#343a40'
+              }}
             >
               {value}
             </Typography>
-            {subtitle && (
-              <Typography
-                variant="caption"
-                color={hasGradient ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}
-                mt={1.2}
-                display="block"
-              >
-                {subtitle}
-              </Typography>
-            )}
-            {trend && (
-              <Typography
-                variant="caption"
-                mt={0.8}
-                display="block"
-                sx={{
-                  fontWeight: 600,
-                  color: trend.isPositive ? '#8deab4' : '#ffb3be',
-                }}
-              >
-                Tendance : {trendLabel}
-              </Typography>
-            )}
+            <Typography
+              variant="body2"
+              sx={{ 
+                fontWeight: 500, 
+                color: isFullColor ? 'rgba(255, 255, 255, 0.85)' : '#6c757d',
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                letterSpacing: 0.5
+              }}
+            >
+              {title}
+            </Typography>
           </Box>
-
+          
           {icon && (
             <Box
               sx={{
-                background: `linear-gradient(140deg, ${color}, rgba(255, 255, 255, 0.35))`,
-                borderRadius: '16px',
-                p: 1.6,
+                opacity: isFullColor ? 0.3 : 1,
+                color: isFullColor ? '#000000' : color,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: `0 12px 24px ${color}55`,
+                '& .MuiSvgIcon-root': {
+                  fontSize: 40,
+                },
               }}
             >
               {icon}
             </Box>
           )}
         </Box>
+
+        {(subtitle || trend) && (
+          <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            {trend && (
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  px: 0.8,
+                  py: 0.2,
+                  borderRadius: 1,
+                  bgcolor: trend.isPositive ? 'rgba(40, 167, 69, 0.15)' : 'rgba(220, 53, 69, 0.15)',
+                  color: trend.isPositive ? '#28a745' : '#dc3545',
+                }}
+              >
+                {trend.isPositive ? '↑' : '↓'} {trend.value}%
+              </Typography>
+            )}
+            {subtitle && (
+              <Typography
+                variant="caption"
+                sx={{ 
+                  color: isFullColor ? 'rgba(255, 255, 255, 0.75)' : '#6c757d',
+                  fontSize: '0.75rem'
+                }}
+              >
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+        )}
       </CardContent>
+      
+      {isFullColor && (
+        <Box
+          sx={{
+            py: 0.5,
+            px: 2,
+            bgcolor: 'rgba(0, 0, 0, 0.1)',
+            textAlign: 'center',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.15)' }
+          }}
+        >
+          <Typography variant="caption" sx={{ fontWeight: 600 }}> Plus d'infos →</Typography>
+        </Box>
+      )}
     </Card>
   );
 };

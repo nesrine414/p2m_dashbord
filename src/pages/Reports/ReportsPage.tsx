@@ -15,21 +15,18 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Breadcrumbs,
+  Link,
 } from '@mui/material';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
-import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
+import { Home, Assessment } from '@mui/icons-material';
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import StatusBadge from '../../components/common/StatusBadge';
 import { BackendAlarm, getAlarms, getDashboardStats } from '../../services/api';
 import { DashboardStats } from '../../types';
 import getSocket from '../../utils/socket';
 
-type PeriodOption = {
-  label: string;
-  key: 'today' | '7d' | '30d';
-  days: number;
-};
-
-const PERIOD_OPTIONS: PeriodOption[] = [
+const PERIOD_OPTIONS = [
   { label: "Aujourd'hui", key: 'today', days: 1 },
   { label: '7 jours', key: '7d', days: 7 },
   { label: '30 jours', key: '30d', days: 30 },
@@ -37,19 +34,11 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 
 const formatDateTime = (value: string): string => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString();
+  return isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
-const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
-
-const isOpenAlarm = (status: BackendAlarm['lifecycleStatus']): boolean =>
-  status === 'active' || status === 'acknowledged' || status === 'in_progress';
-
 const ReportsPage: React.FC = () => {
-  const [periodKey, setPeriodKey] = useState<PeriodOption['key']>('7d');
+  const [periodKey, setPeriodKey] = useState<'today' | '7d' | '30d'>('7d');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [alarms, setAlarms] = useState<BackendAlarm[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,355 +46,142 @@ const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-
     const loadData = async (showLoader = false) => {
       try {
-        if (showLoader) {
-          setLoading(true);
-          setError(null);
-        }
-
-        const [statsResponse, alarmsResponse] = await Promise.all([
+        if (showLoader) setLoading(true);
+        const [statsData, alarmsData] = await Promise.all([
           getDashboardStats(),
           getAlarms({ page: 1, pageSize: 500 }),
         ]);
-
-        if (!active) {
-          return;
-        }
-
-        setStats(statsResponse);
-        setAlarms(alarmsResponse.data);
+        if (!active) return;
+        setStats(statsData);
+        setAlarms(alarmsData.data);
       } catch {
-        if (!active) {
-          return;
-        }
-        if (showLoader) {
-          setError('Impossible de charger les rapports depuis le backend.');
-        }
+        setError('Erreur de chargement des rapports.');
       } finally {
-        if (active && showLoader) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-
-    void loadData(true);
-
+    loadData(true);
     const socket = getSocket();
-    const onRealtimeUpdate = () => {
-      void loadData(false);
-    };
-
-    socket.on('emulator_cycle_completed', onRealtimeUpdate);
-    socket.on('new_alarm', onRealtimeUpdate);
-    socket.on('alarm_updated', onRealtimeUpdate);
-    socket.on('kpi_updated', onRealtimeUpdate);
-
-    return () => {
-      active = false;
-      socket.off('emulator_cycle_completed', onRealtimeUpdate);
-      socket.off('new_alarm', onRealtimeUpdate);
-      socket.off('alarm_updated', onRealtimeUpdate);
-      socket.off('kpi_updated', onRealtimeUpdate);
-    };
+    const refresh = () => loadData(false);
+    socket.on('kpi_updated', refresh);
+    return () => { active = false; socket.off('kpi_updated', refresh); };
   }, []);
 
-  const selectedPeriod = useMemo(
-    () => PERIOD_OPTIONS.find((option) => option.key === periodKey) || PERIOD_OPTIONS[1],
-    [periodKey]
-  );
-
-  const fromDate = useMemo(() => {
-    const now = new Date();
-    if (selectedPeriod.key === 'today') {
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      return start;
-    }
-
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - (selectedPeriod.days - 1));
-    return start;
-  }, [selectedPeriod.days, selectedPeriod.key]);
-
-  const filteredAlarms = useMemo(
-    () =>
-      alarms
-        .filter((alarm) => {
-          const occurredAt = new Date(alarm.occurredAt);
-          return !Number.isNaN(occurredAt.getTime()) && occurredAt >= fromDate;
-        })
-        .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime()),
-    [alarms, fromDate]
-  );
-
-  const reportSummary = useMemo(() => {
-    const critical = filteredAlarms.filter((alarm) => alarm.severity === 'critical').length;
-    const major = filteredAlarms.filter((alarm) => alarm.severity === 'major').length;
-    const open = filteredAlarms.filter((alarm) => isOpenAlarm(alarm.lifecycleStatus)).length;
-    const closed = filteredAlarms.length - open;
-
-    return {
-      critical,
-      major,
-      open,
-      closed,
-    };
-  }, [filteredAlarms]);
+  const filteredAlarms = useMemo(() => {
+    const days = PERIOD_OPTIONS.find(o => o.key === periodKey)?.days || 7;
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() - days);
+    return alarms.filter(a => new Date(a.occurredAt) >= threshold).sort((a,b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+  }, [alarms, periodKey]);
 
   const severityData = useMemo(() => [
-    { name: 'Critique', value: reportSummary.critical, color: '#ff6f7a' },
-    { name: 'Majeure', value: reportSummary.major, color: '#ffb347' },
-    { name: 'Mineur/Autre', value: filteredAlarms.length - reportSummary.critical - reportSummary.major, color: '#55c2ff' },
-  ].filter(d => d.value > 0), [reportSummary, filteredAlarms.length]);
-
-  const rtuData = useMemo(() => {
-    const counts = new Map<string, number>();
-    filteredAlarms.forEach(alarm => {
-      const name = alarm.rtuName || `RTU-${alarm.rtuId || 'Inconnu'}`;
-      counts.set(name, (counts.get(name) || 0) + 1);
-    });
-    return Array.from(counts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-  }, [filteredAlarms]);
-
-  const exportCsv = () => {
-    const headers = [
-      'ID',
-      'Date',
-      'Type',
-      'Severite',
-      'Statut',
-      'RTU',
-      'Message',
-      'Localisation',
-    ];
-
-    const rows = filteredAlarms.map((alarm) => [
-      String(alarm.id),
-      formatDateTime(alarm.occurredAt),
-      alarm.alarmType,
-      alarm.severity,
-      alarm.lifecycleStatus,
-      alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`,
-      alarm.message,
-      alarm.localizationKm || alarm.location || 'N/D',
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((row) => row.map((cell) => escapeCsv(String(cell))).join(','))
-      .join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `rapport-incidents-${selectedPeriod.key}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
+    { name: 'Critique', value: filteredAlarms.filter(a => a.severity === 'critical').length, color: '#dc3545' },
+    { name: 'Majeure', value: filteredAlarms.filter(a => a.severity === 'major').length, color: '#ffc107' },
+    { name: 'Autre', value: filteredAlarms.filter(a => !['critical', 'major'].includes(a.severity)).length, color: '#007bff' },
+  ].filter(d => d.value > 0), [filteredAlarms]);
 
   return (
-    <Box>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        spacing={2}
-        mb={3}
-      >
+    <Box sx={{ p: { xs: 1, md: 2 } }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h4" fontWeight={800} color="white">
-            Rapports
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Resume KPI et incidents exportables par periode.
-          </Typography>
+            <Typography variant="h4" mb={0.5}>Rapports Opérationnels</Typography>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link underline="hover" sx={{ display: 'flex', alignItems: 'center' }} color="inherit" href="/">
+                <Home sx={{ mr: 0.5 }} fontSize="inherit" /> Accueil
+              </Link>
+              <Typography color="text.primary">Analytique</Typography>
+            </Breadcrumbs>
         </Box>
-        <Button variant="contained" startIcon={<FileDownloadOutlined />} onClick={exportCsv}>
-          Export CSV
-        </Button>
-      </Stack>
+        <Button variant="contained" startIcon={<FileDownloadOutlined />}>Exporter CSV</Button>
+      </Box>
 
-      <Stack direction="row" spacing={1} mb={2.2} flexWrap="wrap" useFlexGap>
-        {PERIOD_OPTIONS.map((option) => (
-          <Chip
-            key={option.key}
-            clickable
-            label={option.label}
-            color={periodKey === option.key ? 'primary' : 'default'}
-            onClick={() => setPeriodKey(option.key)}
-          />
-        ))}
-      </Stack>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {loading && (
-        <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
-          <CircularProgress size={18} />
-          <Typography variant="body2" color="text.secondary">
-            Chargement du rapport...
-          </Typography>
+      <Paper className="card-premium-light" sx={{ p: 2, mb: 3 }}>
+        <Stack direction="row" spacing={1}>
+            {PERIOD_OPTIONS.map(o => (
+                <Chip key={o.key} label={o.label} color={periodKey === o.key ? 'primary' : 'default'} onClick={() => setPeriodKey(o.key as any)} />
+            ))}
         </Stack>
-      )}
+      </Paper>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
-            <Typography variant="caption" color="text.secondary">
-              Critiques
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#ff9aa5">
-              {reportSummary.critical}
-            </Typography>
+      <Grid container spacing={2} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>ALARMES PÉRIODE</Typography>
+            <Typography variant="h4" fontWeight={800}>{filteredAlarms.length}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#3b3126', border: '1px solid #7a6442' }}>
-            <Typography variant="caption" color="text.secondary">
-              Majeures
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#ffcb8b">
-              {reportSummary.major}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>MTTR MOYEN</Typography>
+            <Typography variant="h4" fontWeight={800}>{(stats?.mttr || 0).toFixed(2)}h</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2f3950', border: '1px solid #5a6c89' }}>
-            <Typography variant="caption" color="text.secondary">
-              En cours
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#a9c8ff">
-              {reportSummary.open}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>DISPONIBILITÉ</Typography>
+            <Typography variant="h4" color="success.main" fontWeight={800}>{(stats?.availability || 0).toFixed(1)}%</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2a373a', border: '1px solid #587a7f' }}>
-            <Typography variant="caption" color="text.secondary">
-              Cloturees
-            </Typography>
-            <Typography variant="h4" fontWeight={700} color="#8be8ef">
-              {reportSummary.closed}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 12, lg: 2.4 }}>
-          <Paper sx={{ p: 2.2, borderRadius: 3, backgroundColor: '#2d3250', border: '1px solid #5f6294' }}>
-            <Typography variant="caption" color="text.secondary">
-              KPI reseau
-            </Typography>
-            <Typography variant="body2" color="white" mt={0.8}>
-              Disponibilite: <strong>{(stats?.availability || 0).toFixed(1)}%</strong>
-            </Typography>
-            <Typography variant="body2" color="white">
-              MTTR: <strong>{(stats?.mttr || 0).toFixed(2)}h</strong>
-            </Typography>
-            <Typography variant="body2" color="white">
-              MTBF: <strong>{(stats?.mtbf || 0).toFixed(1)}h</strong>
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>MTBF</Typography>
+            <Typography variant="h4" fontWeight={800}>{(stats?.mtbf || 0).toFixed(1)}h</Typography>
           </Paper>
         </Grid>
       </Grid>
 
-      {filteredAlarms.length > 0 && (
-        <Grid container spacing={2.5} mb={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: 320 }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="white" mb={1}>Répartition par Sévérité</Typography>
-              <ResponsiveContainer width="100%" height="85%">
+      <Grid container spacing={3} mb={3}>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Paper className="card-premium-light" sx={{ p: 2.5, height: 350 }}>
+            <Typography variant="h6" fontWeight={700} mb={2}>Distribution Sévérité</Typography>
+            <ResponsiveContainer width="100%" height="90%">
                 <PieChart>
-                  <Pie
-                    data={severityData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {severityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip contentStyle={{ backgroundColor: '#1a1f2e', border: 'none', borderRadius: 8, color: 'white' }} itemStyle={{ color: 'white' }} />
-                  <Legend verticalAlign="bottom" height={36} />
+                    <Pie data={severityData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {severityData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Legend />
                 </PieChart>
-              </ResponsiveContainer>
-            </Paper>
-          </Grid>
-          
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: 320 }}>
-              <Typography variant="subtitle1" fontWeight="bold" color="white" mb={1}>Top 5 RTU les plus impactés</Typography>
-              <ResponsiveContainer width="100%" height="85%">
-                <BarChart data={rtuData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
-                  <XAxis type="number" stroke="#9aa9bd" />
-                  <YAxis dataKey="name" type="category" stroke="#9aa9bd" width={170} tick={{ fontSize: 12 }} />
-                  <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: '#1a1f2e', border: 'none', borderRadius: 8, color: 'white' }} />
-                  <Bar dataKey="count" name="Alarmes" fill="#86c8ff" radius={[0, 4, 4, 0]} barSize={24} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Paper>
-          </Grid>
+            </ResponsiveContainer>
+          </Paper>
         </Grid>
-      )}
-
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-        <Typography variant="h6" color="white" mb={2}>
-          Incidents sur la periode {selectedPeriod.label}
-        </Typography>
-
-        {filteredAlarms.length === 0 ? (
-          <Alert severity="info">Aucun incident sur la periode selectionnee.</Alert>
-        ) : (
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Severite</TableCell>
-                  <TableCell>Statut</TableCell>
-                  <TableCell>RTU</TableCell>
-                  <TableCell>Localisation</TableCell>
-                  <TableCell>Message</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredAlarms.map((alarm) => (
-                  <TableRow key={alarm.id} hover>
-                    <TableCell>{alarm.id}</TableCell>
-                    <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
-                    <TableCell>{alarm.alarmType}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={alarm.severity} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
-                    </TableCell>
-                    <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
-                    <TableCell>{alarm.localizationKm || alarm.location || 'N/D'}</TableCell>
-                    <TableCell sx={{ minWidth: 260 }}>{alarm.message}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Paper className="card-premium-light" sx={{ p: 2.5, height: 350 }}>
+            <Box sx={{ p: 0, overflow: 'hidden' }}>
+                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                    <Assessment sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" fontWeight={700}>Tableau de Bord Analytique</Typography>
+                </Box>
+                <TableContainer sx={{ maxHeight: 250 }}>
+                    <Table size="small" stickyHeader>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 700, bgcolor: '#f8f9fa' }}>DATE</TableCell>
+                                <TableCell sx={{ fontWeight: 700, bgcolor: '#f8f9fa' }}>SÉVÉRITÉ</TableCell>
+                                <TableCell sx={{ fontWeight: 700, bgcolor: '#f8f9fa' }}>TYPE ALARME</TableCell>
+                                <TableCell sx={{ fontWeight: 700, bgcolor: '#f8f9fa' }}>LOCALISATION</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredAlarms.slice(0, 10).map(a => (
+                                <TableRow key={a.id} hover>
+                                    <TableCell>{formatDateTime(a.occurredAt)}</TableCell>
+                                    <TableCell><StatusBadge status={a.severity} /></TableCell>
+                                    <TableCell>{a.alarmType}</TableCell>
+                                    <TableCell>{a.localizationKm || 'N/D'}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

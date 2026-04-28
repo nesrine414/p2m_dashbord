@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Stack, Typography } from '@mui/material';
-import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Stack, Typography, Breadcrumbs, Link, Paper } from '@mui/material';
+import { ArrowBackOutlined, Home, SettingsRemote } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import RtuTelemetryPanel from '../components/widgets/RtuTelemetryPanel';
 import DiagnosticTestPanel from '../components/widgets/DiagnosticTestPanel';
@@ -26,126 +26,79 @@ const RTUDetailPage: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
-
         const lookupKey = decodeURIComponent(rtuParam);
         let resolvedRtu: BackendRTU | null = null;
 
         if (isNumericId(lookupKey)) {
-          try {
-            resolvedRtu = await getRTUById(Number(lookupKey));
-          } catch {
-            resolvedRtu = null;
-          }
+          try { resolvedRtu = await getRTUById(Number(lookupKey)); } catch { resolvedRtu = null; }
         }
-
         if (!resolvedRtu) {
-          try {
-            resolvedRtu = await getRTUByIp(lookupKey);
-          } catch {
-            resolvedRtu = null;
-          }
+          try { resolvedRtu = await getRTUByIp(lookupKey); } catch { resolvedRtu = null; }
         }
 
         if (!active) return;
-
         if (!resolvedRtu?.ipAddress) {
-          setRtu(null);
-          setBundle(null);
-          setError("Impossible de retrouver la RTU demandée. Vérifiez l'identifiant ou l'adresse IP.");
+          setError("RTU introuvable.");
           return;
         }
 
         setRtu(resolvedRtu);
         const telemetryBundle = await getTelemetryBundleByIp(resolvedRtu.ipAddress);
-
-        if (!active) return;
-
-        setBundle(telemetryBundle);
+        if (active) setBundle(telemetryBundle);
       } catch {
-        if (!active) return;
-        setError('Impossible de charger le bundle telemetry de cette RTU.');
+        if (active) setError('Erreur de télémesure RTU.');
       } finally {
         if (active) setLoading(false);
       }
     };
-
-    void load();
+    load();
     return () => { active = false; };
   }, [rtuParam, refreshIndex, revision]);
 
-  const handleRefresh = () => setRefreshIndex((v) => v + 1);
-
   return (
-    <Box>
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        spacing={2}
-        mb={3}
-      >
+    <Box sx={{ p: { xs: 1, md: 2 } }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h4" fontWeight={800} color="white">
-            Détail RTU
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Vue complète par IP — fibres, alarmes, KPI et diagnostic en direct.
-          </Typography>
+            <Typography variant="h4" mb={0.5}>Détails Équipement</Typography>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link underline="hover" sx={{ display: 'flex', alignItems: 'center' }} color="inherit" href="/">
+                <Home sx={{ mr: 0.5 }} fontSize="inherit" /> Accueil
+              </Link>
+              <Link underline="hover" sx={{ display: 'flex', alignItems: 'center' }} color="inherit" href={ROUTE_PATHS.rtu}>
+                <SettingsRemote sx={{ mr: 0.5 }} fontSize="inherit" /> Inventaire
+              </Link>
+              <Typography color="text.primary">{displayTitle}</Typography>
+            </Breadcrumbs>
         </Box>
-
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-          <Chip
-            label={connected ? 'Socket connecté' : 'Socket hors ligne'}
-            color={connected ? 'success' : 'default'}
-            variant="outlined"
-            size="small"
-          />
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ArrowBackOutlinedIcon />}
-            onClick={() => navigate(ROUTE_PATHS.rtu)}
-          >
-            Retour inventaire
-          </Button>
+        <Stack direction="row" spacing={1}>
+            <Chip 
+              label={connected ? 'Live Sync' : 'Offline'} 
+              color={connected ? 'success' : 'default'} 
+              size="small" 
+            />
+            <Button variant="outlined" size="small" startIcon={<ArrowBackOutlined />} onClick={() => navigate(ROUTE_PATHS.rtu)}>Retour</Button>
         </Stack>
-      </Stack>
+      </Box>
 
-      {/* ── Loading / Error / Success ───────────────────────────────────── */}
-      {loading && (
-        <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
-          <CircularProgress size={18} />
-          <Typography variant="body2" color="text.secondary">
-            Chargement du bundle RTU...
-          </Typography>
-        </Stack>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {loading && <CircularProgress size={20} sx={{ mb: 2 }} />}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {!error && bundle && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {displayTitle} — IP {bundle.ipAddress} — source {bundle.source}
-        </Alert>
+        <Paper className="card-premium-light" sx={{ p: 2, mb: 3, bgcolor: '#e7f3ff', border: 'none' }}>
+            <Typography variant="body1" fontWeight={700}>
+                Connecté à {displayTitle} — <span style={{ opacity: 0.7 }}>IP: {bundle.ipAddress}</span>
+            </Typography>
+        </Paper>
       )}
 
-      {/* ── Telemetry Panel ─────────────────────────────────────────────── */}
-      <RtuTelemetryPanel bundle={bundle} loading={loading} error={error} onRefresh={handleRefresh} />
-
-      {/* ── Diagnostic Test Panel ───────────────────────────────────────── */}
-      <Box mt={3}>
+      <Stack spacing={3}>
+        <RtuTelemetryPanel bundle={bundle} loading={loading} error={error} onRefresh={() => setRefreshIndex(v => v+1)} />
         <DiagnosticTestPanel ipAddress={rtu?.ipAddress} />
-      </Box>
+      </Stack>
     </Box>
   );
 };

@@ -86,120 +86,42 @@ export interface DemoOtdrTest {
 }
 
 export const demoRtus: DemoRTU[] = [
-  {
-    id: 1,
-    name: 'RTU-TUNIS-BACKBONE',
-    locationAddress: 'Tunis Centre',
-    locationLatitude: 36.8065,
-    locationLongitude: 10.1815,
-    ipAddress: '10.60.1.11',
-    serialNumber: 'NQMS-RTU-TN-0001',
-    status: 'online',
-    power: 'normal',
-    temperature: 31,
-    otdrStatus: 'ready',
-    lastSeen: '2026-04-02T10:02:00.000Z',
-  },
-  {
-    id: 2,
-    name: 'RTU-SOUSSE-METRO',
-    locationAddress: 'Sousse Ville',
-    locationLatitude: 35.8256,
-    locationLongitude: 10.636,
-    ipAddress: '10.60.1.12',
-    serialNumber: 'NQMS-RTU-TN-0002',
-    status: 'online',
-    power: 'normal',
-    temperature: 39,
-    otdrStatus: 'busy',
-    lastSeen: '2026-04-02T09:54:00.000Z',
-  },
-  {
-    id: 3,
-    name: 'RTU-SFAX-CORE',
-    locationAddress: 'Sfax Centre',
-    locationLatitude: 34.7398,
-    locationLongitude: 10.76,
-    ipAddress: '10.60.1.13',
-    serialNumber: 'NQMS-RTU-TN-0003',
-    status: 'online',
-    power: 'normal',
-    temperature: 30,
-    otdrStatus: 'ready',
-    lastSeen: '2026-04-02T10:01:00.000Z',
-  },
-  {
-    id: 4,
-    name: 'RTU-GABES-AGGREGATION',
-    locationAddress: 'Gabes Hub',
-    locationLatitude: 33.8881,
-    locationLongitude: 10.0972,
-    ipAddress: '10.60.1.14',
-    serialNumber: 'NQMS-RTU-TN-0004',
-    status: 'offline',
-    power: 'failure',
-    temperature: 0,
-    otdrStatus: 'fault',
-    lastSeen: '2026-04-02T08:15:00.000Z',
-  },
-  {
-    id: 5,
-    name: 'RTU-GAFSA-EDGE',
-    locationAddress: 'Gafsa Backbone',
-    locationLatitude: 34.4311,
-    locationLongitude: 8.7757,
-    ipAddress: '10.60.1.15',
-    serialNumber: 'NQMS-RTU-TN-0005',
-    status: 'unreachable',
-    power: 'failure',
-    temperature: 36,
-    otdrStatus: 'fault',
-    lastSeen: '2026-04-02T08:42:00.000Z',
-  },
-  {
-    id: 6,
-    name: 'RTU-BIZERTE-DISTRIBUTION',
-    locationAddress: 'Bizerte Nord',
-    locationLatitude: 37.2746,
-    locationLongitude: 9.8739,
-    ipAddress: '10.60.1.16',
-    serialNumber: 'NQMS-RTU-TN-0006',
-    status: 'online',
-    power: 'normal',
-    temperature: 29,
-    otdrStatus: 'ready',
-    lastSeen: '2026-04-02T10:00:30.000Z',
-  },
+  { id: 1, name: 'RTU-TUNIS-BACKBONE', locationAddress: 'Tunis Centre', locationLatitude: 36.8065, locationLongitude: 10.1815, ipAddress: '10.60.1.11', serialNumber: 'NQMS-RTU-TN-0001', status: 'online', power: 'normal', temperature: 31, otdrStatus: 'ready', lastSeen: '2026-04-02T10:02:00.000Z' },
+  { id: 2, name: 'RTU-SOUSSE-METRO', locationAddress: 'Sousse Ville', locationLatitude: 35.8256, locationLongitude: 10.636, ipAddress: '10.60.1.12', serialNumber: 'NQMS-RTU-TN-0002', status: 'online', power: 'normal', temperature: 39, otdrStatus: 'busy', lastSeen: '2026-04-02T09:54:00.000Z' },
+  { id: 3, name: 'RTU-SFAX-CORE', locationAddress: 'Sfax Centre', locationLatitude: 34.7398, locationLongitude: 10.76, ipAddress: '10.60.1.13', serialNumber: 'NQMS-RTU-TN-0003', status: 'online', power: 'normal', temperature: 30, otdrStatus: 'ready', lastSeen: '2026-04-02T10:01:00.000Z' },
+  { id: 4, name: 'RTU-GABES-AGGREGATION', locationAddress: 'Gabes Hub', locationLatitude: 33.8881, locationLongitude: 10.0972, ipAddress: '10.60.1.14', serialNumber: 'NQMS-RTU-TN-0004', status: 'offline', power: 'failure', temperature: 0, otdrStatus: 'fault', lastSeen: '2026-04-02T08:15:00.000Z' },
+  { id: 5, name: 'RTU-GAFSA-EDGE', locationAddress: 'Gafsa Backbone', locationLatitude: 34.4311, locationLongitude: 8.7757, ipAddress: '10.60.1.15', serialNumber: 'NQMS-RTU-TN-0005', status: 'unreachable', power: 'failure', temperature: 36, otdrStatus: 'fault', lastSeen: '2026-04-02T08:42:00.000Z' },
+  { id: 6, name: 'RTU-BIZERTE-DISTRIBUTION', locationAddress: 'Bizerte Nord', locationLatitude: 37.2746, locationLongitude: 9.8739, ipAddress: '10.60.1.16', serialNumber: 'NQMS-RTU-TN-0006', status: 'online', power: 'normal', temperature: 29, otdrStatus: 'ready', lastSeen: '2026-04-02T10:00:30.000Z' },
 ];
 
 export const demoFibres: DemoFibre[] = [
-  { id: 1, fromRtuId: 1, toRtuId: 6, name: 'F1', length: 24.5, status: 'normal' },
-  { id: 2, fromRtuId: 1, toRtuId: 2, name: 'F2', length: 18.2, status: 'degraded' },
-  { id: 3, fromRtuId: 1, toRtuId: 5, name: 'F3', length: 35.1, status: 'normal' },
-  { id: 4, fromRtuId: 2, toRtuId: 1, name: 'F1', length: 14.8, status: 'degraded' },
-  { id: 5, fromRtuId: 2, toRtuId: 3, name: 'F2', length: 9.6, status: 'normal' },
-  { id: 6, fromRtuId: 3, toRtuId: 2, name: 'F1', length: 27.3, status: 'normal' },
-  { id: 7, fromRtuId: 3, toRtuId: 4, name: 'F2', length: 19.4, status: 'broken' },
-  { id: 8, fromRtuId: 4, toRtuId: 3, name: 'F1', length: 16.1, status: 'broken' },
-  { id: 9, fromRtuId: 4, toRtuId: 5, name: 'F2', length: 13.5, status: 'degraded' },
-  { id: 10, fromRtuId: 5, toRtuId: 4, name: 'F1', length: 21.7, status: 'degraded' },
-  { id: 11, fromRtuId: 6, toRtuId: 1, name: 'F1', length: 11.4, status: 'normal' },
-  { id: 12, fromRtuId: 6, toRtuId: 2, name: 'F2', length: 15.2, status: 'normal' },
+  { id: 1, fromRtuId: 1, toRtuId: 6, name: 'F1', length: 65.2, status: 'normal' },
+  { id: 2, fromRtuId: 1, toRtuId: 2, name: 'F2', length: 140.5, status: 'degraded' },
+  { id: 3, fromRtuId: 1, toRtuId: 5, name: 'F3', length: 350.1, status: 'normal' },
+  { id: 4, fromRtuId: 2, toRtuId: 1, name: 'F1', length: 140.5, status: 'degraded' },
+  { id: 5, fromRtuId: 2, toRtuId: 3, name: 'F2', length: 130.8, status: 'normal' },
+  { id: 6, fromRtuId: 3, toRtuId: 2, name: 'F1', length: 130.8, status: 'normal' },
+  { id: 7, fromRtuId: 3, toRtuId: 4, name: 'F2', length: 140.2, status: 'broken' },
+  { id: 8, fromRtuId: 4, toRtuId: 3, name: 'F1', length: 140.2, status: 'broken' },
+  { id: 9, fromRtuId: 4, toRtuId: 5, name: 'F2', length: 157.0, status: 'degraded' },
+  { id: 10, fromRtuId: 5, toRtuId: 4, name: 'F1', length: 157.0, status: 'degraded' },
+  { id: 11, fromRtuId: 6, toRtuId: 1, name: 'F1', length: 65.2, status: 'normal' },
+  { id: 12, fromRtuId: 6, toRtuId: 2, name: 'F2', length: 160.8, status: 'normal' },
 ];
 
 export const demoMeasurements: DemoMeasurement[] = [
-  { id: 1, fibreId: 1, attenuation: 4.8, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:40:00.000Z' },
-  { id: 2, fibreId: 2, attenuation: 8.6, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T09:37:00.000Z' },
-  { id: 3, fibreId: 3, attenuation: 5.4, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:28:00.000Z' },
-  { id: 4, fibreId: 4, attenuation: 7.9, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T09:32:00.000Z' },
-  { id: 5, fibreId: 5, attenuation: 3.6, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:46:00.000Z' },
-  { id: 6, fibreId: 6, attenuation: 4.2, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:48:00.000Z' },
-  { id: 7, fibreId: 7, attenuation: 15.7, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T09:18:00.000Z' },
-  { id: 8, fibreId: 8, attenuation: 17.1, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T08:10:00.000Z' },
-  { id: 9, fibreId: 9, attenuation: 9.1, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T08:42:00.000Z' },
-  { id: 10, fibreId: 10, attenuation: 8.4, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T08:53:00.000Z' },
-  { id: 11, fibreId: 11, attenuation: 3.1, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:55:00.000Z' },
-  { id: 12, fibreId: 12, attenuation: 3.9, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:58:00.000Z' },
+  { id: 1, fibreId: 1, attenuation: 14.8, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:40:00.000Z' },
+  { id: 2, fibreId: 2, attenuation: 38.6, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T09:37:00.000Z' },
+  { id: 3, fibreId: 3, attenuation: 77.4, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:28:00.000Z' },
+  { id: 4, fibreId: 4, attenuation: 39.9, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T09:32:00.000Z' },
+  { id: 5, fibreId: 5, attenuation: 28.6, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:46:00.000Z' },
+  { id: 6, fibreId: 6, attenuation: 29.2, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:48:00.000Z' },
+  { id: 7, fibreId: 7, attenuation: 55.7, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T09:18:00.000Z' },
+  { id: 8, fibreId: 8, attenuation: 57.1, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T08:10:00.000Z' },
+  { id: 9, fibreId: 9, attenuation: 35.1, testResult: 'fail', wavelength: 1625, timestamp: '2026-04-02T08:42:00.000Z' },
+  { id: 10, fibreId: 10, attenuation: 34.4, testResult: 'fail', wavelength: 1550, timestamp: '2026-04-02T08:53:00.000Z' },
+  { id: 11, fibreId: 11, attenuation: 14.3, testResult: 'pass', wavelength: 1310, timestamp: '2026-04-02T09:55:00.000Z' },
+  { id: 12, fibreId: 12, attenuation: 35.9, testResult: 'pass', wavelength: 1550, timestamp: '2026-04-02T09:58:00.000Z' },
 ];
 
 export const demoFibreAlarms: DemoAlarm[] = [
@@ -226,43 +148,25 @@ const latestMeasurementByFibre = new Map<number, DemoMeasurement>(
 );
 
 const buildFibrePath = (source: DemoRTU, destination: DemoRTU): DemoRoutePathPoint[] => [
-  [
-    Number(source.locationLatitude.toFixed(6)),
-    Number(source.locationLongitude.toFixed(6)),
-  ],
-  [
-    Number(destination.locationLatitude.toFixed(6)),
-    Number(destination.locationLongitude.toFixed(6)),
-  ],
+  [Number(source.locationLatitude.toFixed(6)), Number(source.locationLongitude.toFixed(6))],
+  [Number(destination.locationLatitude.toFixed(6)), Number(destination.locationLongitude.toFixed(6))],
 ];
 
 const toRouteStatus = (status: DemoFibreStatus): 'active' | 'inactive' | 'skipped' => {
-  if (status === 'broken') {
-    return 'inactive';
-  }
-  if (status === 'degraded') {
-    return 'skipped';
-  }
+  if (status === 'broken') return 'inactive';
+  if (status === 'degraded') return 'skipped';
   return 'active';
 };
 
 const getPulseWidth = (length: number): string => {
-  if (length >= 30) {
-    return '100 ns';
-  }
-  if (length >= 20) {
-    return '50 ns';
-  }
+  if (length >= 30) return '100 ns';
+  if (length >= 20) return '50 ns';
   return '30 ns';
 };
 
 const getMode = (measurement: DemoMeasurement): 'auto' | 'manual' | 'scheduled' => {
-  if (measurement.testResult === 'fail') {
-    return 'manual';
-  }
-  if (measurement.wavelength === 1625) {
-    return 'scheduled';
-  }
+  if (measurement.testResult === 'fail') return 'manual';
+  if (measurement.wavelength === 1625) return 'scheduled';
   return 'auto';
 };
 
@@ -271,13 +175,7 @@ export const demoFiberRoutes: DemoFiberRoute[] = demoFibres.map((fibre) => {
   const latestMeasurement = latestMeasurementByFibre.get(fibre.id);
   const destinationRtu = demoRtus.find((item) => item.id === fibre.toRtuId);
 
-  if (!rtu) {
-    throw new Error(`RTU not found for fibre ${fibre.id}`);
-  }
-
-  if (!destinationRtu) {
-    throw new Error(`Destination RTU not found for fibre ${fibre.id}`);
-  }
+  if (!rtu || !destinationRtu) throw new Error(`Data missing for fibre ${fibre.id}`);
 
   return {
     id: fibre.id,
@@ -298,9 +196,7 @@ export const demoFiberRoutes: DemoFiberRoute[] = demoFibres.map((fibre) => {
 
 export const demoOtdrTests: DemoOtdrTest[] = demoMeasurements.map((measurement) => {
   const fibre = demoFibres.find((item) => item.id === measurement.fibreId);
-  if (!fibre) {
-    throw new Error(`Fibre not found for measurement ${measurement.id}`);
-  }
+  if (!fibre) throw new Error(`Fibre not found for measurement ${measurement.id}`);
 
   return {
     id: measurement.id,
@@ -319,9 +215,7 @@ export const demoAlarms = demoFibreAlarms.map((alarm) => {
   const fibre = demoFibres.find((item) => item.id === alarm.fibreId);
   const rtu = fibre ? demoRtus.find((item) => item.id === fibre.fromRtuId) : undefined;
 
-  if (!fibre || !rtu) {
-    throw new Error(`Fibre or RTU not found for alarm ${alarm.id}`);
-  }
+  if (!fibre || !rtu) throw new Error(`Fibre or RTU not found for alarm ${alarm.id}`);
 
   return {
     id: alarm.id,
@@ -331,10 +225,9 @@ export const demoAlarms = demoFibreAlarms.map((alarm) => {
     severity: alarm.severity,
     lifecycleStatus: alarm.status === 'active' ? 'active' as DemoAlarmLifecycle : 'resolved' as DemoAlarmLifecycle,
     alarmType: alarm.type,
-    message:
-      alarm.type === 'Fiber Cut'
-        ? `Fiber cut detected on ${rtu.name} ${fibre.name}.`
-        : `High loss detected on ${rtu.name} ${fibre.name}.`,
+    message: alarm.type === 'Fiber Cut'
+        ? `Coupure fibre détectée sur ${rtu.name} (${fibre.name}).`
+        : `Perte élevée détectée sur ${rtu.name} (${fibre.name}).`,
     location: rtu.locationAddress,
     localizationKm: `KM ${alarm.localization.toFixed(1)}`,
     owner: 'Emulator NQMS',

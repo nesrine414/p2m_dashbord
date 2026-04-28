@@ -15,9 +15,13 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Breadcrumbs,
+  Link,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
-import { NotificationsActiveOutlined } from '@mui/icons-material';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { NotificationsActiveOutlined, Home, ErrorOutline, SearchOutlined, FilterListOutlined } from '@mui/icons-material';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
 import {
   BackendAlarm,
@@ -28,82 +32,9 @@ import {
 import { AlarmLifecycleStatus, AlarmSeverity } from '../types';
 import getSocket from '../utils/socket';
 
-const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  const maybe = error as {
-    response?: { data?: { error?: string; message?: string } };
-  };
-
-  return maybe?.response?.data?.error || maybe?.response?.data?.message || fallback;
-};
-
 const formatDateTime = (value: string): string => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString();
-};
-
-const formatRealtimeUpdate = (value: string | null): string => {
-  if (!value) {
-    return 'En attente du flux live...';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return `Derniere mise a jour temps reel: ${date.toLocaleTimeString()}`;
-};
-
-const isClosedStatus = (status: BackendAlarm['lifecycleStatus']): boolean =>
-  status === AlarmLifecycleStatus.CLOSED ||
-  status === AlarmLifecycleStatus.RESOLVED ||
-  status === AlarmLifecycleStatus.CLEARED;
-
-const normalizeLifecycleStatus = (status: unknown): BackendAlarm['lifecycleStatus'] => {
-  if (
-    status === 'active' ||
-    status === 'acknowledged' ||
-    status === 'in_progress' ||
-    status === 'resolved' ||
-    status === 'closed' ||
-    status === 'cleared'
-  ) {
-    return status;
-  }
-  return 'active';
-};
-
-const normalizeSeverity = (severity: unknown): BackendAlarm['severity'] => {
-  if (severity === 'critical' || severity === 'major' || severity === 'minor' || severity === 'info') {
-    return severity;
-  }
-  return 'info';
-};
-
-const toBackendAlarm = (payload: unknown): BackendAlarm => {
-  const source = payload as Record<string, unknown>;
-  const id = Number(source.id ?? 0);
-  const rtuId = source.rtuId ?? source.rtu_id;
-  const occurredAt = source.occurredAt ?? source.occurred_at ?? new Date().toISOString();
-
-  return {
-    id: Number.isFinite(id) ? id : 0,
-    rtuId: typeof rtuId === 'number' ? rtuId : rtuId ? Number(rtuId) : null,
-    rtuName: typeof source.rtuName === 'string' ? source.rtuName : undefined,
-    zone: typeof source.zone === 'string' ? source.zone : undefined,
-    severity: normalizeSeverity(source.severity),
-    lifecycleStatus: normalizeLifecycleStatus(source.lifecycleStatus ?? source.lifecycle_status),
-    alarmType: (typeof source.alarmType === 'string' ? source.alarmType : 'Maintenance') as BackendAlarm['alarmType'],
-    message: typeof source.message === 'string' ? source.message : 'Alarme detectee.',
-    location: typeof source.location === 'string' ? source.location : null,
-    localizationKm: typeof source.localizationKm === 'string' ? source.localizationKm : null,
-    owner: typeof source.owner === 'string' ? source.owner : null,
-    occurredAt: String(occurredAt),
-  };
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('fr-FR');
 };
 
 const AlarmsPage: React.FC = () => {
@@ -112,420 +43,186 @@ const AlarmsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState<'all' | AlarmSeverity>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | AlarmLifecycleStatus>('all');
+  const [search, setSearch] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
-  const [lastRealtimeUpdateAt, setLastRealtimeUpdateAt] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await getAlarms({ page: 1, pageSize: 500 });
-        if (!active) {
-          return;
-        }
-
-        setAlarms(response.data);
-      } catch {
-        if (!active) {
-          return;
-        }
-        setError("Impossible de charger les donnees d'alarmes depuis le backend.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const replaceAlarm = (updatedAlarm: BackendAlarm) => {
-    setAlarms((current) => {
-      const existingIndex = current.findIndex((alarm) => alarm.id === updatedAlarm.id);
-      if (existingIndex < 0) {
-        return [updatedAlarm, ...current];
-      }
-
-      const cloned = [...current];
-      cloned[existingIndex] = { ...cloned[existingIndex], ...updatedAlarm };
-      return cloned;
-    });
-  };
-
-  const prependOrReplaceAlarm = (incomingAlarm: BackendAlarm) => {
-    setAlarms((current) => {
-      const existingIndex = current.findIndex((alarm) => alarm.id === incomingAlarm.id);
-      if (existingIndex >= 0) {
-        const cloned = [...current];
-        cloned[existingIndex] = { ...cloned[existingIndex], ...incomingAlarm };
-        return cloned;
-      }
-
-      return [incomingAlarm, ...current];
-    });
+  const loadAlarms = async (showLoader = false) => {
+    try {
+      if (showLoader) setLoading(true);
+      const response = await getAlarms({ page: 1, pageSize: 500 });
+      setAlarms(response.data);
+    } catch {
+      setError("Erreur technique lors de la synchronisation des alarmes.");
+    } finally {
+      if (showLoader) setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const markRealtimeUpdate = () => {
-      setLastRealtimeUpdateAt(new Date().toISOString());
-    };
-
-    const handleNewAlarm = (event: Event) => {
-      const customEvent = event as CustomEvent<BackendAlarm>;
-      if (!customEvent.detail) {
-        return;
-      }
-
-      prependOrReplaceAlarm(toBackendAlarm(customEvent.detail));
-      markRealtimeUpdate();
-    };
-
-    const handleUpdatedAlarm = (event: Event) => {
-      const customEvent = event as CustomEvent<BackendAlarm>;
-      if (!customEvent.detail) {
-        return;
-      }
-
-      replaceAlarm(toBackendAlarm(customEvent.detail));
-      markRealtimeUpdate();
-    };
-
+    loadAlarms(true);
     const socket = getSocket();
-    const onSocketNewAlarm = (rawPayload: unknown) => {
-      prependOrReplaceAlarm(toBackendAlarm(rawPayload));
-      markRealtimeUpdate();
-    };
-
-    const onSocketUpdatedAlarm = (rawPayload: unknown) => {
-      replaceAlarm(toBackendAlarm(rawPayload));
-      markRealtimeUpdate();
-    };
-
-    window.addEventListener('nqms:alarm:new', handleNewAlarm as EventListener);
-    window.addEventListener('nqms:alarm:updated', handleUpdatedAlarm as EventListener);
-    socket.on('new_alarm', onSocketNewAlarm);
-    socket.on('alarm_updated', onSocketUpdatedAlarm);
-
-    return () => {
-      window.removeEventListener('nqms:alarm:new', handleNewAlarm as EventListener);
-      window.removeEventListener('nqms:alarm:updated', handleUpdatedAlarm as EventListener);
-      socket.off('new_alarm', onSocketNewAlarm);
-      socket.off('alarm_updated', onSocketUpdatedAlarm);
-    };
+    const refresh = () => loadAlarms(false);
+    socket.on('new_alarm', refresh);
+    socket.on('alarm_updated', refresh);
+    return () => { socket.off('new_alarm', refresh); socket.off('alarm_updated', refresh); };
   }, []);
 
-  const handleInProgress = async (alarmId: number) => {
+  const handleAction = async (id: number, action: 'progress' | 'close') => {
     try {
-      setActionLoadingId(alarmId);
-      setError(null);
-      replaceAlarm(await markAlarmInProgress(alarmId));
-    } catch (apiError) {
-      setError(getApiErrorMessage(apiError, "Impossible de passer l'alarme en cours de traitement."));
+      setActionLoadingId(id);
+      if (action === 'progress') await markAlarmInProgress(id);
+      else await closeAlarm(id);
+      await loadAlarms(false);
+    } catch {
+      setError("Échec de l'action sur l'alarme. Vérifiez vos permissions.");
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  const handleClose = async (alarmId: number) => {
-    try {
-      setActionLoadingId(alarmId);
-      setError(null);
-      replaceAlarm(await closeAlarm(alarmId));
-    } catch (apiError) {
-      setError(getApiErrorMessage(apiError, "Impossible de cloturer l'alarme."));
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
+  const filteredAlarms = useMemo(() => alarms.filter(a => {
+    const sevMatch = severityFilter === 'all' || a.severity === severityFilter;
+    const statMatch = statusFilter === 'all' || (statusFilter === 'closed' ? ['closed', 'resolved', 'cleared'].includes(a.lifecycleStatus) : a.lifecycleStatus === statusFilter);
+    const searchMatch = !search || 
+        a.message.toLowerCase().includes(search.toLowerCase()) || 
+        a.rtuName?.toLowerCase().includes(search.toLowerCase()) ||
+        a.alarmType.toLowerCase().includes(search.toLowerCase());
+    return sevMatch && statMatch && searchMatch;
+  }), [alarms, severityFilter, statusFilter, search]);
 
-  const filteredAlarms = useMemo(
-    () =>
-      alarms.filter((alarm) => {
-        const severityMatch = severityFilter === 'all' || alarm.severity === severityFilter;
-        const statusMatch =
-          statusFilter === 'all' ||
-          (statusFilter === AlarmLifecycleStatus.CLOSED
-            ? isClosedStatus(alarm.lifecycleStatus)
-            : alarm.lifecycleStatus === statusFilter);
-        return severityMatch && statusMatch;
-      }),
-    [alarms, severityFilter, statusFilter]
-  );
+  const summary = useMemo(() => ({
+    critical: alarms.filter(a => a.severity === 'critical').length,
+    major: alarms.filter(a => a.severity === 'major').length,
+    active: alarms.filter(a => a.lifecycleStatus === 'active').length,
+    inProgress: alarms.filter(a => a.lifecycleStatus === 'in_progress').length,
+    closed: alarms.filter(a => ['closed', 'resolved', 'cleared'].includes(a.lifecycleStatus)).length,
+  }), [alarms]);
 
-  const summary = useMemo(
-    () => ({
-      critical: alarms.filter((item) => item.severity === AlarmSeverity.CRITICAL).length,
-      major: alarms.filter((item) => item.severity === AlarmSeverity.MAJOR).length,
-      minor: alarms.filter((item) => item.severity === AlarmSeverity.MINOR).length,
-      active: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.ACTIVE).length,
-      inProgress: alarms.filter((item) => item.lifecycleStatus === AlarmLifecycleStatus.IN_PROGRESS).length,
-      closed: alarms.filter((item) => isClosedStatus(item.lifecycleStatus)).length,
-    }),
-    [alarms]
-  );
-
-  const alarmZoneVolumes = useMemo(() => {
-    const zoneMap = new Map<string, { zone: string; critical: number; major: number; minor: number }>();
-
-    alarms.forEach((alarm) => {
-      const zone = alarm.zone || alarm.location || 'Unknown zone';
-      if (!zoneMap.has(zone)) {
-        zoneMap.set(zone, { zone, critical: 0, major: 0, minor: 0 });
-      }
-
-      const entry = zoneMap.get(zone);
-      if (!entry) {
-        return;
-      }
-
-      if (alarm.severity === AlarmSeverity.CRITICAL) {
-        entry.critical += 1;
-      } else if (alarm.severity === AlarmSeverity.MAJOR) {
-        entry.major += 1;
-      } else if (alarm.severity === AlarmSeverity.MINOR) {
-        entry.minor += 1;
-      }
+  const chartData = useMemo(() => {
+    const zones = new Map();
+    alarms.forEach(a => {
+        const z = a.zone || 'Autre';
+        if (!zones.has(z)) zones.set(z, { name: z, critical: 0, major: 0 });
+        const entry = zones.get(z);
+        if (a.severity === 'critical') entry.critical++;
+        else if (a.severity === 'major') entry.major++;
     });
-
-    return Array.from(zoneMap.values()).slice(0, 8);
+    return Array.from(zones.values()).slice(0, 5).sort((a: any, b: any) => (b.critical + b.major) - (a.critical + a.major));
   }, [alarms]);
 
   return (
-    <Box>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        spacing={2}
-        mb={3}
-      >
+    <Box sx={{ p: { xs: 1, md: 2 } }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h4" fontWeight={800} color="white">
-            Alarmes et evenements
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Type, severite, statut, horodatage et localisation du defaut.
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {formatRealtimeUpdate(lastRealtimeUpdateAt)}
-          </Typography>
+            <Typography variant="h4" mb={0.5} fontWeight={800}>Centre d'Alarmes & Incidents</Typography>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link underline="hover" sx={{ display: 'flex', alignItems: 'center' }} color="inherit" href="/">
+                <Home sx={{ mr: 0.5 }} fontSize="inherit" /> Accueil
+              </Link>
+              <Typography color="text.primary">Supervision Live</Typography>
+            </Breadcrumbs>
         </Box>
-        <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }} disabled>
-          Creer un incident
-        </Button>
-      </Stack>
+        {loading && <CircularProgress size={20} />}
+      </Box>
 
-      {loading && (
-        <Stack direction="row" spacing={1.2} alignItems="center" mb={2}>
-          <CircularProgress size={18} />
-          <Typography variant="body2" color="text.secondary">
-            Chargement des alarmes...
-          </Typography>
-        </Stack>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
-            <Typography variant="caption" color="text.secondary">
-              Critiques
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#ff8d9a">
-              {summary.critical}
-            </Typography>
+      <Grid container spacing={2} mb={3}>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderLeftWidth: '8px', borderLeftColor: '#dc3545' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>CRITIQUES</Typography>
+            <Typography variant="h4" color="error.main" fontWeight={800}>{summary.critical}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#403327', border: '1px solid #8a6a45' }}>
-            <Typography variant="caption" color="text.secondary">
-              Majeures
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#ffc47f">
-              {summary.major}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderLeftWidth: '8px', borderLeftColor: '#ffc107' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>MAJEURES</Typography>
+            <Typography variant="h4" color="warning.main" fontWeight={800}>{summary.major}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#303b2a', border: '1px solid #5a7350' }}>
-            <Typography variant="caption" color="text.secondary">
-              Mineures
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#c3eca1">
-              {summary.minor}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderLeftWidth: '8px', borderLeftColor: '#17a2b8' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>ACTIVES</Typography>
+            <Typography variant="h4" color="info.main" fontWeight={800}>{summary.active}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#3a2f43', border: '1px solid #746088' }}>
-            <Typography variant="caption" color="text.secondary">
-              Actives
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#d6a7ff">
-              {summary.active}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderLeftWidth: '8px', borderLeftColor: '#fd7e14' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>EN COURS</Typography>
+            <Typography variant="h4" fontWeight={800}>{summary.inProgress}</Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2e3948', border: '1px solid #516782' }}>
-            <Typography variant="caption" color="text.secondary">
-              En cours
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#9cc6ff">
-              {summary.inProgress}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2a373a', border: '1px solid #587a7f' }}>
-            <Typography variant="caption" color="text.secondary">
-              Cloturees
-            </Typography>
-            <Typography variant="h5" fontWeight={700} color="#8ae8ef">
-              {summary.closed}
-            </Typography>
+        <Grid size={{ xs: 12, sm: 6, lg: 2.4 }}>
+          <Paper className="card-premium-light" sx={{ p: 2, borderLeftWidth: '8px', borderLeftColor: '#28a745' }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={700}>CLÔTURÉES</Typography>
+            <Typography variant="h4" color="success.main" fontWeight={800}>{summary.closed}</Typography>
           </Paper>
         </Grid>
       </Grid>
 
-      <Stack direction="row" spacing={1} mb={1.4} flexWrap="wrap" useFlexGap>
-        <Chip
-          clickable
-          label="Toutes les severites"
-          color={severityFilter === 'all' ? 'primary' : 'default'}
-          onClick={() => setSeverityFilter('all')}
-        />
-        <Chip
-          clickable
-          label="Critiques"
-          color={severityFilter === AlarmSeverity.CRITICAL ? 'error' : 'default'}
-          onClick={() => setSeverityFilter(AlarmSeverity.CRITICAL)}
-        />
-        <Chip
-          clickable
-          label="Majeures"
-          color={severityFilter === AlarmSeverity.MAJOR ? 'warning' : 'default'}
-          onClick={() => setSeverityFilter(AlarmSeverity.MAJOR)}
-        />
-        <Chip
-          clickable
-          label="Mineures"
-          color={severityFilter === AlarmSeverity.MINOR ? 'success' : 'default'}
-          onClick={() => setSeverityFilter(AlarmSeverity.MINOR)}
-        />
-      </Stack>
-
-      <Stack direction="row" spacing={1} mb={2.4} flexWrap="wrap" useFlexGap>
-        <Chip
-          clickable
-          label="Tous les statuts"
-          color={statusFilter === 'all' ? 'primary' : 'default'}
-          onClick={() => setStatusFilter('all')}
-        />
-        <Chip
-          clickable
-          label="Actives"
-          color={statusFilter === AlarmLifecycleStatus.ACTIVE ? 'warning' : 'default'}
-          onClick={() => setStatusFilter(AlarmLifecycleStatus.ACTIVE)}
-        />
-        <Chip
-          clickable
-          label="Pris en compte"
-          color={statusFilter === AlarmLifecycleStatus.ACKNOWLEDGED ? 'info' : 'default'}
-          onClick={() => setStatusFilter(AlarmLifecycleStatus.ACKNOWLEDGED)}
-        />
-        <Chip
-          clickable
-          label="En cours"
-          color={statusFilter === AlarmLifecycleStatus.IN_PROGRESS ? 'warning' : 'default'}
-          onClick={() => setStatusFilter(AlarmLifecycleStatus.IN_PROGRESS)}
-        />
-        <Chip
-          clickable
-          label="Cloturees"
-          color={statusFilter === AlarmLifecycleStatus.CLOSED ? 'success' : 'default'}
-          onClick={() => setStatusFilter(AlarmLifecycleStatus.CLOSED)}
-        />
-      </Stack>
+      <Paper className="card-premium-light" sx={{ p: 2, mb: 3 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+            <TextField 
+                size="small" fullWidth placeholder="Rechercher une alarme, une unité RTU ou un type d'incident..."
+                value={search} onChange={e => setSearch(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined color="action" /></InputAdornment> }}
+            />
+            <Stack direction="row" spacing={1} sx={{ minWidth: 'max-content' }}>
+                <Chip icon={<FilterListOutlined />} label="Tous" color={severityFilter === 'all' ? 'primary' : 'default'} onClick={() => setSeverityFilter('all')} />
+                <Chip label="Critiques" color={severityFilter === 'critical' ? 'error' : 'default'} onClick={() => setSeverityFilter('critical' as any)} />
+                <Chip label="Majeures" color={severityFilter === 'major' ? 'warning' : 'default'} onClick={() => setSeverityFilter('major' as any)} />
+                <Box sx={{ width: '1px', bgcolor: 'divider', height: 24, mx: 1 }} />
+                <Chip label="Actives" variant={statusFilter === 'active' ? 'filled' : 'outlined'} onClick={() => setStatusFilter('active' as any)} />
+                <Chip label="Clôturées" variant={statusFilter === 'closed' ? 'filled' : 'outlined'} onClick={() => setStatusFilter('closed' as any)} />
+            </Stack>
+        </Stack>
+      </Paper>
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Typography variant="h6" color="white" mb={2}>
-              File active des alarmes
-            </Typography>
-            <TableContainer>
-              <Table size="small">
+          <Paper className="card-premium-light" sx={{ p: 0, overflow: 'hidden' }}>
+            <Box sx={{ p: 2, borderBottom: '1px solid #dee2e6', display: 'flex', alignItems: 'center' }}>
+                <NotificationsActiveOutlined sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6" fontWeight={800}>Journal des Incidents en Temps Réel</Typography>
+            </Box>
+            <TableContainer sx={{ maxHeight: '60vh' }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Severite</TableCell>
-                    <TableCell>Statut</TableCell>
-                    <TableCell>Message</TableCell>
-                    <TableCell>RTU</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Localisation</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>DATE / HEURE</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>SÉVÉRITÉ</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>STATUT</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', width: '30%' }}>MESSAGE D'ALARME</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>UNITÉ RTU</TableCell>
+                    <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', textAlign: 'center' }}>ACTIONS</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredAlarms.map((alarm) => {
-                    const loadingAction = actionLoadingId === alarm.id;
-                    const closed = isClosedStatus(alarm.lifecycleStatus);
-                    const isInProgress = alarm.lifecycleStatus === AlarmLifecycleStatus.IN_PROGRESS;
-
-                    return (
-                      <TableRow key={alarm.id} hover>
-                        <TableCell>{alarm.id}</TableCell>
-                        <TableCell>{alarm.alarmType}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={alarm.severity} />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
-                        </TableCell>
-                        <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
-                        <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
-                        <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
-                        <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              disabled={loadingAction || closed || isInProgress}
-                              onClick={() => handleInProgress(alarm.id)}
-                            >
-                              Prise en charge
-                            </Button>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              disabled={loadingAction || closed}
-                              onClick={() => handleClose(alarm.id)}
-                            >
-                              Cloturer
-                            </Button>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {filteredAlarms.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} align="center" sx={{ py: 3 }}>Aucune alarme correspondante trouvée.</TableCell></TableRow>
+                  ) : filteredAlarms.map((a) => (
+                    <TableRow key={a.id} hover>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(a.occurredAt)}</TableCell>
+                      <TableCell><StatusBadge status={a.severity} /></TableCell>
+                      <TableCell><StatusBadge status={a.lifecycleStatus} variant="outlined" /></TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: a.severity === 'critical' ? 'error.main' : 'text.primary' }}>{a.message}</TableCell>
+                      <TableCell>{a.rtuName}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                            <Button 
+                                size="small" variant="outlined" sx={{ fontSize: '0.7rem' }}
+                                disabled={actionLoadingId === a.id || a.lifecycleStatus !== 'active'}
+                                onClick={() => handleAction(a.id, 'progress')}
+                            >PRENDRE</Button>
+                            <Button 
+                                size="small" variant="contained" color="primary" sx={{ fontSize: '0.7rem' }}
+                                disabled={actionLoadingId === a.id || ['closed', 'resolved'].includes(a.lifecycleStatus)}
+                                onClick={() => handleAction(a.id, 'close')}
+                            >CLÔTURER</Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -533,46 +230,33 @@ const AlarmsPage: React.FC = () => {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Stack spacing={3}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Typography variant="h6" color="white" mb={2}>
-                Repartition de severite par zone
-              </Typography>
-              <Box sx={{ height: 260 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={alarmZoneVolumes}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
-                    <XAxis dataKey="zone" stroke="#9aa9bd" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#9aa9bd" />
-                    <Tooltip />
-                    <Bar dataKey="critical" stackId="a" fill="#f44336" />
-                    <Bar dataKey="major" stackId="a" fill="#ff9800" />
-                    <Bar dataKey="minor" stackId="a" fill="#4caf50" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
+            <Paper className="card-premium-light" sx={{ p: 2.5, mb: 3 }}>
+                <Typography variant="h6" fontWeight={800} mb={2}>Zones les plus impactées</Typography>
+                <Box sx={{ height: 280 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ left: -20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                            <XAxis dataKey="name" stroke="#6c757d" tick={{ fontSize: 10, fontWeight: 600 }} />
+                            <YAxis stroke="#6c757d" tick={{ fontSize: 11 }} />
+                            <Tooltip cursor={{fill: '#f8f9fa'}} contentStyle={{ borderRadius: 12, border: '1px solid #dee2e6', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                            <Legend wrapperStyle={{ fontSize: 12, fontWeight: 700 }} />
+                            <Bar dataKey="critical" name="Critique" fill="#dc3545" radius={[6, 6, 0, 0]} barSize={20} />
+                            <Bar dataKey="major" name="Majeure" fill="#ffc107" radius={[6, 6, 0, 0]} barSize={20} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </Box>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Typography variant="h6" color="white" mb={1.4}>
-                Procedure
-              </Typography>
-              <Stack spacing={1.2}>
-                <Typography variant="body2" color="text.secondary">
-                  1. Verifiez la localisation et isolez le segment impacte.
+            <Paper className="card-premium-light" sx={{ p: 2.5, bgcolor: '#e7f3ff', border: 'none', borderLeft: '4px solid #007bff' }}>
+                <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                    <ErrorOutline color="primary" />
+                    <Typography fontWeight={800} color="primary.main">Protocole Intervention</Typography>
+                </Stack>
+                <Typography variant="body2" sx={{ opacity: 0.9, color: 'primary.dark', lineHeight: 1.6 }}>
+                    En cas de coupure de fibre détectée, veuillez acquitter l'alarme ("PRENDRE") avant de lancer un test OTDR de diagnostic. 
+                    Une fois l'incident corrigé, n'oubliez pas de "CLÔTURER" l'alarme pour l'historique KPI.
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  2. Cliquez sur Prise en charge pour passer directement en cours de traitement.
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  3. Une fois l intervention terminee, cloturez l alarme.
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  4. Une alarme cloturee manuellement n est plus recreee automatiquement.
-                </Typography>
-              </Stack>
             </Paper>
-          </Stack>
         </Grid>
       </Grid>
     </Box>

@@ -1,49 +1,106 @@
 [
   {
     "id": "bb-bizerte-tunis",
-    "routeName": "Backbone Bizerte-Tunis",
+    "routeName": "Backbone Bizerte–Tunis",
     "from": "bizerte",
     "to": "tunis",
-    "status": "normal"
+    "status": "normal",
+    "lengthKm": 65
+  },
+  {
+    "id": "bb-tunis-beja",
+    "routeName": "Backbone Tunis–Béja",
+    "from": "tunis",
+    "to": "beja",
+    "status": "normal",
+    "lengthKm": 106
   },
   {
     "id": "bb-tunis-sousse",
-    "routeName": "Backbone Tunis-Sousse",
+    "routeName": "Backbone Tunis–Sousse (GP1)",
     "from": "tunis",
     "to": "sousse",
-    "via": ["nabeul", "monastir"],
-    "status": "normal"
+    "status": "normal",
+    "lengthKm": 140
   },
   {
-    "id": "bb-sousse-sfax",
-    "routeName": "Backbone Sousse-Sfax",
+    "id": "bb-sousse-monastir",
+    "routeName": "Backbone Sousse–Monastir",
     "from": "sousse",
+    "to": "monastir",
+    "status": "normal",
+    "lengthKm": 22
+  },
+  {
+    "id": "bb-monastir-sfax",
+    "routeName": "Backbone Monastir–Sfax (GP1)",
+    "from": "monastir",
     "to": "sfax",
-    "via": ["monastir"],
-    "status": "degraded"
+    "status": "degraded",
+    "lengthKm": 108
   },
   {
     "id": "bb-sfax-gabes",
-    "routeName": "Backbone Sfax-Gabes",
+    "routeName": "Backbone Sfax–Gabès (GP1)",
     "from": "sfax",
     "to": "gabes",
-    "via": ["medenine"],
-    "status": "normal"
+    "status": "normal",
+    "lengthKm": 140
+  },
+  {
+    "id": "bb-gabes-medenine",
+    "routeName": "Backbone Gabès–Médenine (GP1)",
+    "from": "gabes",
+    "to": "medenine",
+    "status": "normal",
+    "lengthKm": 75
+  },
+  {
+    "id": "bb-medenine-tataouine",
+    "routeName": "Backbone Médenine–Tataouine (GP19)",
+    "from": "medenine",
+    "to": "tataouine",
+    "status": "normal",
+    "lengthKm": 51
   },
   {
     "id": "bb-gabes-gafsa",
-    "routeName": "Backbone Gabes-Gafsa",
+    "routeName": "Backbone Gabès–Gafsa (GP15)",
     "from": "gabes",
     "to": "gafsa",
-    "via": ["kasserine"],
-    "status": "degraded"
+    "status": "degraded",
+    "lengthKm": 157
   },
   {
-    "id": "bb-tunis-gafsa",
-    "routeName": "Backbone Tunis-Gafsa",
-    "from": "tunis",
-    "to": "gafsa",
-    "via": ["kairouan", "kasserine"],
-    "status": "normal"
+    "id": "bb-gafsa-kasserine",
+    "routeName": "Backbone Gafsa–Kasserine (GP3)",
+    "from": "gafsa",
+    "to": "kasserine",
+    "status": "normal",
+    "lengthKm": 92
+  },
+  {
+    "id": "bb-kasserine-kairouan",
+    "routeName": "Backbone Kasserine–Kairouan (GP13)",
+    "from": "kasserine",
+    "to": "kairouan",
+    "status": "normal",
+    "lengthKm": 105
+  },
+  {
+    "id": "bb-kairouan-sousse",
+    "routeName": "Backbone Kairouan–Sousse",
+    "from": "kairouan",
+    "to": "sousse",
+    "status": "normal",
+    "lengthKm": 60
+  },
+  {
+    "id": "bb-gafsa-tozeur",
+    "routeName": "Backbone Gafsa–Tozeur (GP3)",
+    "from": "gafsa",
+    "to": "tozeur",
+    "status": "normal",
+    "lengthKm": 93
   }
 ]

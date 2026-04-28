@@ -61,10 +61,10 @@ const Header: React.FC<HeaderProps> = ({
       sx={{
         width: { md: `calc(100% - ${drawerWidth}px)` },
         ml: { md: `${drawerWidth}px` },
-        backgroundColor: 'rgba(24, 33, 53, 0.56)',
+        backgroundColor: '#ffffff',
         boxShadow: 'none',
-        borderBottom: '1px solid rgba(175, 194, 232, 0.22)',
-        backdropFilter: 'blur(14px)',
+        borderBottom: '1px solid #dee2e6',
+        color: '#343a40',
       }}
     >
       <Toolbar sx={{ gap: 1.2 }}>
@@ -73,31 +73,30 @@ const Header: React.FC<HeaderProps> = ({
         </IconButton>
 
         <TextField
-          placeholder="Rechercher RTU, alarmes ou rapports"
+          placeholder="Rechercher RTU, alarmes..."
           variant="outlined"
           size="small"
           sx={{
-            width: { xs: '100%', sm: 360, md: 420 },
-            maxWidth: { xs: '100%', md: 460 },
-            backgroundColor: 'rgba(40, 54, 82, 0.72)',
-            borderRadius: 2,
+            width: { xs: '100%', sm: 300, md: 350 },
+            backgroundColor: '#f4f6f9',
+            borderRadius: 1.5,
             '& .MuiOutlinedInput-root': {
-              color: 'white',
+              color: '#343a40',
               '& fieldset': {
-                borderColor: 'rgba(175, 194, 232, 0.28)',
+                borderColor: '#dee2e6',
               },
               '&:hover fieldset': {
-                borderColor: 'rgba(183, 206, 244, 0.45)',
+                borderColor: '#adb5bd',
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#82d7ff',
+                borderColor: '#007bff',
               },
             },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search sx={{ color: '#8ba2bf' }} />
+                <Search sx={{ color: '#adb5bd', fontSize: 20 }} />
               </InputAdornment>
             ),
           }}
@@ -125,104 +124,114 @@ const Header: React.FC<HeaderProps> = ({
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           PaperProps={{
             sx: {
-              mt: 1,
-              width: 320,
-              borderRadius: 3,
-              backgroundColor: 'rgba(24, 33, 53, 0.92)',
-              border: '1px solid rgba(175, 194, 232, 0.22)',
-              backdropFilter: 'blur(16px)',
-              boxShadow: '0 18px 40px rgba(5, 10, 22, 0.28)',
-              color: 'white',
+              mt: 1.5,
+              width: 350,
+              borderRadius: 2,
+              backgroundColor: '#ffffff',
+              border: '1px solid #dee2e6',
+              boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+              color: '#343a40',
             },
           }}
         >
           <Box sx={{ p: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
               <Typography variant="subtitle1" fontWeight={700}>
-                Alertes ({notificationCount})
+                Notifications ({notificationCount})
               </Typography>
               <Badge badgeContent={notificationCount} color="error">
                 <NotificationsOutlined fontSize="small" />
               </Badge>
             </Stack>
-            <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.18)', mb: 1.5 }} />
+            <Divider sx={{ mb: 1.5 }} />
 
-            <Stack spacing={1.2}>
+            <Stack spacing={1}>
               {notifications.length > 0 ? (
                 notifications.map((item) => (
                   <Box
                     key={item.id}
                     sx={{
-                      p: 1.4,
-                      borderRadius: 2,
-                      backgroundColor: item.read ? 'rgba(41, 50, 71, 0.4)' : 'rgba(41, 50, 71, 0.75)',
-                      border: item.read
-                        ? '1px solid rgba(156, 176, 217, 0.15)'
-                        : '1px solid rgba(156, 176, 217, 0.28)',
+                      p: 1.5,
+                      borderRadius: 1.5,
+                      backgroundColor: item.read ? '#f8f9fa' : 'rgba(0, 123, 255, 0.04)',
+                      border: '1px solid',
+                      borderColor: item.read ? '#e9ecef' : 'rgba(0, 123, 255, 0.12)',
                     }}
                   >
-                    <Stack direction="row" spacing={1} alignItems="center" mb={0.4}>
+                    <Stack direction="row" spacing={1} alignItems="flex-start" mb={0.5}>
                       {item.type === 'alarm' ? (
-                        <NotificationsActiveOutlined sx={{ color: '#ff7a94', fontSize: 18 }} />
+                        <NotificationsActiveOutlined sx={{ color: '#dc3545', fontSize: 18, mt: 0.2 }} />
                       ) : (
-                        <PsychologyOutlined sx={{ color: '#b7a6ff', fontSize: 18 }} />
+                        <PsychologyOutlined sx={{ color: '#6610f2', fontSize: 18, mt: 0.2 }} />
                       )}
-                      <Typography variant="body2" fontWeight={700} color="white">
-                        {item.title}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body2" fontWeight={700} color="#343a40">
+                          {item.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ lineBreak: 'anywhere' }}>
+                          {item.message}
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: 10 }}>
+                          {item.time}
+                        </Typography>
+                      </Box>
                     </Stack>
-                    <Typography variant="caption" color={item.read ? 'text.disabled' : 'text.secondary'} display="block">
-                      {item.message}
-                    </Typography>
-                    <Typography variant="caption" color="#8fb3d1">
-                      {item.time}
-                    </Typography>
                   </Box>
                 ))
               ) : (
-                <Typography variant="caption" color="text.secondary">
-                  Aucune notification en temps reel.
-                </Typography>
+                <Box sx={{ py: 3, textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Aucune nouvelle notification.
+                  </Typography>
+                </Box>
               )}
             </Stack>
 
-            <Divider sx={{ borderColor: 'rgba(175, 194, 232, 0.18)', my: 1.5 }} />
-            <Typography
-              variant="caption"
-              color={unreadCount > 0 ? '#7cdfff' : 'text.disabled'}
-              sx={{ cursor: unreadCount > 0 ? 'pointer' : 'default' }}
+            <Divider sx={{ my: 1.5 }} />
+            <Box
+              sx={{
+                textAlign: 'center',
+                cursor: unreadCount > 0 ? 'pointer' : 'default',
+                '&:hover': { opacity: unreadCount > 0 ? 0.8 : 1 }
+              }}
               onClick={() => {
                 if (unreadCount > 0 && onMarkAllRead) {
                   onMarkAllRead();
                 }
               }}
             >
-              {unreadCount > 0 ? 'Tout marquer comme lu' : 'Toutes les notifications sont lues'}
-            </Typography>
+              <Typography
+                variant="caption"
+                color="primary"
+                fontWeight={600}
+              >
+                {unreadCount > 0 ? 'Tout marquer comme lu' : 'Toutes les notifications lues'}
+              </Typography>
+            </Box>
           </Box>
         </Popover>
 
         <Box
           sx={{
-            background: 'linear-gradient(120deg, rgba(136, 198, 168, 0.92), rgba(106, 168, 132, 0.92))',
-            color: '#10271d',
-            px: 1.8,
+            bgcolor: '#e1f5fe',
+            color: '#01579b',
+            px: 1.5,
             py: 0.5,
-            borderRadius: 4,
-            mr: 1,
-            fontSize: 12,
+            borderRadius: 1,
+            mr: 1.5,
+            fontSize: 11,
             fontWeight: 700,
-            boxShadow: '0 8px 18px rgba(104, 168, 130, 0.35)',
             display: { xs: 'none', sm: 'block' },
+            border: '1px solid #b3e5fc'
           }}
         >
-          Connecte
+          CONNECTÉ
         </Box>
 
         <Tooltip title="Profil" arrow>
-          <IconButton sx={{ p: 0 }} aria-label="Ouvrir le profil" onClick={() => navigate(ROUTE_PATHS.profile)}>
-            <Avatar sx={{ width: 34, height: 34, backgroundColor: '#7ea5e8', fontSize: 14 }}>
-              A
+          <IconButton sx={{ p: 0.5 }} aria-label="Ouvrir le profil" onClick={() => navigate(ROUTE_PATHS.profile)}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13, fontWeight: 700 }}>
+              AD
             </Avatar>
           </IconButton>
         </Tooltip>
