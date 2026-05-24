@@ -29,7 +29,7 @@ Alarm.init({
         field: 'route_id',
     },
     alarmType: {
-        type: sequelize_1.DataTypes.ENUM('Fiber Cut', 'High Loss', 'RTU Down', 'Temperature', 'Maintenance'),
+        type: sequelize_1.DataTypes.ENUM('Coupure Fibre', 'Perte Elevée', 'Fiber Cut', 'High Loss', 'RTU Down', 'Temperature', 'Maintenance'),
         allowNull: false,
         field: 'alarm_type',
     },

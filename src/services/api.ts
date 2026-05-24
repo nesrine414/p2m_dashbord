@@ -123,6 +123,8 @@ export interface EmulatorQueryResponse {
 export interface BackendAlarm {
   id: number;
   rtuId?: number | null;
+  fibreId?: number | null;
+  routeId?: number | null;
   rtuName?: string;
   zone?: string;
   severity: 'critical' | 'major' | 'minor' | 'info';
@@ -229,6 +231,26 @@ export interface AiChatResponse {
   timestamp: string;
 }
 
+export interface PanneRiskPredictionRow {
+  [key: string]: unknown;
+  prediction_binary: number | string;
+  prediction_label: 'Normal' | 'Panne' | string;
+  probability_panne: number | string;
+  probability_normal: number | string;
+}
+
+export interface PanneRiskPredictionResponse {
+  predictions: PanneRiskPredictionRow[];
+  provider: 'xgboost' | 'fallback';
+  summary: {
+    total: number;
+    normal: number;
+    panne: number;
+  };
+  requestedBy: string;
+  timestamp: string;
+}
+
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   const response = await apiClient.get<DashboardStats>('/dashboard/stats');
   return response.data;
@@ -299,6 +321,21 @@ export const getAlarms = async (params?: {
   pageSize?: number;
 }): Promise<PaginatedResponse<BackendAlarm>> => {
   const response = await apiClient.get<PaginatedResponse<BackendAlarm>>('/alarms', { params });
+  return response.data;
+};
+
+export const createAlarm = async (payload: {
+  rtuId?: number | null;
+  fibreId?: number | null;
+  routeId?: number | null;
+  severity: BackendAlarm['severity'];
+  alarmType: BackendAlarm['alarmType'];
+  message: string;
+  location?: string | null;
+  localizationKm?: string | null;
+  owner?: string | null;
+}): Promise<BackendAlarm> => {
+  const response = await apiClient.post<BackendAlarm>('/alarms', payload);
   return response.data;
 };
 
@@ -408,6 +445,17 @@ export const runDiagnosticTest = async (payload: {
   thresholds: DiagnosticThresholds;
 }): Promise<DiagnosticTestResult> => {
   const response = await apiClient.post<DiagnosticTestResult>('/emulator/run-test', payload);
+  return response.data;
+};
+
+export const postPanneRiskPrediction = async (
+  rows: Array<Record<string, unknown>>
+): Promise<PanneRiskPredictionResponse> => {
+  const response = await apiClient.post<PanneRiskPredictionResponse>(
+    '/predictions/panne-risk',
+    { rows },
+    { timeout: 65000 }
+  );
   return response.data;
 };
 

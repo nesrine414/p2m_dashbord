@@ -1,0 +1,4 @@
+accuracy,precision_macro,recall_macro,f1_macro,precision_weighted,recall_weighted,f1_weighted,fold,train_size,val_size
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,1,68000,34000
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,2,68000,34000
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,3,68000,34000

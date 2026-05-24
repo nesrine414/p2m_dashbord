@@ -15,7 +15,7 @@ const router = Router();
 
 router.get('/', getAlarms);
 router.get('/:id', getAlarmById);
-router.post('/', authMiddleware, requireRole(['admin', 'user', 'customer']), createAlarm);
+router.post('/', authMiddleware, requireRole(['admin']), createAlarm);
 router.patch('/:id/acknowledge', authMiddleware, requireRole(['admin', 'user', 'customer']), acknowledgeAlarm);
 router.patch('/:id/resolve', authMiddleware, requireRole(['admin', 'user', 'customer']), resolveAlarm);
 router.patch('/:id/in-progress', authMiddleware, requireRole(['admin', 'user', 'customer']), inProgressAlarm);

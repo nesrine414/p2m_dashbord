@@ -6,6 +6,7 @@ const database_1 = require("../config/database");
 const models_1 = require("../models");
 const demoData_1 = require("../data/demoData");
 const dashboardStatsService_1 = require("../services/dashboardStatsService");
+const fibreAging_1 = require("../utils/fibreAging");
 const OPEN_ALARM_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'];
 const RESOLVED_ALARM_LIFECYCLE_STATUSES = ['resolved', 'closed', 'cleared'];
 const DEFAULT_TREND_WINDOW_MINUTES = 180;
@@ -92,12 +93,19 @@ const buildFibrePath = (sourceLatitude, sourceLongitude, destinationLatitude, de
     ];
 };
 const calculateMTTR = async () => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const resolvedAlarms = await models_1.Alarm.findAll({
         where: {
             lifecycleStatus: {
                 [sequelize_1.Op.in]: RESOLVED_ALARM_LIFECYCLE_STATUSES,
             },
+            resolvedAt: {
+                [sequelize_1.Op.gte]: thirtyDaysAgo,
+            },
         },
+        order: [['resolvedAt', 'DESC']],
+        limit: 50,
     });
     if (resolvedAlarms.length === 0) {
         return 0;
@@ -245,6 +253,10 @@ const getTopology = async (_req, res) => {
                 ? (destinationRtu.get('name') || `RTU-${destinationRtuId}`)
                 : `RTU-${destinationRtuId ?? index + 1}`;
             const routeName = buildRouteName(sourceName, destinationName, fibreName);
+            const attenuationDb = latestMeasurement ? (latestMeasurement.get('attenuation') ?? null) : null;
+            const lengthKm = fibre.get('length') ?? null;
+            const attenuationPerKm = (0, fibreAging_1.computeAttenuationPerKm)(attenuationDb, lengthKm);
+            const agingStatus = (0, fibreAging_1.classifyFibreAgingStatus)(attenuationPerKm, fibre.get('status'));
             return {
                 id: fibre.get('id'),
                 routeName,
@@ -257,8 +269,10 @@ const getTopology = async (_req, res) => {
                 path: sourceRtu && destinationRtu
                     ? buildFibrePath(sourceRtu.get('locationLatitude'), sourceRtu.get('locationLongitude'), destinationRtu.get('locationLatitude'), destinationRtu.get('locationLongitude'))
                     : null,
-                lengthKm: fibre.get('length') ?? null,
-                attenuationDb: latestMeasurement ? (latestMeasurement.get('attenuation') ?? null) : null,
+                lengthKm,
+                attenuationDb,
+                attenuationPerKm,
+                agingStatus,
                 reflectionEvents: latestMeasurement ? latestMeasurement.get('testResult') === 'fail' : false,
                 lastTestTime: latestMeasurement ? latestMeasurement.get('timestamp') : null,
             };

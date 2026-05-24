@@ -51,8 +51,7 @@ DashboardSnapshot.init({
     },
     mttrHours: {
         type: sequelize_1.DataTypes.FLOAT,
-        allowNull: false,
-        defaultValue: 0,
+        allowNull: true,
         field: 'mttr_hours',
     },
     mtbfHours: {

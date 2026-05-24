@@ -1,0 +1,30 @@
+{
+  "accuracy": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "precision_macro": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "recall_macro": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "f1_macro": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "precision_weighted": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "recall_weighted": {
+    "mean": 1.0,
+    "std": 0.0
+  },
+  "f1_weighted": {
+    "mean": 1.0,
+    "std": 0.0
+  }
+}
