@@ -122,6 +122,8 @@ export interface EmulatorQueryResponse {
 export interface BackendAlarm {
   id: number;
   rtuId?: number | null;
+  fibreId?: number | null;
+  routeId?: number | null;
   rtuName?: string;
   zone?: string;
   severity: 'critical' | 'major' | 'minor' | 'info';
@@ -316,6 +318,21 @@ export const getAlarms = async (params?: {
   pageSize?: number;
 }): Promise<PaginatedResponse<BackendAlarm>> => {
   const response = await apiClient.get<PaginatedResponse<BackendAlarm>>('/alarms', { params });
+  return response.data;
+};
+
+export const createAlarm = async (payload: {
+  rtuId?: number | null;
+  fibreId?: number | null;
+  routeId?: number | null;
+  severity: BackendAlarm['severity'];
+  alarmType: BackendAlarm['alarmType'];
+  message: string;
+  location?: string | null;
+  localizationKm?: string | null;
+  owner?: string | null;
+}): Promise<BackendAlarm> => {
+  const response = await apiClient.post<BackendAlarm>('/alarms', payload);
   return response.data;
 };
 

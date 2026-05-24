@@ -27,8 +27,6 @@ import {
   BackendFiberRoute,
   BackendOtdrTest,
   BackendRTU,
-  EmulatorThresholdsConfig,
-  getEmulatorThresholds,
   getAlarms,
   getRecentOtdrTests,
   getRTUs,
@@ -51,6 +49,7 @@ interface TrendChartPoint {
   timestamp: string;
   timestampMs: number;
   attenuationDb: number | null;
+  attenuationDbKm: number | null;
   wavelengthNm: number;
   testResult: 'pass' | 'fail';
 }
@@ -67,6 +66,8 @@ const TREND_WINDOW_OPTIONS: TrendWindowOption[] = [
 ];
 
 const DEFAULT_TREND_WINDOW_MINUTES = TREND_WINDOW_OPTIONS[0].minutes;
+const ATTENUATION_WARNING_DB_KM = 0.25;
+const ATTENUATION_CRITICAL_DB_KM = 0.3;
 
 const formatDateTime = (value?: string | null): string => {
   if (!value) {
@@ -87,11 +88,19 @@ const toTimeString = (value: string): string => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-const toTrendChartPoints = (points: RouteAttenuationTrendPoint[]): TrendChartPoint[] =>
+const toTrendChartPoints = (points: RouteAttenuationTrendPoint[], routeLengthKm?: number | null): TrendChartPoint[] =>
   points.map((point) => ({
     timestampMs: new Date(point.timestamp).getTime(),
     timestamp: point.timestamp,
     attenuationDb: point.attenuationDb,
+    attenuationDbKm:
+      typeof point.attenuationDb === 'number' &&
+      Number.isFinite(point.attenuationDb) &&
+      typeof routeLengthKm === 'number' &&
+      Number.isFinite(routeLengthKm) &&
+      routeLengthKm > 0
+        ? Number((point.attenuationDb / routeLengthKm).toFixed(4))
+        : null,
     wavelengthNm: point.wavelengthNm,
     testResult: point.testResult,
   }))
@@ -210,7 +219,7 @@ const aggregateTrendPoints = (points: TrendChartPoint[], windowMinutes: number):
   sorted.forEach((point) => {
     const bucketStart = getBucketStartMs(point.timestampMs, windowMinutes);
     const existing = bucketMap.get(bucketStart);
-    const value = point.attenuationDb;
+    const value = point.attenuationDbKm;
     const hasNumeric = typeof value === 'number' && Number.isFinite(value);
 
     if (!existing) {
@@ -237,7 +246,8 @@ const aggregateTrendPoints = (points: TrendChartPoint[], windowMinutes: number):
     .map(([timestampMs, value]) => ({
       timestampMs,
       timestamp: new Date(timestampMs).toISOString(),
-      attenuationDb: value.count > 0 ? Number((value.sum / value.count).toFixed(2)) : null,
+      attenuationDb: null,
+      attenuationDbKm: value.count > 0 ? Number((value.sum / value.count).toFixed(4)) : null,
       wavelengthNm: value.wavelengthNm,
       testResult: value.hasFail ? 'fail' : 'pass',
     }));
@@ -252,9 +262,6 @@ const MonitoringPage: React.FC = () => {
   const [trendWindowMinutes, setTrendWindowMinutes] = useState<number>(DEFAULT_TREND_WINDOW_MINUTES);
   const [trendRouteName, setTrendRouteName] = useState<string>('Route selectionnee');
   const [trendPoints, setTrendPoints] = useState<TrendChartPoint[]>([]);
-  const [trendThresholds, setTrendThresholds] = useState<EmulatorThresholdsConfig['fibre']['attenuationDb'] | null>(
-    null
-  );
   const [trendLoading, setTrendLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -335,33 +342,6 @@ const MonitoringPage: React.FC = () => {
   }, [routes, selectedRouteId]);
 
   useEffect(() => {
-    let active = true;
-
-    const loadThresholds = async () => {
-      try {
-        const thresholds = await getEmulatorThresholds();
-        if (!active) {
-          return;
-        }
-
-        setTrendThresholds(thresholds.fibre.attenuationDb);
-      } catch {
-        if (!active) {
-          return;
-        }
-
-        setTrendThresholds(null);
-      }
-    };
-
-    void loadThresholds();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!selectedRouteId) {
       setTrendPoints([]);
       return;
@@ -382,7 +362,8 @@ const MonitoringPage: React.FC = () => {
         }
 
         setTrendRouteName(response.routeName);
-        setTrendPoints(toTrendChartPoints(response.points));
+        const routeLengthKm = routes.find((route) => route.id === selectedRouteId)?.lengthKm ?? null;
+        setTrendPoints(toTrendChartPoints(response.points, routeLengthKm));
       } catch {
         if (!active) {
           return;
@@ -417,7 +398,7 @@ const MonitoringPage: React.FC = () => {
       socket.off('new_alarm', onRealtimeUpdate);
       socket.off('alarm_updated', onRealtimeUpdate);
     };
-  }, [selectedRouteId, trendWindowMinutes]);
+  }, [selectedRouteId, trendWindowMinutes, routes]);
 
   const trendDisplayPoints = useMemo<TrendChartPoint[]>(
     () => aggregateTrendPoints(trendPoints, trendWindowMinutes),
@@ -426,23 +407,21 @@ const MonitoringPage: React.FC = () => {
 
   const trendDomain = useMemo<[number, number]>(() => {
     const numericValues = trendDisplayPoints
-      .map((point) => point.attenuationDb)
+      .map((point) => point.attenuationDbKm)
       .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
 
-    if (trendThresholds) {
-      numericValues.push(trendThresholds.warning, trendThresholds.critical);
-    }
+    numericValues.push(ATTENUATION_WARNING_DB_KM, ATTENUATION_CRITICAL_DB_KM);
 
     if (numericValues.length === 0) {
-      return [0, 5];
+      return [0, 0.35];
     }
 
     const minValue = Math.min(...numericValues);
     const maxValue = Math.max(...numericValues);
-    const margin = Math.max(0.5, (maxValue - minValue) * 0.15);
+    const margin = Math.max(0.02, (maxValue - minValue) * 0.15);
 
-    return [Math.max(0, Number((minValue - margin).toFixed(2))), Number((maxValue + margin).toFixed(2))];
-  }, [trendDisplayPoints, trendThresholds]);
+    return [Math.max(0, Number((minValue - margin).toFixed(3))), Number((maxValue + margin).toFixed(3))];
+  }, [trendDisplayPoints]);
 
   const trendTimeDomain = useMemo<[number, number]>(
     () => getTrendTimeDomain(trendWindowMinutes),
@@ -625,9 +604,10 @@ const MonitoringPage: React.FC = () => {
               Fenetre: {getTrendWindowLabel(trendWindowMinutes)}
               {' | '}
               Points: {trendDisplayPoints.length}
-              {trendThresholds
-                ? ` | Seuils: warning ${trendThresholds.warning} ${trendThresholds.unit}, critical ${trendThresholds.critical} ${trendThresholds.unit}`
-                : ''}
+              {' | '}
+              Seuils: normal &lt; {ATTENUATION_WARNING_DB_KM.toFixed(2)} dB/km, warning{' '}
+              {ATTENUATION_WARNING_DB_KM.toFixed(2)}-{ATTENUATION_CRITICAL_DB_KM.toFixed(2)} dB/km, critical &gt;{' '}
+              {ATTENUATION_CRITICAL_DB_KM.toFixed(2)} dB/km
             </Typography>
 
             <Box sx={{ height: 320 }}>
@@ -656,40 +636,36 @@ const MonitoringPage: React.FC = () => {
                       minTickGap={40}
                       interval={0}
                     />
-                    <YAxis stroke="#9aa9bd" domain={trendDomain} />
+                    <YAxis stroke="#9aa9bd" domain={trendDomain} tickFormatter={(value: number) => value.toFixed(2)} />
                     <Tooltip
                       formatter={(value: number | string | null) =>
-                        typeof value === 'number' ? `${value.toFixed(2)} dB` : 'N/D'
+                        typeof value === 'number' ? `${value.toFixed(3)} dB/km` : 'N/D'
                       }
                       labelFormatter={(_label: string, payload: Array<{ payload: TrendChartPoint }>) => {
                         const item = payload?.[0]?.payload;
                         return item ? formatDateTime(item.timestamp) : '';
                       }}
                     />
-                    {trendThresholds && (
-                      <>
-                        <Line
-                          type="linear"
-                          dataKey={() => trendThresholds.warning}
-                          stroke="#ffb347"
-                          strokeWidth={1.5}
-                          dot={false}
-                          name={`Seuil warning (${trendThresholds.warning} ${trendThresholds.unit})`}
-                        />
-                        <Line
-                          type="linear"
-                          dataKey={() => trendThresholds.critical}
-                          stroke="#ff6f7a"
-                          strokeWidth={1.5}
-                          strokeDasharray="4 4"
-                          dot={false}
-                          name={`Seuil critical (${trendThresholds.critical} ${trendThresholds.unit})`}
-                        />
-                      </>
-                    )}
+                    <Line
+                      type="linear"
+                      dataKey={() => ATTENUATION_WARNING_DB_KM}
+                      stroke="#ffb347"
+                      strokeWidth={1.5}
+                      dot={false}
+                      name={`Seuil warning (${ATTENUATION_WARNING_DB_KM.toFixed(2)} dB/km)`}
+                    />
+                    <Line
+                      type="linear"
+                      dataKey={() => ATTENUATION_CRITICAL_DB_KM}
+                      stroke="#ff6f7a"
+                      strokeWidth={1.5}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      name={`Seuil critical (${ATTENUATION_CRITICAL_DB_KM.toFixed(2)} dB/km)`}
+                    />
                     <Line
                       type="monotoneX"
-                      dataKey="attenuationDb"
+                      dataKey="attenuationDbKm"
                       stroke="#55c2ff"
                       strokeWidth={2}
                       dot={false}

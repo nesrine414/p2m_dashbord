@@ -4,11 +4,12 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node src/server.ts",
-    "build": "tsc",
-    "start": "ts-node src/server.ts",
-    "typecheck": "tsc --noEmit",
-    "ml": "python ml_model/serve_xgboost.py"
+    "dev": "start-dev.cmd",
+    "build": "set ELECTRON_RUN_AS_NODE=&& node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc",
+    "start": "set ELECTRON_RUN_AS_NODE=&& node --max-old-space-size=4096 dist/server.js",
+    "typecheck": "set ELECTRON_RUN_AS_NODE=&& node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit",
+    "ml": "python ml_model/serve_xgboost.py",
+    "ml:evaluate": "python ml_model/evaluate_models.py"
   },
   "keywords": [],
   "author": "",

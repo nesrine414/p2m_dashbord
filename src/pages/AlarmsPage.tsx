@@ -5,8 +5,16 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -15,16 +23,23 @@ import {
   TableHead,
   TableRow,
   Typography,
+  TextField,
 } from '@mui/material';
-import { NotificationsActiveOutlined } from '@mui/icons-material';
+import { AddAlertOutlined } from '@mui/icons-material';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
 import {
   BackendAlarm,
+  BackendFiberRoute,
+  BackendRTU,
   closeAlarm,
+  createAlarm,
   getAlarms,
+  getRTUs,
+  getTopology,
   markAlarmInProgress,
 } from '../services/api';
+import { AuthUser, me } from '../services/auth';
 import { AlarmLifecycleStatus, AlarmSeverity } from '../types';
 import getSocket from '../utils/socket';
 
@@ -88,11 +103,15 @@ const toBackendAlarm = (payload: unknown): BackendAlarm => {
   const source = payload as Record<string, unknown>;
   const id = Number(source.id ?? 0);
   const rtuId = source.rtuId ?? source.rtu_id;
+  const fibreId = source.fibreId ?? source.fibre_id;
+  const routeId = source.routeId ?? source.route_id;
   const occurredAt = source.occurredAt ?? source.occurred_at ?? new Date().toISOString();
 
   return {
     id: Number.isFinite(id) ? id : 0,
     rtuId: typeof rtuId === 'number' ? rtuId : rtuId ? Number(rtuId) : null,
+    fibreId: typeof fibreId === 'number' ? fibreId : fibreId ? Number(fibreId) : null,
+    routeId: typeof routeId === 'number' ? routeId : routeId ? Number(routeId) : null,
     rtuName: typeof source.rtuName === 'string' ? source.rtuName : undefined,
     zone: typeof source.zone === 'string' ? source.zone : undefined,
     severity: normalizeSeverity(source.severity),
@@ -106,14 +125,41 @@ const toBackendAlarm = (payload: unknown): BackendAlarm => {
   };
 };
 
+type ManualAlarmForm = {
+  rtuId: string;
+  routeId: string;
+  severity: BackendAlarm['severity'];
+  alarmType: BackendAlarm['alarmType'];
+  message: string;
+  location: string;
+  localizationKm: string;
+};
+
+const createEmptyManualAlarmForm = (): ManualAlarmForm => ({
+  rtuId: '',
+  routeId: '',
+  severity: 'major',
+  alarmType: 'Maintenance',
+  message: '',
+  location: '',
+  localizationKm: '',
+});
+
 const AlarmsPage: React.FC = () => {
   const [alarms, setAlarms] = useState<BackendAlarm[]>([]);
+  const [rtus, setRtus] = useState<BackendRTU[]>([]);
+  const [routes, setRoutes] = useState<BackendFiberRoute[]>([]);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState<'all' | AlarmSeverity>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | AlarmLifecycleStatus>('all');
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [lastRealtimeUpdateAt, setLastRealtimeUpdateAt] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [manualAlarmForm, setManualAlarmForm] = useState<ManualAlarmForm>(createEmptyManualAlarmForm);
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     let active = true;
@@ -129,11 +175,33 @@ const AlarmsPage: React.FC = () => {
         }
 
         setAlarms(response.data);
-      } catch {
+
+        const [rtuResult, topologyResult, profileResult] = await Promise.allSettled([
+          getRTUs(),
+          getTopology(),
+          me(),
+        ]);
+
         if (!active) {
           return;
         }
-        setError("Impossible de charger les donnees d'alarmes depuis le backend.");
+
+        if (rtuResult.status === 'fulfilled') {
+          setRtus(rtuResult.value);
+        }
+
+        if (topologyResult.status === 'fulfilled') {
+          setRoutes(topologyResult.value.routes);
+        }
+
+        if (profileResult.status === 'fulfilled') {
+          setCurrentUser(profileResult.value);
+        }
+      } catch (apiError) {
+        if (!active) {
+          return;
+        }
+        setError(getApiErrorMessage(apiError, "Impossible de charger les donnees d'alarmes depuis le backend."));
       } finally {
         if (active) {
           setLoading(false);
@@ -247,6 +315,88 @@ const AlarmsPage: React.FC = () => {
     }
   };
 
+  const handleManualAlarmRtuChange = (rtuId: string) => {
+    const selectedRtu = rtus.find((rtu) => String(rtu.id) === rtuId);
+    setManualAlarmForm((current) => ({
+      ...current,
+      rtuId,
+      routeId: '',
+      location: selectedRtu?.locationAddress || current.location,
+    }));
+  };
+
+  const handleManualAlarmRouteChange = (routeId: string) => {
+    const selectedRoute = routes.find((route) => String(route.id) === routeId);
+    setManualAlarmForm((current) => ({
+      ...current,
+      routeId,
+      location: selectedRoute ? `${selectedRoute.source} - ${selectedRoute.destination}` : current.location,
+      localizationKm:
+        selectedRoute && typeof selectedRoute.lengthKm === 'number'
+          ? `KM ${selectedRoute.lengthKm.toFixed(2)}`
+          : current.localizationKm,
+    }));
+  };
+
+  const handleCreateManualAlarm = async () => {
+    if (currentUser && !isAdmin) {
+      setError("Seul l'admin peut creer une alarme manuellement.");
+      return;
+    }
+
+    if (!manualAlarmForm.rtuId) {
+      setError('Choisissez une RTU pour cette alarme.');
+      return;
+    }
+
+    if (!manualAlarmForm.routeId) {
+      setError('Choisissez une route pour cette alarme.');
+      return;
+    }
+
+    const message = manualAlarmForm.message.trim();
+    if (!message) {
+      setError('Le message de l alarme est obligatoire.');
+      return;
+    }
+
+    try {
+      setCreateLoading(true);
+      setError(null);
+
+      const createdAlarm = await createAlarm({
+        rtuId: Number(manualAlarmForm.rtuId),
+        routeId: Number(manualAlarmForm.routeId),
+        severity: manualAlarmForm.severity,
+        alarmType: manualAlarmForm.alarmType,
+        message,
+        location: manualAlarmForm.location.trim() || null,
+        localizationKm: manualAlarmForm.localizationKm.trim() || null,
+        owner: currentUser?.username || 'admin',
+      });
+
+      prependOrReplaceAlarm(createdAlarm);
+      setLastRealtimeUpdateAt(new Date().toISOString());
+      setManualAlarmForm(createEmptyManualAlarmForm());
+      setCreateDialogOpen(false);
+    } catch (apiError) {
+      setError(getApiErrorMessage(apiError, "Impossible de creer l'alarme manuellement."));
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const manualAlarmRoutes = useMemo(() => {
+    if (!manualAlarmForm.rtuId) {
+      return routes;
+    }
+
+    const selectedRtuId = Number(manualAlarmForm.rtuId);
+    return routes.filter(
+      (route) => route.sourceRtuId === selectedRtuId || route.destinationRtuId === selectedRtuId
+    );
+  }, [manualAlarmForm.rtuId, routes]);
+
   const filteredAlarms = useMemo(
     () =>
       alarms.filter((alarm) => {
@@ -299,6 +449,15 @@ const AlarmsPage: React.FC = () => {
     return Array.from(zoneMap.values()).slice(0, 8);
   }, [alarms]);
 
+  const getRouteLabel = (routeId?: number | null): string => {
+    if (!routeId) {
+      return 'N/D';
+    }
+
+    const route = routes.find((item) => item.id === routeId);
+    return route ? route.routeName : `Route-${routeId}`;
+  };
+
   return (
     <Box>
       <Stack
@@ -319,8 +478,14 @@ const AlarmsPage: React.FC = () => {
             {formatRealtimeUpdate(lastRealtimeUpdateAt)}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<NotificationsActiveOutlined />} sx={{ borderRadius: 2 }} disabled>
-          Creer un incident
+        <Button
+          variant="contained"
+          startIcon={<AddAlertOutlined />}
+          sx={{ borderRadius: 2 }}
+          disabled={loading}
+          onClick={() => setCreateDialogOpen(true)}
+        >
+          Creer une alarme
         </Button>
       </Stack>
 
@@ -338,6 +503,147 @@ const AlarmsPage: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle>Ajouter une alarme</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.2} mt={1}>
+            {currentUser && !isAdmin ? (
+              <Alert severity="warning">Seul l'admin peut ajouter une alarme manuellement.</Alert>
+            ) : null}
+
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <FormControl fullWidth>
+                <InputLabel id="manual-alarm-type-label">Type</InputLabel>
+                <Select
+                  labelId="manual-alarm-type-label"
+                  label="Type"
+                  value={manualAlarmForm.alarmType}
+                  onChange={(event) =>
+                    setManualAlarmForm((current) => ({
+                      ...current,
+                      alarmType: event.target.value as BackendAlarm['alarmType'],
+                    }))
+                  }
+                >
+                  <MenuItem value="Fiber Cut">Fiber Cut</MenuItem>
+                  <MenuItem value="High Loss">High Loss</MenuItem>
+                  <MenuItem value="RTU Down">RTU Down</MenuItem>
+                  <MenuItem value="Temperature">Temperature</MenuItem>
+                  <MenuItem value="Maintenance">Maintenance</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel id="manual-alarm-severity-label">Severite</InputLabel>
+                <Select
+                  labelId="manual-alarm-severity-label"
+                  label="Severite"
+                  value={manualAlarmForm.severity}
+                  onChange={(event) =>
+                    setManualAlarmForm((current) => ({
+                      ...current,
+                      severity: event.target.value as BackendAlarm['severity'],
+                    }))
+                  }
+                >
+                  <MenuItem value="critical">Critique</MenuItem>
+                  <MenuItem value="major">Majeure</MenuItem>
+                  <MenuItem value="minor">Mineure</MenuItem>
+                  <MenuItem value="info">Info</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <FormControl fullWidth required>
+                <InputLabel id="manual-alarm-rtu-label">RTU</InputLabel>
+                <Select
+                  labelId="manual-alarm-rtu-label"
+                  label="RTU"
+                  value={manualAlarmForm.rtuId}
+                  onChange={(event) => handleManualAlarmRtuChange(String(event.target.value))}
+                >
+                  {rtus.map((rtu) => (
+                    <MenuItem key={rtu.id} value={String(rtu.id)}>
+                      {rtu.name} - {rtu.locationAddress || 'Zone inconnue'}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth required disabled={!manualAlarmForm.rtuId}>
+                <InputLabel id="manual-alarm-route-label">Route</InputLabel>
+                <Select
+                  labelId="manual-alarm-route-label"
+                  label="Route"
+                  value={manualAlarmForm.routeId}
+                  onChange={(event) => handleManualAlarmRouteChange(String(event.target.value))}
+                >
+                  {manualAlarmRoutes.map((route) => (
+                    <MenuItem key={route.id} value={String(route.id)}>
+                      {route.routeName} - {route.source} / {route.destination}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <TextField
+              label="Message"
+              value={manualAlarmForm.message}
+              onChange={(event) =>
+                setManualAlarmForm((current) => ({
+                  ...current,
+                  message: event.target.value,
+                }))
+              }
+              multiline
+              minRows={3}
+              required
+              fullWidth
+            />
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Localisation"
+                value={manualAlarmForm.location}
+                onChange={(event) =>
+                  setManualAlarmForm((current) => ({
+                    ...current,
+                    location: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="KM"
+                placeholder="KM 12.50"
+                value={manualAlarmForm.localizationKm}
+                onChange={(event) =>
+                  setManualAlarmForm((current) => ({
+                    ...current,
+                    localizationKm: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCreateDialogOpen(false)} disabled={createLoading}>
+            Annuler
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateManualAlarm}
+            disabled={createLoading || Boolean(currentUser && !isAdmin)}
+          >
+            Ajouter
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
@@ -478,6 +784,7 @@ const AlarmsPage: React.FC = () => {
                     <TableCell>Statut</TableCell>
                     <TableCell>Message</TableCell>
                     <TableCell>RTU</TableCell>
+                    <TableCell>Route</TableCell>
                     <TableCell>Date</TableCell>
                     <TableCell>Localisation</TableCell>
                     <TableCell>Actions</TableCell>
@@ -501,6 +808,7 @@ const AlarmsPage: React.FC = () => {
                         </TableCell>
                         <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
                         <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
+                        <TableCell>{getRouteLabel(alarm.routeId)}</TableCell>
                         <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
                         <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
                         <TableCell>

@@ -126,9 +126,9 @@ const toHeaderItem = (notification: BackendNotification): NotificationItem => ({
 const buildUpdateNotification = (alarm: BackendAlarm): NotificationItem => ({
   id: `alarm-update-${alarm.id}-${Date.now()}`,
   alarmId: alarm.id,
-  type: 'system',
-  title: 'Alarme mise a jour',
-  message: `Alarme #${alarm.id} est maintenant ${alarm.lifecycleStatus}.`,
+  type: 'alarm',
+  title: `${alarm.alarmType} - ${alarm.severity}`,
+  message: `${alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}: ${alarm.message}`,
   time: 'a l instant',
   read: false,
 });
