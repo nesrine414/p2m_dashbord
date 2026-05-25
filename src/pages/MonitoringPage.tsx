@@ -5,10 +5,17 @@ import {
   CircularProgress,
   FormControl,
   Grid,
+  InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from '@mui/material';
 import { AutoGraphOutlined, DeviceHubOutlined, RouteOutlined } from '@mui/icons-material';
@@ -20,6 +27,7 @@ import {
   BackendFiberRoute,
   BackendOtdrTest,
   BackendRTU,
+  RouteAttenuationTrendPoint,
   getAlarms,
   getRecentOtdrTests,
   getRTUs,
@@ -632,13 +640,13 @@ const MonitoringPage: React.FC = () => {
                     />
                     <YAxis stroke="#5f6b7a" tick={{ fill: '#5f6b7a' }} domain={trendDomain} tickFormatter={(value: number) => value.toFixed(2)} />
                     <Tooltip
-                      formatter={(value: number | string | null) =>
-                        typeof value === 'number' ? `${value.toFixed(3)} dB/km` : 'N/D'
-                      }
-                      labelFormatter={(_label: string, payload: Array<{ payload: TrendChartPoint }>) => {
-                        const item = payload?.[0]?.payload;
-                        return item ? formatDateTime(item.timestamp) : '';
+                      formatter={(value: any) => {
+                        const scalar = Array.isArray(value) ? value[0] : value;
+                        return typeof scalar === 'number' ? `${scalar.toFixed(3)} dB/km` : 'N/D';
                       }}
+                      labelFormatter={(_label: any, payload: ReadonlyArray<{ payload?: TrendChartPoint }>) =>
+                        payload?.[0]?.payload ? formatDateTime(payload[0].payload.timestamp) : ''
+                      }
                     />
                     <Line
                       type="linear"
