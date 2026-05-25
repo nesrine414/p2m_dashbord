@@ -5,6 +5,7 @@ import authRoutes from './auth.routes';
 import dashboardRoutes from './dashboard.routes';
 import emulatorRoutes from './emulator.routes';
 import notificationRoutes from './notification.routes';
+import predictionRoutes from './prediction.routes';
 import rtuRoutes from './rtu.routes';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.use('/alarms', alarmRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/emulator', emulatorRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/predictions', predictionRoutes);
 
 export default router;

@@ -204,21 +204,24 @@ const FloatingChatbot: React.FC = () => {
                         py: 1.3,
                         borderRadius: 3,
                         background: isAssistant
-                          ? 'linear-gradient(160deg, rgba(87, 118, 176, 0.28), rgba(255, 255, 255, 0.04))'
-                          : 'linear-gradient(160deg, rgba(106, 217, 255, 0.24), rgba(111, 143, 209, 0.16))',
+                          ? 'linear-gradient(160deg, #f4f7fb, #eaf1fb)'
+                          : 'linear-gradient(160deg, #e8f7ff, #d8efff)',
                         border: isAssistant
-                          ? '1px solid rgba(156, 176, 217, 0.24)'
-                          : '1px solid rgba(135, 212, 255, 0.34)',
+                          ? '1px solid #d4dfef'
+                          : '1px solid #b9e2fb',
                       }}
                     >
-                      <Typography variant="body2" sx={{ color: '#1e293b', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: 'pre-wrap', color: '#243447', fontWeight: 650, lineHeight: 1.45 }}
+                      >
                         {message.text}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.6 }}>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.6, color: '#5f6b7a', fontWeight: 600 }}>
                         {isAssistant ? 'Assistant NQMS' : 'Technicien'} - {message.timestamp}
                       </Typography>
                       {isAssistant && message.provider && (
-                        <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#9de8ff' }}>
+                        <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#0b75c9', fontWeight: 700 }}>
                           {message.provider === 'groq' ? 'Reponse via Groq' : 'Reponse via fallback'}
                         </Typography>
                       )}
@@ -243,14 +246,13 @@ const FloatingChatbot: React.FC = () => {
                       px: 1.6,
                       py: 1.2,
                       borderRadius: 3,
-                      border: '1px solid rgba(156, 176, 217, 0.24)',
-                      background:
-                        'linear-gradient(160deg, rgba(87, 118, 176, 0.28), rgba(255, 255, 255, 0.04))',
+                      border: '1px solid #d4dfef',
+                      background: 'linear-gradient(160deg, #f4f7fb, #eaf1fb)',
                     }}
                   >
                     <Stack direction="row" spacing={1} alignItems="center">
                       <CircularProgress size={15} />
-                      <Typography variant="body2" color="white">
+                      <Typography variant="body2" sx={{ color: '#243447', fontWeight: 650 }}>
                         Analyse en cours...
                       </Typography>
                     </Stack>

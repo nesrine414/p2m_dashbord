@@ -1,0 +1,66 @@
+{
+  "ranking_rule": "Tri par recall de la classe Panne, puis F1 Panne, puis accuracy.",
+  "best_model": "xgboost",
+  "models": [
+    {
+      "model": "xgboost",
+      "model_type": "XGBClassifier",
+      "accuracy": 0.6409,
+      "f1_macro": 0.5436,
+      "recall_macro": 0.5716,
+      "panne_precision": 0.6494,
+      "panne_recall": 0.2238,
+      "panne_f1": 0.3329,
+      "panne_support": 7206,
+      "normal_precision": 0.6395,
+      "normal_recall": 0.9193,
+      "normal_f1": 0.7543,
+      "normal_support": 10794,
+      "n_features": 14,
+      "confusion_matrix_png": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\xgboost_anticipation_strict_binary\\test_confusion_matrix.png",
+      "feature_importance_csv": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\xgboost_anticipation_strict_binary\\feature_importance.csv"
+    },
+    {
+      "model": "catboost",
+      "model_type": "CatBoostClassifier",
+      "accuracy": 0.6465,
+      "f1_macro": 0.5363,
+      "recall_macro": 0.5721,
+      "panne_precision": 0.7088,
+      "panne_recall": 0.1986,
+      "panne_f1": 0.3102,
+      "panne_support": 7206,
+      "normal_precision": 0.6386,
+      "normal_recall": 0.9455,
+      "normal_f1": 0.7624,
+      "normal_support": 10794,
+      "n_features": 14,
+      "confusion_matrix_png": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\catboost_anticipation_strict_binary\\test_confusion_matrix.png",
+      "feature_importance_csv": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\catboost_anticipation_strict_binary\\feature_importance.csv"
+    },
+    {
+      "model": "random_forest",
+      "model_type": "RandomForestClassifier",
+      "accuracy": 0.6588,
+      "f1_macro": 0.5231,
+      "recall_macro": 0.5753,
+      "panne_precision": 0.9456,
+      "panne_recall": 0.1567,
+      "panne_f1": 0.2688,
+      "panne_support": 7206,
+      "normal_precision": 0.6384,
+      "normal_recall": 0.994,
+      "normal_f1": 0.7775,
+      "normal_support": 10794,
+      "n_features": 14,
+      "confusion_matrix_png": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\random_forest_anticipation_strict_binary\\test_confusion_matrix.png",
+      "feature_importance_csv": "C:\\Users\\Eslem Ben Ameur\\p2m_dashbord\\p2m-backend\\ml_model\\models\\random_forest_anticipation_strict_binary\\feature_importance.csv"
+    }
+  ],
+  "recommendations": [
+    "Meilleur modele selon recall panne: xgboost (recall=0.2238, f1=0.3329).",
+    "Recall panne faible: augmenter les exemples de pannes, baisser le seuil de decision ou penaliser davantage les faux negatifs.",
+    "Les modeles detectent mieux les cas normaux que les pannes; enrichir les scenarios RTU offline, fibre degradee, echec OTDR et alarmes critiques.",
+    "Pour la prochaine iteration, comparer aussi plusieurs seuils de probabilite (0.30, 0.35, 0.40, 0.50) sur la classe Panne."
+  ]
+}

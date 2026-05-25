@@ -11,7 +11,7 @@ import {
   getFibreAgingWarningThreshold,
 } from '../utils/fibreAging';
 import { HEARTBEAT_STALE_MINUTES } from '../utils/rtuHealth';
-import { emitNewAlarmRealtime } from './alarmRealtimeService';
+import { emitAlarmUpdatedRealtime, emitNewAlarmRealtime } from './alarmRealtimeService';
 import { createNotificationForAlarm } from './notificationService';
 
 const OPEN_LIFECYCLE_STATUSES = ['active', 'acknowledged', 'in_progress'] as const;
@@ -240,6 +240,16 @@ export class AlarmDetectionService {
       },
     });
     if (existingOpenAlarm) {
+      await existingOpenAlarm.update({
+        severity: alarmData.severity,
+        message: alarmData.message,
+        location: alarmData.location,
+        localizationKm: alarmData.localizationKm,
+        owner: alarmData.owner,
+        occurredAt: new Date(),
+      });
+      await emitAlarmUpdatedRealtime(existingOpenAlarm);
+      console.log(`Updated alarm: ${existingOpenAlarm.get('message')}`);
       return;
     }
 

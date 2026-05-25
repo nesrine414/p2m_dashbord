@@ -1,41 +1,41 @@
 import { RtuEmulatorMonitorService } from './rtuEmulatorMonitorService';
 
 const emulatorMonitorService = new RtuEmulatorMonitorService();
+const DEFAULT_EMULATOR_INTERVAL_SECONDS = 30;
+
+const getEmulatorIntervalMs = (): number => {
+  const parsed = Number(process.env.RTU_EMULATOR_INTERVAL_SECONDS);
+  const seconds = Number.isFinite(parsed) && parsed >= 5 ? parsed : DEFAULT_EMULATOR_INTERVAL_SECONDS;
+  return seconds * 1000;
+};
 
 export const startAlarmDetection = () => {
-  const configuredIntervalSeconds = Number(process.env.RTU_EMULATOR_INTERVAL_SECONDS || 180);
-  const intervalSeconds = Number.isFinite(configuredIntervalSeconds)
-    ? Math.max(5, Math.floor(configuredIntervalSeconds))
-    : 180;
-  const intervalMs = intervalSeconds * 1000;
-  let cycleRunning = false;
+  let running = false;
 
   const runCycle = async () => {
-    if (cycleRunning) {
-      console.warn('[RTU Emulator] previous cycle still running, skipping this tick.');
+    if (running) {
+      console.warn('[RTU Emulator] previous cycle still running; skipping this tick.');
       return;
     }
 
-    cycleRunning = true;
-    console.log('[RTU Emulator] running automatic monitoring cycle...');
+    running = true;
+
     try {
+      console.log('[RTU Emulator] running automatic monitoring cycle...');
       await emulatorMonitorService.runCycle();
+    } catch (error) {
+      console.error('[RTU Emulator] monitoring cycle failed:', error);
     } finally {
-      cycleRunning = false;
+      running = false;
     }
   };
 
   void runCycle();
 
+  const intervalMs = getEmulatorIntervalMs();
   setInterval(() => {
     void runCycle();
   }, intervalMs);
 
-  if (intervalSeconds < 60) {
-    console.log(`[RTU Emulator] automatic monitoring started (every ${intervalSeconds} seconds)`);
-    return;
-  }
-
-  const intervalMinutes = Number((intervalSeconds / 60).toFixed(2));
-  console.log(`[RTU Emulator] automatic monitoring started (every ${intervalMinutes} minutes)`);
+  console.log(`[RTU Emulator] automatic monitoring started (every ${intervalMs / 1000} seconds)`);
 };
