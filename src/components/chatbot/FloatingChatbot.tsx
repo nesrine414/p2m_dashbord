@@ -211,10 +211,10 @@ const FloatingChatbot: React.FC = () => {
                           : '1px solid rgba(135, 212, 255, 0.34)',
                       }}
                     >
-                      <Typography variant="body2" color="white" sx={{ whiteSpace: 'pre-wrap' }}>
+                      <Typography variant="body2" sx={{ color: '#1e293b', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
                         {message.text}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.6 }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.6 }}>
                         {isAssistant ? 'Assistant NQMS' : 'Technicien'} - {message.timestamp}
                       </Typography>
                       {isAssistant && message.provider && (

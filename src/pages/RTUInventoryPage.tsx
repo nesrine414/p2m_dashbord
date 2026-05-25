@@ -236,10 +236,7 @@ const RTUInventoryPage: React.FC = () => {
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ÉQUIPEMENT</TableCell>
                                 <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ZONE / EMPLACEMENT</TableCell>
-                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>VENDEUR</TableCell>
                                 <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>STATUT</TableCell>
-                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>BUDGET</TableCell>
-                                <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>UPTIME</TableCell>
                                 <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa' }}>ALERTS</TableCell>
                                 <TableCell sx={{ fontWeight: 800, bgcolor: '#f8f9fa', textAlign: 'center' }}>ACTION</TableCell>
                             </TableRow>
@@ -257,15 +254,7 @@ const RTUInventoryPage: React.FC = () => {
                                         <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>{r.ipAddress}</Typography>
                                     </TableCell>
                                     <TableCell><Typography variant="body2">{r.zone}</Typography></TableCell>
-                                    <TableCell><Chip label={r.vendor} size="small" variant="outlined" sx={{ borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 }} /></TableCell>
                                     <TableCell><StatusBadge status={r.status} /></TableCell>
-                                    <TableCell><Typography variant="body2" fontWeight={600}>{r.opticalBudgetDb} dB</Typography></TableCell>
-                                    <TableCell>
-                                        <Stack direction="row" spacing={1} alignItems="center">
-                                            <Typography variant="caption" fontWeight={700}>{r.uptimePercent}%</Typography>
-                                            <LinearProgress variant="determinate" value={r.uptimePercent} sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: '#eee' }} />
-                                        </Stack>
-                                    </TableCell>
                                     <TableCell>
                                         {r.activeAlarms > 0 ? (
                                             <Chip label={r.activeAlarms} color="error" size="small" sx={{ fontWeight: 800, height: 20 }} />

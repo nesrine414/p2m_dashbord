@@ -1,0 +1,312 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages Standard ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{float}
+
+% --- Couleurs Personnalisées ---
+\definecolor{navyblue}{HTML}{1E3A8A}
+\definecolor{teal}{HTML}{0D9488}
+\definecolor{darkgray}{HTML}{374151}
+\definecolor{lightgray}{HTML}{F3F4F6}
+\definecolor{codebackground}{HTML}{F9FAFB}
+
+% --- Configuration de Hyperref ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=navyblue,
+    filecolor=teal,      
+    urlcolor=teal,
+    citecolor=navyblue,
+    pdftitle={Rapport de Projet - Préparation Métier},
+    pdfpagemode=FullScreen,
+}
+
+% --- Configuration des Titres ---
+\titleformat{\section}
+  {\color{navyblue}\normalfont\Large\bfseries}
+  {\thesection}{1em}{}[{\titlerule[0.8pt]}]
+\titleformat{\subsection}
+  {\color{teal}\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+
+% --- Configuration En-têtes et Pieds de Page (Style SUP'COM) ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\textcolor{darkgray}{\small Projet de Préparation Métier}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Configuration du Code ---
+\lstset{
+    backgroundcolor=\color{codebackground},
+    basicstyle=\ttfamily\small\color{darkgray},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{lightgray}
+}
+
+\begin{document}
+
+% ==========================================
+% PAGE 1 : PAGE DE GARDE (Style SUP'COM P2M exact)
+% ==========================================
+\begin{titlepage}
+    \centering
+    \vspace*{-1cm}
+    
+    % Logo et En-tête Institutionnel
+    {\large\textbf{\color{navyblue}{SUP'COM}}} \\
+    \vspace{0.2cm}
+    {\small\textbf{Ecole Supérieure des Communications de Tunis}} \\
+    {\small Higher School of Communications of Tunis} \\
+    \vspace{0.3cm}
+    \rule{6cm}{1pt} \\
+    
+    \vspace{2.5cm}
+    
+    \rule{\linewidth}{1.5pt} \\[0.4cm]
+    {\Huge\bfseries\color{navyblue}{Projet de Préparation Métier}} \\
+    \vspace{0.2cm}
+    {\large\bfseries\color{darkgray}{P2M}} \\
+    \rule{\linewidth}{1.5pt} \\
+    
+    \vspace{2cm}
+    
+    {\Large\bfseries\color{darkgray}{[Saisir le titre du projet ici]}} \\[0.3cm]
+    {\large\itshape\color{teal}{[Sous-titre ou description du projet]}} \\
+    
+    \vspace{3.5cm}
+    
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushleft
+        \textbf{Réalisé par :}\\
+        {\large\color{navyblue}{[Prénom Nom Étudiant 1]}} \\
+        {\large\color{navyblue}{[Prénom Nom Étudiant 2]}}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushright
+        \textbf{Encadré par :}\\
+        {\large\color{navyblue}{[Prénom Nom de l'Encadrant]}}
+    \end{minipage}
+    
+    \vfill
+    
+    \rule{8cm}{0.4pt} \\
+    \vspace{0.3cm}
+    {\large\textbf{Année universitaire : 2025--2026}}
+\end{titlepage}
+
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% ==========================================
+% PAGE i : REMERCIEMENTS
+% ==========================================
+\section*{Remerciements}
+\addcontentsline{toc}{section}{Remerciements}
+\textit{[Saisir votre texte de remerciements ici. Remerciez votre encadrant, les membres du jury et toute personne ayant contribué au projet.]}
+
+\newpage
+
+% ==========================================
+% PAGE ii : TABLE DES MATIÈRES
+% ==========================================
+\renewcommand{\contentsname}{Table des matières}
+\tableofcontents
+\addcontentsline{toc}{section}{Table des matières}
+
+\newpage
+
+% ==========================================
+% PAGE iii : LISTE DES FIGURES
+% ==========================================
+\renewcommand{\listfigurename}{Liste des figures}
+\listoffigures
+\addcontentsline{toc}{section}{Liste des figures}
+
+\newpage
+
+% ==========================================
+% PAGE iv : LISTE DES ABRÉVIATIONS
+% ==========================================
+\section*{Liste des abréviations}
+\addcontentsline{toc}{section}{Liste des abréviations}
+
+\begin{description}[leftmargin=2.5cm, style=nextline]
+    \item[EMS] Element Management System
+    \item[RTU] Remote Test Unit
+    \item[OTDR] Optical Time-Domain Reflectometer
+    \item[OTH] Optical Test Head
+    \item[OSM] OpenStreetMap
+    \item[GIS] Geographic Information System
+    \item[[Abreviation]] [Signification de l'abréviation]
+\end{description}
+
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% ==========================================
+% SECTION 1 : INTRODUCTION
+% ==========================================
+\section{Introduction}
+\textit{[Saisir l'introduction générale du projet ici. Présentez brièvement le projet de Préparation Métiers (P2M), son objectif global et les grandes lignes du travail.]}
+
+\subsection{État de l’art}
+
+\subsubsection{Contexte}
+\textit{[Saisir le contexte général ici. Expliquez le domaine des réseaux de fibres optiques, leur importance, leur utilisation dans les infrastructures modernes de télécommunications.]}
+
+\subsubsection{Problématique}
+\textit{[Saisir la problématique ici. Décrivez les limites des méthodes traditionnelles, la nature imprévisible des coupures physiques de fibres optiques, et l'impact opérationnel ou financier des pannes.]}
+
+\subsubsection{Solution}
+\textit{[Saisir la solution proposée ici. Détaillez l'application web ou le système conçu pour répondre aux besoins opérationnels de supervision et de maintenance.]}
+
+\subsection{Conclusion}
+\textit{[Saisir la conclusion de l'introduction ici.]}
+
+\newpage
+
+% ==========================================
+% SECTION 2 : CONCEPTION
+% ==========================================
+\section{Conception}
+\textit{[Saisir l'introduction de la section Conception ici. Présentez la démarche de conception adoptée.]}
+
+\subsection{Architecture d’un réseau de fibre optique}
+\textit{[Décrivez l'architecture générale de supervision. Expliquez le rôle des différents composants (EMS, RTU, OTH, OTDR).]}
+
+\begin{figure}[H]
+    \centering
+    % Remplacer "placeholder_image" par votre fichier d'image réel
+    % \includegraphics[width=0.85\textwidth]{placeholder_image.png}
+    \fbox{\begin{minipage}{0.85\textwidth}
+        \centering
+        \vspace{1.5cm}
+        \textbf{[FIGURE 2.1 : Architecture typique de supervision d'un réseau de fibre optique]} \\
+        \textit{(Insérez ici votre schéma d'architecture)} \\
+        \vspace{1.5cm}
+    \end{minipage}}
+    \caption{Architecture typique de supervision d’un réseau de fibre optique.}
+    \label{fig:typical_arch}
+\end{figure}
+
+\subsection{Outils et bibliothèques}
+\textit{[Présentez brièvement les outils technologiques adoptés pour la réalisation de l'application.]}
+
+\subsubsection{Django}
+\textit{[Saisir la description de l'outil et son utilité dans le projet ici.]}
+
+\subsubsection{PostgreSQL}
+\textit{[Saisir la description de l'outil et son utilité dans le projet ici.]}
+
+\subsubsection{Node.js}
+\textit{[Saisir la description de l'outil et son utilité dans le projet ici.]}
+
+\subsubsection{Firebase}
+\textit{[Saisir la description de l'outil et son utilité dans le projet ici.]}
+
+\subsubsection{OpenStreetMap}
+\textit{[Saisir la description de l'outil et son utilité dans le projet ici.]}
+
+\subsection{Conclusion}
+\textit{[Saisir la conclusion de la partie conception.]}
+
+\newpage
+
+% ==========================================
+% SECTION 3 : IMPLÉMENTATIONS ET RÉSULTATS
+% ==========================================
+\section{Implémentations et résultats}
+\textit{[Présentez l'introduction de la partie implémentation, montrant le passage de la conception à la réalisation concrète.]}
+
+\subsection{Gestion des utilisateurs et des routes optiques}
+\textit{[Saisir le texte ici. Présentez les interfaces d'authentification, de configuration des sondes RTU et des commutateurs OTH.]}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\begin{minipage}{0.85\textwidth}
+        \centering
+        \vspace{1.5cm}
+        \textbf{[FIGURE 3.1 : Capture d'écran - Interface d'authentification]} \\
+        \vspace{1.5cm}
+    \end{minipage}}
+    \caption{Interface d'authentification des utilisateurs.}
+    \label{fig:auth}
+\end{figure}
+
+\subsection{Communication EMS/RTU}
+\textit{[Saisir le texte ici. Expliquez le fonctionnement de la communication entre l'émulateur RTU (envoi des fichiers de mesure .sor) et le système centralisé EMS.]}
+
+\subsection{Mise en action}
+\textit{[Saisir le texte ici. Décrivez le scénario de détection d'une panne, l'affichage de la courbe OTDR de défaut, et le traitement cartographique cartographique GIS.]}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\begin{minipage}{0.85\textwidth}
+        \centering
+        \vspace{1.5cm}
+        \textbf{[FIGURE 3.2 : Capture d'écran - Visualisation cartographique des liaisons]} \\
+        \vspace{1.5cm}
+    \end{minipage}}
+    \caption{Visualisation cartographique des liaisons optiques et localisation d'un défaut.}
+    \label{fig:map}
+\end{figure}
+
+\subsection{Conclusion}
+\textit{[Saisir la conclusion de la partie réalisation.]}
+
+\newpage
+
+% ==========================================
+% SECTION 4 : CONCLUSION ET PERSPECTIVES
+% ==========================================
+\section{Conclusion et Perspectives}
+\textit{[Saisir la conclusion générale ici. Rappelez les objectifs atteints, le bilan personnel et technique du projet, ainsi que les perspectives d'évolutions futures.]}
+
+\newpage
+
+% ==========================================
+% SECTION 5 : BIBLIOGRAPHIE
+% ==========================================
+\section*{Bibliographie}
+\addcontentsline{toc}{section}{Bibliographie}
+
+\begin{enumerate}[label={[\arabic*]}]
+    \item Site Web de EXFO -- \textit{EXpert in Fiber Optics}, consulté le 26 mai 2025. \\
+    Disponible sur : \url{https://www.exfo.com/en/}
+    
+    \item Viavi Solutions -- \textit{Outils de test et de diagnostic pour réseaux fibre optique}, consulté le 26 mai 2025. \\
+    Disponible sur : \url{https://www.viavisolutions.com}
+    
+    \item \textit{[Saisir d'autres références de livres, sites ou articles scientifiques ici...]}
+\end{enumerate}
+
+\end{document}

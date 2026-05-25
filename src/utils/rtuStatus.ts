@@ -9,7 +9,7 @@ export const normalizeRtuStatus = (status?: string | null): RTUStatus => {
     case RTUStatus.UNREACHABLE:
       return RTUStatus.UNREACHABLE;
     case RTUStatus.WARNING:
-      return RTUStatus.UNREACHABLE;
+      return RTUStatus.WARNING;
     default:
       return RTUStatus.UNREACHABLE;
   }

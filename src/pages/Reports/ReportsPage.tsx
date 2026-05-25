@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import { Home, Assessment } from '@mui/icons-material';
-import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import StatusBadge from '../../components/common/StatusBadge';
 import { BackendAlarm, getAlarms, getDashboardStats } from '../../services/api';
 import { DashboardStats } from '../../types';
@@ -94,7 +94,10 @@ const ReportsPage: React.FC = () => {
               <Typography color="text.primary">Analytique</Typography>
             </Breadcrumbs>
         </Box>
-        <Button variant="contained" startIcon={<FileDownloadOutlined />}>Exporter CSV</Button>
+        <Stack direction="row" spacing={1} alignItems="center">
+          {loading && <CircularProgress size={20} />}
+          <Button variant="contained" startIcon={<FileDownloadOutlined />}>Exporter CSV</Button>
+        </Stack>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

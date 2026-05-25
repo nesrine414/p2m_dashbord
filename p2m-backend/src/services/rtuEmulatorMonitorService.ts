@@ -22,13 +22,40 @@ export class RtuEmulatorMonitorService {
     const sampledAtDate = new Date(sampledAt);
 
     if (!databaseState.connected) {
-      console.warn('RTU emulator monitor skipped: database not connected.');
-      return {
-        processedRtus: 0,
+      console.warn('RTU emulator monitor skipped: database not connected. Emulating fake alarm for demo UI.');
+      
+      const { demoAlarms, demoRtus } = require('../data/demoData');
+      const randomRtu = demoRtus[Math.floor(Math.random() * demoRtus.length)];
+      
+      const newAlarm = {
+        id: Math.max(...demoAlarms.map((a: any) => a.id), 0) + 1,
+        rtuId: randomRtu.id,
+        fibreId: null,
+        routeId: null,
+        severity: Math.random() > 0.5 ? 'major' : 'minor',
+        lifecycleStatus: 'active',
+        alarmType: 'Temperature',
+        message: `Température anormale détectée sur ${randomRtu.name} (Simulation)`,
+        location: randomRtu.locationAddress,
+        localizationKm: null,
+        owner: 'Demo Engine',
+        occurredAt: sampledAt,
+      };
+      
+      demoAlarms.unshift(newAlarm);
+      if (demoAlarms.length > 50) demoAlarms.pop();
+      
+      emitEvent('new_alarm', newAlarm);
+
+      const summary: EmulatorCycleSummary = {
+        processedRtus: demoRtus.length,
         processedFibres: 0,
-        issuesDetected: 0,
+        issuesDetected: demoAlarms.filter((a: any) => a.lifecycleStatus === 'active').length,
         sampledAt,
       };
+
+      emitEvent('emulator_cycle_completed', summary);
+      return summary;
     }
 
     const rtus = (await RTU.findAll({

@@ -1,0 +1,590 @@
+\documentclass[11pt,a4paper]{article}
+
+% ==========================================
+% PAQUETS STANDARDS & ENCODAGE
+% ==========================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{top=2.2cm, bottom=2.2cm, left=2.2cm, right=2.2cm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tcolorbox}
+\usepackage{microtype}
+
+% ==========================================
+% CHARTE GRAPHIQUE PREMIUM (ORIGINALE)
+% ==========================================
+\definecolor{slate-navy}{HTML}{0F172A}   % Primary: Slate Navy
+\definecolor{teal-accent}{HTML}{0D9488}  % Secondary: Teal
+\definecolor{coral-alert}{HTML}{E11D48}  % Accent: Coral
+\definecolor{bg-slate}{HTML}{F8FAFC}     % Background code/boxes
+\definecolor{text-slate}{HTML}{334155}   % Body text
+\definecolor{border-slate}{HTML}{E2E8F0} % Borders
+
+% Configuration hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=slate-navy,
+    filecolor=teal-accent,      
+    urlcolor=teal-accent,
+    citecolor=slate-navy,
+    pdftitle={Rapport de Projet P2M - NQMS Intelligent FTTH},
+    pdfpagemode=UseNone,
+}
+
+% Configuration des titres (original et moderne)
+\titleformat{\section}
+  {\color{slate-navy}\normalfont\Large\bfseries}
+  {\thesection}{1em}{}[{\color{teal-accent}\titlerule[1.5pt]}]
+\titleformat{\subsection}
+  {\color{teal-accent}\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\color{slate-navy}\normalfont\normalsize\bfseries}
+  {\thesubsubsection}{1em}{}
+
+% Configuration En-têtes et Pieds de Page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{text-slate}{\small Rapport de Projet de Fin d'Étude P2M}}
+\fancyhead[R]{\textcolor{teal-accent}{\small\textbf{SUP'COM}}}
+\fancyfoot[C]{\textcolor{slate-navy}{\thepage}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{2pt}
+
+% Configuration des boîtes tcolorbox
+\tcbset{
+    colback=bg-slate,
+    colframe=teal-accent,
+    fonttitle=\bfseries\color{white},
+    coltitle=white,
+    boxrule=1pt,
+    arc=4pt,
+    boxsep=4pt,
+    left=6pt,
+    right=6pt,
+    top=6pt,
+    bottom=6pt
+}
+
+% Configuration de Listings (Code)
+\lstset{
+    backgroundcolor=\color{bg-slate},
+    basicstyle=\ttfamily\small\color{text-slate},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{border-slate},
+    keywordstyle=\color{teal-accent}\bfseries,
+    commentstyle=\color{text-slate}\itshape,
+    stringstyle=\color{coral-alert}
+}
+
+\begin{document}
+
+% ====================================================================
+% PAGE 1 : PAGE DE GARDE ASYMÉTRIQUE & PREMIUM
+% ====================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{-1.5cm}
+    
+    % En-tête Institutionnel SUP'COM
+    {\large\textbf{\color{slate-navy}{SUP'COM}}} \\
+    \vspace{0.1cm}
+    {\small\textbf{École Supérieure des Communications de Tunis}} \\
+    \vspace{0.2cm}
+    \textcolor{teal-accent}{\rule{8cm}{1.5pt}} \\
+    \vspace{2.5cm}
+    
+    % Bloc Titre Asymétrique
+    \begin{tcolorbox}[colback=bg-slate, colframe=slate-navy, boxrule=3pt, arc=0pt, left=15pt, right=15pt, top=15pt, bottom=15pt]
+        \centering
+        \vspace{0.2cm}
+        {\Huge\bfseries\color{slate-navy}{Rapport de Projet P2M}} \\
+        \vspace{0.4cm}
+        {\large\bfseries\color{teal-accent}{Projet de Préparation Métier}} \\
+        \vspace{0.6cm}
+        \textcolor{teal-accent}{\rule{4cm}{1pt}} \\
+        \vspace{0.6cm}
+        {\Large\bfseries\color{slate-navy}{Supervision et Maintenance Préventive de Réseaux de Fibres Optiques FTTH par Apprentissage Automatique}} \\
+        \vspace{0.3cm}
+        {\large\itshape\color{text-slate}{Conception d'un NQMS Intelligent avec Architecture Microservices et Modèle Random Forest}}
+        \vspace{0.2cm}
+    \end{tcolorbox}
+    
+    \vspace{2.5cm}
+    
+    % Étudiants & Encadrants
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushleft
+        \textbf{\color{slate-navy}{Réalisé par :}}\\
+        \vspace{0.2cm}
+        {\large\textbf{Étudiant 1}} \\
+        {\large\textbf{Étudiant 2}} \\
+        \vspace{0.1cm}
+        \textit{Élèves Ingénieurs -- SUP'COM}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \flushright
+        \textbf{\color{slate-navy}{Encadré par :}}\\
+        \vspace{0.2cm}
+        {\large\textbf{Encadrant Académique}} \\
+        {\large\textbf{Co-encadrant Industriel}} \\
+        \vspace{0.1cm}
+        \textit{Département Réseaux \& Télécoms}
+    \end{minipage}
+    
+    \vfill
+    
+    \textcolor{teal-accent}{\rule{10cm}{0.5pt}} \\
+    \vspace{0.3cm}
+    {\large\textbf{Année Universitaire : 2025--2026}}
+\end{titlepage}
+
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% ====================================================================
+% REMERCIEMENTS & AVANT-PROPOS
+% ====================================================================
+\section*{Remerciements}
+\addcontentsline{toc}{section}{Remerciements}
+Nous tenons tout d'abord à exprimer nos plus sincères remerciements à nos encadrants pour leur soutien indéfectible, leurs orientations précieuses et leur patience tout au long de la réalisation de ce projet de Préparation Métier (P2M). Leurs conseils avisés nous ont permis d'aborder les défis complexes de la supervision des réseaux optiques avec rigueur et méthode.
+
+Nos remerciements s'adressent également à l'administration de l'École Supérieure des Communications de Tunis (SUP'COM) pour nous avoir fourni un cadre d'apprentissage exceptionnel et les ressources indispensables à notre formation d'ingénieur. 
+
+Enfin, nous tenons à exprimer notre gratitude aux membres du jury qui nous font l'honneur d'évaluer notre travail. Leurs remarques et critiques constructives constitueront sans nul doute un atout majeur pour nos futures carrières scientifiques et techniques.
+
+\newpage
+
+% ====================================================================
+% TABLE DES MATIÈRES & ABRÉVIATIONS
+% ====================================================================
+\renewcommand{\contentsname}{Table des matières}
+\tableofcontents
+\addcontentsline{toc}{section}{Table des matières}
+
+\newpage
+\section*{Liste des abréviations}
+\addcontentsline{toc}{section}{Liste des abréviations}
+
+\begin{description}[leftmargin=2.5cm, style=nextline]
+    \item[EMS] Element Management System
+    \item[NQMS] Network Quality Management System
+    \item[RTU] Remote Test Unit
+    \item[OTDR] Optical Time-Domain Reflectometer
+    \item[OTH] Optical Test Head
+    \item[FTTH] Fiber To The Home
+    \item[GIS] Geographic Information System
+    \item[API] Application Programming Interface
+    \item[JWT] JSON Web Token
+    \item[KPI] Key Performance Indicator
+    \item[MTTR] Mean Time To Repair
+    \item[ITU-T] International Telecommunication Union - Telecommunication Standardization Sector
+\end{description}
+
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% ====================================================================
+% PAGE 2 : INTRODUCTION GÉNÉRALE
+% ====================================================================
+\section{Introduction}
+L'essor massif des services numériques à très haut débit, propulsé par la généralisation du télétravail, du cloud computing et du streaming haute définition, a transformé les infrastructures de fibres optiques en véritables artères vitales de l'économie moderne. La technologie FTTH (Fiber To The Home) s'est imposée comme le standard d'accès privilégié. Néanmoins, la gestion et le maintien en conditions opérationnelles de ces réseaux d'accès physiques représentent un défi titanesque pour les opérateurs de télécommunications.
+
+\subsection{État de l'art}
+La gestion de la couche physique des réseaux optiques s'appuie historiquement sur des équipements de diagnostic de pointe et des protocoles de mesures standardisés. La maintenance moderne cherche à s'éloigner des méthodes manuelles pour tendre vers une automatisation intelligente.
+
+\subsubsection{Contexte}
+L'infrastructure des télécommunications mondiales et nationales repose aujourd'hui de manière hégémonique sur la transmission par fibre optique. Qu'il s'agisse des liaisons intercontinentales terrestres et sous-marines (réseau de transport backbone) ou des réseaux d'accès capillaires de type FTTH (Fiber To The Home), la fibre optique monomode standard, régie par la recommandation ITU-T G.652, s'est imposée comme le support physique privilégié pour répondre à l'explosion du trafic Très Haut Débit. Ce réseau physique nécessite une gestion stricte de ses performances optiques, notamment l'atténuation nominale qui s'élève idéalement à environ $0.2 \text{ dB/km}$ à $1550 \text{ nm}$.
+
+Pour maintenir l'intégrité de cette immense couche physique, les opérateurs de télécommunications déploient des systèmes de supervision appelés \textbf{NQMS (Network Quality Management System)}. Ces systèmes centralisent des sondes de test distantes appelées \textbf{RTU (Remote Test Units)} installées dans les centraux optiques. Ces RTU effectuent de manière périodique des mesures de réflectométrie (\textbf{OTDR} - Optical Time-Domain Reflectometry) et de puissance optique pour cartographier en permanence la santé physique des liens optiques.
+
+\subsubsection{Problématique}
+Malgré les performances exceptionnelles du support optique, le maintien en conditions opérationnelles de la couche physique représente un défi permanent et complexe. Étant exposées sur des milliers de kilomètres aux contraintes mécaniques et environnementales (travaux publics, intempéries, coupures aériennes, surchauffes des boîtiers RTU $> 50^\circ\text{C}$), les liaisons optiques subissent deux types d'anomalies majeures :
+\begin{itemize}
+    \item \textbf{Les pannes physiques soudaines :} Les ruptures de câbles (coups de pelleteuse de voirie) entraînant une interruption totale instantanée du signal optique (atténuation critique $> 18\text{ dB}$, puissance optique $< -40\text{ dBm}$).
+    \item \textbf{Les dégradations physiques progressives :} Les contraintes mécaniques croissantes, micro-courbures (macrobendings) ou vieillissement des connecteurs provoquant une hausse lente et continue de l'atténuation ($13\text{ dB}$, puis $15\text{ dB}$, puis $17\text{ dB}$) qui passe inaperçue jusqu'à l'effondrement de la liaison.
+\end{itemize}
+
+Face à cela, les méthodes traditionnelles de maintenance souffrent de limitations critiques :
+\begin{enumerate}
+    \item \textbf{Une approche curative et réactive :} L'opérateur n'est alerté qu'après le signalement de la coupure de service par les abonnés finaux.
+    \item \textbf{Un temps de localisation (MTTR) excessivement élevé :} L'identification du défaut requiert des déplacements physiques répétitifs pour effectuer des mesures manuelles sur le terrain.
+    \item \textbf{Des coûts opérationnels (OPEX) élevés :} Des dépenses excessives liées au manque d'anticipation et de diagnostic précoce.
+\end{enumerate}
+
+La problématique centrale de ce projet réside donc dans la question suivante : \textit{Comment concevoir et implémenter une plateforme NQMS intelligente qui automatise la détection instantanée des coupures réseau et anticipe les pannes physiques progressives 24h à 48h à l'avance grâce au Machine Learning ?}
+
+\subsubsection{Solution}
+Pour répondre de manière exhaustive et structurée aux limitations de la maintenance curative traditionnelle, nous avons conçu et implémenté une plateforme de supervision intelligente et complète : le \textbf{Système NQMS (Network Quality Management System) pour la supervision intelligente des réseaux fibres optiques}. 
+
+Cette solution se présente sous la forme d'un écosystème logiciel modulaire et performant, structuré autour de **trois axes fonctionnels majeurs** :
+
+\begin{enumerate}
+    \item \textbf{Supervision continue et détection en temps réel :} Grâce à l'intégration d'unités de test distantes (\textbf{RTU}) simulées, le système collecte en permanence les données physiques de la fibre (atténuation, puissance optique, température). En cas d'anomalie critique ou de rupture physique, l'alerte est propagée instantanément à la console de supervision, réduisant le temps de détection à la seconde près.
+    
+    \item \textbf{Anticipation et maintenance préventive :} C'est la brique la plus innovante de notre système. Un microservice d'intelligence artificielle analyse en continu l'historique temporel des mesures physiques. En identifiant les micro-dégradations et les tendances d'usure lente, le modèle est capable de prédire les risques de défaillance physique dans un horizon de **48 heures**, permettant ainsi de planifier des interventions techniques préventives avant que le service client ne soit interrompu.
+    
+    \item \textbf{Console d'aide à la décision centralisée :} Le dashboard fournit aux opérateurs NOC une vue globale, unifiée et interactive du réseau. Il intègre des graphiques dynamiques pour suivre l'évolution des atténuations optiques et affiche les indicateurs clés de performance (\textbf{KPIs}) indispensables à l'optimisation opérationnelle (taux de disponibilité, temps moyen de réparation MTTR, répartition géographique des alertes).
+\end{enumerate}
+
+En associant la réactivité du temps réel à la puissance prédictive de l'apprentissage automatique, le \textbf{Système NQMS} transforme en profondeur la gestion des infrastructures optiques, garantissant aux opérateurs télécoms une amélioration significative de la disponibilité de leur réseau physique.
+
+
+\subsection{Conclusion}
+En somme, ce système de supervision intelligente pose les bases d'une maintenance préventive proactive de la couche optique physique. L'intégration de télémétries continues combinée à l'apprentissage automatique permet de minimiser les coupures de services abonnés. La suite de ce rapport décrira l'analyse des besoins, la conception de l'architecture microservices, l'implémentation de la base de données et l'entraînement du modèle Random Forest.
+
+\newpage
+
+% ====================================================================
+% PAGE 3 : ANALYSE DES BESOINS
+% ====================================================================
+\section{Analyse du Besoin}
+
+La conception d'un système NQMS efficace nécessite une identification précise des besoins fonctionnels portés par les équipes opérationnelles du NOC (Network Operations Center). Cette phase d'analyse est fondamentale pour garantir que la solution implémentée répond exactement aux exigences métier des utilisateurs finaux et aux contraintes techniques de l'infrastructure supervisée.
+
+\subsection{Fonctionnalités clés}
+
+Le système doit répondre aux exigences fonctionnelles suivantes :
+
+\begin{description}[leftmargin=2cm, style=nextline]
+    \item[\textcolor{teal-accent}{\textbf{Supervision des RTU}}]
+    Monitoring permanent de la connectivité et de la santé des unités de test distantes (Remote Test Units). Le système vérifie en continu que chaque RTU est joignable, opérationnel et capable de remonter ses mesures. Tout changement d'état (passage de \texttt{online} à \texttt{offline}) déclenche instantanément une alerte opérationnelle.
+
+    \item[\textcolor{teal-accent}{\textbf{Monitoring des fibres}}]
+    Collecte automatisée et centralisée des paramètres optiques de chaque liaison. Le système acquiert périodiquement les valeurs d'atténuation (en dB), de puissance optique reçue (en dBm), de réflectance et de température de boîtier, afin de constituer un historique exploitable pour l'analyse des tendances.
+
+    \item[\textcolor{teal-accent}{\textbf{Gestion des alarmes}}]
+    Alertes instantanées hiérarchisées en fonction de la gravité du défaut rencontré. Le moteur d'alarmes distingue quatre niveaux de sévérité : \texttt{Critical} (coupure physique totale), \texttt{Major} (dégradation optique forte), \texttt{Minor} (anomalie thermique ou avertissement) et \texttt{Info} (maintenance planifiée). Chaque alarme suit un cycle de vie complet : détection $\rightarrow$ notification $\rightarrow$ acquittement $\rightarrow$ résolution.
+
+    \item[\textcolor{teal-accent}{\textbf{Analyse des tendances d'atténuation}}]
+    Suivi historique pour détecter le vieillissement prématuré des câbles optiques. Le dashboard représente graphiquement l'évolution de l'atténuation mesurée sur une fenêtre glissante (7 jours, 30 jours) afin de mettre en évidence les dérives lentes et de corréler les hausses d'atténuation avec des événements environnementaux (travaux, températures extrêmes).
+
+    \item[\textcolor{teal-accent}{\textbf{Prédiction par IA}}]
+    Évaluation proactive des risques de pannes à l'horizon de 48 heures. Un microservice d'intelligence artificielle basé sur un modèle \textbf{Random Forest Classifier} analyse les caractéristiques temporelles agrégées de chaque RTU pour calculer une probabilité de défaillance et générer des alertes préventives avant l'interruption effective du service.
+
+    \item[\textcolor{teal-accent}{\textbf{Assistant Intelligent (Chatbot)}}]
+    Interaction en langage naturel pour faciliter l'exploitation de la plateforme. Le chatbot intégré assiste les opérateurs dans leurs tâches quotidiennes, répond aux requêtes sur l'état du réseau (ex. « quel est l'état du RTU de Tunis ? »), explique les alarmes complexes et guide les utilisateurs à travers les fonctionnalités du dashboard.
+\end{description}
+
+\subsection{Profils des utilisateurs}
+
+La plateforme s'adresse à deux types d'acteurs clés :
+
+\begin{enumerate}
+    \item \textbf{Les opérateurs du NOC (Network Operations Center) :} Ils assurent la surveillance opérationnelle en temps réel, analysent les courbes physiques remontées par les RTU, acquittent et clôturent les alarmes, et consultent les recommandations de maintenance générées par l'IA. Leur interface principale est le \textbf{dashboard de supervision} qui leur offre une vision panoramique et instantanée de l'état du réseau.
+
+    \item \textbf{L'administrateur système :} Il est responsable de la gestion de la configuration du parc d'équipements RTU (ajout, modification, suppression des boîtiers), de la définition des seuils d'alarmes et de la gestion des comptes utilisateurs. Il dispose de droits étendus sur la plateforme et supervise l'intégrité globale de l'architecture logicielle du NQMS.
+\end{enumerate}
+
+\begin{tcolorbox}[colback=bg-slate, colframe=teal-accent, title=Résumé des cas d'utilisation principaux]
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Acteur} & \textbf{Action} & \textbf{Résultat attendu} \\
+        \midrule
+        Opérateur NOC & Consulter le dashboard global & Vision temps réel des KPIs réseau \\
+        Opérateur NOC & Analyser un RTU défaillant & Courbes d'atténuation consultables \\
+        Opérateur NOC & Acquitter une alarme critique & Traçabilité opérationnelle assurée \\
+        Opérateur NOC & Visualiser les prédictions IA & Planification de maintenance préventive \\
+        Administrateur & Gérer le parc RTU & Inventaire à jour, seuils configurés \\
+        Administrateur & Gérer les comptes & Accès sécurisés et rôles bien définis \\
+        \bottomrule
+    \end{tabular}
+\end{tcolorbox}
+
+\newpage
+
+% ====================================================================
+% PAGE 4 : ARCHITECTURE GLOBALE DU SYSTÈME
+% ====================================================================
+\section{Architecture Globale du Système}
+
+L'infrastructure repose sur un écosystème modulaire découplé en microservices, où chaque composant assume un rôle bien délimité et communique via des protocoles standardisés.
+
+% --- Diagramme d'architecture ---
+\begin{figure}[H]
+\centering
+\begin{tcolorbox}[
+    colback=bg-slate, colframe=slate-navy, boxrule=1.5pt, arc=6pt,
+    title={\textbf{Diagramme d'architecture réseau -- Système NQMS}},
+    fonttitle=\bfseries\color{white}, coltitle=white
+]
+\centering
+\vspace{0.3cm}
+
+% Ligne 1 : Emulator
+\begin{tcolorbox}[colback=white, colframe=teal-accent, boxrule=1pt, arc=4pt,
+    width=0.55\textwidth, halign=center]
+    \centering
+    {\small\bfseries\color{slate-navy} EMULATOR} \\
+    {\footnotesize\color{text-slate} Simulateur RTU -- Génération de télémétrie}
+\end{tcolorbox}
+
+\vspace{0.15cm}
+{\small $\downarrow$ \textit{HTTP POST (Télémétrie)}}
+\vspace{0.15cm}
+
+% Ligne 2 : Backend + DB côte à côte
+\begin{minipage}{0.5\textwidth}
+\centering
+\begin{tcolorbox}[colback=white, colframe=slate-navy, boxrule=1.5pt, arc=4pt]
+    \centering
+    {\small\bfseries\color{slate-navy} BACKEND} \\
+    {\footnotesize\color{text-slate} Node.js / Express}
+\end{tcolorbox}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+\begin{tcolorbox}[colback=white, colframe=teal-accent, boxrule=1pt, arc=4pt]
+    \centering
+    {\small\bfseries\color{teal-accent} DATABASE} \\
+    {\footnotesize\color{text-slate} PostgreSQL}
+\end{tcolorbox}
+\end{minipage}
+
+\vspace{0.05cm}
+\begin{minipage}{0.5\textwidth}\centering
+{\footnotesize $\updownarrow$ \textit{WebSocket}} \hspace{0.5cm} {\footnotesize $\updownarrow$ \textit{JSON API}}
+\end{minipage}
+\vspace{0.05cm}
+
+% Ligne 3 : Frontend + AI côte à côte
+\begin{minipage}{0.5\textwidth}
+\centering
+\begin{tcolorbox}[colback=white, colframe=slate-navy, boxrule=1.5pt, arc=4pt]
+    \centering
+    {\small\bfseries\color{slate-navy} FRONTEND} \\
+    {\footnotesize\color{text-slate} React / TypeScript}
+\end{tcolorbox}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+\begin{tcolorbox}[colback=white, colframe=teal-accent, boxrule=1pt, arc=4pt]
+    \centering
+    {\small\bfseries\color{teal-accent} AI SERVICE} \\
+    {\footnotesize\color{text-slate} Python Flask / Random Forest}
+\end{tcolorbox}
+\end{minipage}
+
+\vspace{0.3cm}
+\end{tcolorbox}
+\caption{Diagramme d'architecture réseau de l'application NQMS.}
+\end{figure}
+
+\subsection{Outils et bibliothèques}
+
+Afin d'assurer des performances optimales et une supervision en temps réel, la plateforme NQMS s'appuie sur une stack technologique moderne et spécialisée :
+
+\begin{description}[leftmargin=2.2cm, style=nextline]
+    \item[\textcolor{teal-accent}{\textbf{React.js \& TypeScript (Frontend)}}]
+    Permettent de construire un dashboard interactif et robuste. React assure le rendu temps réel des alertes et des courbes d'atténuation dynamiques (via \textbf{Recharts}), tandis que TypeScript prévient les erreurs grâce au typage statique.
+
+    \item[\textcolor{teal-accent}{\textbf{Node.js \& Express (Backend)}}]
+    Forment le cœur asynchrone de l'application. Cette couche traite massivement les flux de télémétrie entrants, sécurise les accès (authentification JWT) et orchestre la communication entre les différents microservices.
+
+    \item[\textcolor{teal-accent}{\textbf{Python \& Flask (Service IA)}}]
+    Hébergent le microservice prédictif. Flask expose le modèle d'apprentissage \textbf{Random Forest}, permettant d'inférer rapidement les risques de défaillance à 48h à partir des vecteurs de données transmis par le backend.
+
+    \item[\textcolor{teal-accent}{\textbf{Socket.IO (Temps Réel)}}]
+    Gère la liaison bidirectionnelle (WebSocket) entre le serveur et le dashboard. Cette technologie élimine le besoin de rafraîchissement manuel et garantit la propagation instantanée ($<100\text{ ms}$) des alarmes critiques vers l'opérateur NOC.
+
+    \item[\textcolor{teal-accent}{\textbf{PostgreSQL (Base de Données)}}]
+    Assure la persistance relationnelle, transactionnelle et sécurisée de l'ensemble des données du système.
+\end{description}
+
+\textbf{Schéma de données (tables principales) :}
+\begin{center}
+\small
+\begin{tabular}{lp{8.5cm}}
+    \toprule
+    \textbf{Table} & \textbf{Rôle} \\
+    \midrule
+    \texttt{rtu}            & Inventaire des boîtiers (IP, GPS, statut \texttt{online/offline}) \\
+    \texttt{optical\_routes} & Topologie réseau (source, destination, type fibre, longueur) \\
+    \texttt{test\_results}  & Historique des mesures (atténuation dB, température, statut) \\
+    \texttt{alarms}         & Cycle de vie des alarmes (sévérité, acquittement, résolution) \\
+    \texttt{predictions}    & Résultats IA (probabilité de panne, niveau de risque, features) \\
+    \texttt{ai\_models}     & Versioning des modèles ML (hyperparamètres, F1-score) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+
+
+\subsection{Conclusion}
+Le système NQMS repose sur un ensemble de technologies modernes et complémentaires qui assurent la supervision centralisée en temps réel, le traitement intelligent des données optiques et la visualisation intuitive des incidents. Dans ce qui suit, nous détaillerons le modèle de données relationnel qui structure la persistance de toutes ces informations.
+
+\newpage
+
+
+
+
+
+% ====================================================================
+% PAGE 7 : ÉMULATEUR & GÉNÉRATION DE DONNÉES
+% ====================================================================
+\section{Émulateur RTU et Génération de Données}
+Dans les projets de supervision de réseaux d'infrastructure critiques, l'accès direct aux équipements de production physiques des opérateurs (tels que les réflectomètres VIAVI ou EXFO) est complexe à obtenir pour des raisons évidentes de sécurité. Afin de valider la robustesse fonctionnelle de notre NQMS, le développement d'un émulateur de données a été une étape clé du projet.
+
+\subsection{Simulateur RTU}
+L'émulateur est une application autonome développée sur mesure qui simule de manière logicielle le comportement physique des équipements distants (RTU). Il agit comme une véritable sonde virtuelle, capable de maintenir une connexion avec le backend, de répondre aux requêtes d'état et d'envoyer des flux de données en continu. Ce simulateur permet de tester l'architecture globale sans dépendre du matériel physique, en garantissant que le flux réseau de bout en bout est opérationnel.
+
+\subsection{Génération de mesures OTDR et data réaliste}
+Afin de rendre les tests pertinents, l'émulateur ne se contente pas d'envoyer des valeurs aléatoires. Il génère des données réalistes basées sur les comportements physiques réels de la fibre optique obtenus par réflectométrie (OTDR) :
+\begin{itemize}
+    \item \textbf{Data réaliste nominale (Norme ITU-T G.652) :} La fibre optique monomode standard présente une atténuation moyenne nominale d'environ $0.2\text{ dB/km}$ à une longueur d'onde de $1550\text{ nm}$. L'émulateur génère des valeurs d'atténuation oscillant naturellement de manière gaussienne entre $10.0\text{ dB}$ et $12.0\text{ dB}$ pour simuler les pertes d'épissures d'un itinéraire typique.
+    \item \textbf{Modélisation de la température :} La température interne du boîtier RTU varie de façon périodique (cycle diurne de $15^\circ\text{C}$ à $35^\circ\text{C}$) avec une composante de bruit blanc pour imiter les conditions d'un local technique.
+    \item \textbf{Injection de défauts (Data réaliste d'anomalies) :} Le système permet de simuler des micro-courbures (hausse progressive et saccadée de l'atténuation optique : $13\text{ dB}$, $15\text{ dB}$, puis $17\text{ dB}$) ou des ruptures physiques soudaines (effondrement immédiat du signal au-delà de $18\text{ dB}$ et chute de la puissance reçue $< -40\text{ dBm}$).
+\end{itemize}
+
+\subsection{Tests périodiques}
+Pour reproduire fidèlement l'activité d'une sonde de test, l'émulateur s'appuie sur une routine d'acquisition automatisée :
+\begin{itemize}
+    \item \textbf{Flux continu :} L'émulateur exécute des tests périodiques en transmettant un payload JSON contenant l'atténuation simulée et les mesures d'environnement au backend via des requêtes \textbf{HTTP POST}.
+    \item \textbf{Intervalles configurables :} Les tests peuvent être configurés pour s'exécuter toutes les minutes en mode d'exécution rapide (pour la démonstration et le stress-test du système) ou toutes les heures pour simuler une surveillance de routine nominale, reproduisant ainsi les contraintes de charge sur la base de données PostgreSQL et le traitement asynchrone du backend Node.js.
+\end{itemize}
+
+\newpage
+
+% ====================================================================
+% PAGE 8 : INTELLIGENCE ARTIFICIELLE
+% ====================================================================
+\section{Intelligence Artificielle \& Maintenance Préventive}
+La plus grande valeur ajoutée de notre NQMS réside dans sa capacité à passer d'une maintenance purement réactive à une maintenance prédictive, réduisant de manière drastique les pannes de services abonnés.
+
+\subsection{Modélisation et algorithme}
+Le microservice d'IA s'appuie sur le modèle de Machine Learning \textbf{Random Forest Classifier} (forêt aléatoire) de la bibliothèque `scikit-learn`. Cet algorithme de classification d'ensemble construit un ensemble de 200 arbres de décision indépendants pendant la phase d'apprentissage. La décision finale est obtenue par vote majoritaire de la forêt. Le choix du Random Forest se justifie par sa robustesse face au surapprentissage (grâce au bagging et à la sélection aléatoire des features) et par sa rapidité d'exécution sur des données tabulaires complexes.
+
+\subsection{Les 8 Features d'entrée réelles}
+Toutes les 6 heures, le backend Node.js agrège les télémétries historiques de chaque RTU pour composer un vecteur de caractéristiques envoyé au modèle d'IA :
+\begin{enumerate}
+    \item \texttt{attenuation\_mean\_7d} : La valeur d'atténuation moyenne sur les 7 derniers jours.
+    \item \texttt{nb\_alarms\_24h} : Le nombre total d'alarmes mineures/majeures dans les dernières 24h.
+    \item \texttt{nb\_alarms\_7d} : L'historique des alarmes accumulées sur 7 jours.
+    \item \texttt{uptime\_percent} : Le taux de disponibilité de la sonde RTU sur la semaine.
+    \item \texttt{temperature} : La dernière valeur de température remontée par le RTU.
+    \item \texttt{attenuation\_variation} : L'écart-type de l'atténuation sur 7 jours (représente l'instabilité physique).
+    \item \texttt{rtu\_age\_days} : L'âge du boîtier RTU en jours (sert à capter l'usure de l'électronique).
+    \item \texttt{fiber\_type} : Variable catégorielle décrivant le type de fibre.
+\end{enumerate}
+
+\subsection{Inférence, horizon prédictif et métriques de validation}
+La sortie du modèle fournit une probabilité de défaillance (comprise entre 0.0 et 1.0) dans un horizon temporel de **48 heures**. Le système classe ce risque :
+\begin{itemize}
+    \item \textbf{Risque Faible (Low) :} Probabilité $< 0.50$. Pas d'action requise.
+    \item \textbf{Risque Modéré (Medium) :} Probabilité entre $0.50$ et $0.70$. Surveillance accrue.
+    \item \textbf{Risque Élevé (High) :} Probabilité entre $0.70$ et $0.85$. Alerte préventive mineure.
+    \item \textbf{Risque Critique (Critical) :} Probabilité $> 0.85$. Génération immédiate d'une alerte de maintenance préventive majeure pour envoyer un technicien sur zone.
+\end{itemize}
+
+Les performances réelles de notre modèle (version v2.0) validées lors des tests croisés sont d'un très haut niveau pour un modèle prédictif :
+*   **Précision globale (Accuracy) :** \textbf{85.23 \%}
+*   **F1-Score :** \textbf{81.21 \%}
+*   **ROC-AUC :** \textbf{0.89}
+
+\newpage
+
+% ====================================================================
+% PAGE 9 : IMPLÉMENTATIONS ET RÉSULTATS
+% ====================================================================
+\section{Implémentations et résultats}
+
+Cette section présente les interfaces et les résultats concrets de la réalisation de la plateforme NQMS, validant ainsi l'architecture et les choix techniques détaillés précédemment.
+
+\subsection{Gestion des équipements et des routes optiques}
+Le module de gestion permet à l'administrateur système de visualiser et configurer l'ensemble du parc physique. 
+\begin{itemize}
+    \item \textbf{Inventaire des RTU :} Une interface sous forme de grille dresse l'inventaire complet des sondes de test (adresses IP, localisation GPS, numéro de série). Un statut coloré (\textit{Online}, \textit{Offline}, \textit{Warning}) permet d'identifier au premier coup d'œil l'état de chaque boîtier.
+    \item \textbf{Topologie du réseau :} Le système répertorie les routes optiques, liant un RTU source à une destination, avec leurs caractéristiques physiques (type de fibre, distance kilométrique, atténuation de référence).
+\end{itemize}
+
+\subsection{Communication NQMS/RTU}
+La communication entre les boîtiers de test distants et le centre de supervision (NQMS) est assurée en temps réel.
+\begin{itemize}
+    \item \textbf{Télémétrie en continu :} L'interface React affiche des courbes d'atténuation dynamiques (via \textbf{Recharts}) qui s'actualisent sans rechargement de page au rythme des remontées de l'émulateur.
+    \item \textbf{Propagation des alarmes :} Grâce au protocole WebSocket (\textbf{Socket.IO}), lorsqu'une anomalie physique (micro-courbure ou rupture) est détectée sur le terrain, une alerte sonore et visuelle s'affiche instantanément sur l'écran de l'opérateur NOC.
+\end{itemize}
+
+\subsection{Mise en action}
+La plateforme a été soumise à des tests en conditions proches du réel pour évaluer la pertinence du module prédictif et l'ergonomie de l'assistance intelligente.
+\begin{itemize}
+    \item \textbf{Performance de l'IA :} Le modèle Random Forest a démontré une grande robustesse, atteignant une précision globale de \textbf{85.23 \%} lors de la détection de pannes à 48 heures. Le système génère avec succès des alertes de maintenance préventive.
+    \item \textbf{Assistant Intelligent (Chatbot) :} Le chatbot intégré a prouvé sa capacité à assister les opérateurs. En posant des questions en langage naturel ("Quel est l'état du RTU de Tunis ?"), l'opérateur obtient un diagnostic complet ancré dans les données réelles du réseau.
+    \item \textbf{Suivi des KPIs :} Le panneau supérieur affiche en permanence des indicateurs vitaux : Disponibilité Réseau (cible : $> 99.9\%$), MTTR (temps moyen de réparation), et Répartition des alarmes par sévérité.
+\end{itemize}
+
+\subsection{Conclusion}
+La phase d'implémentation a validé avec succès l'ensemble des fonctionnalités requises. L'interface web offre une vision panoramique instantanée du réseau, tandis que la communication bidirectionnelle NQMS/RTU garantit une réactivité optimale. L'intégration de l'IA et du Chatbot transforme cette supervision classique en un véritable outil d'aide à la décision proactive.
+
+\newpage
+
+% ====================================================================
+% PAGE 10 : CONCLUSION & PERSPECTIVES
+% ====================================================================
+\section{Conclusion \& Perspectives}
+Le projet de Préparation Métier (P2M) nous a permis d'apporter une solution technologique innovante et robuste aux défis complexes de la supervision des réseaux d'accès très haut débit en fibre optique FTTH.
+
+\subsection{Bilan du projet}
+Grâce à la mise en place d'une architecture microservices découplée, nous avons réussi à concevoir un système performant capable d'acquérir des télémétries en temps réel de manière asynchrone, d'identifier instantanément des anomalies physiques sur la fibre optique et de notifier les opérateurs NOC sans latence appréciable via les WebSockets. 
+
+L'intégration d'un classifieur Random Forest, alimenté par 8 caractéristiques temporelles physiques et système, a permis d'ouvrir la voie à la maintenance préventive en prédisant l'occurrence de pannes physiques majeures dans les 48 heures avec une excellente précision de **85.23 \%**. Ce résultat se traduit concrètement par une baisse potentielle importante du MTTR et une réduction significative du taux d'interruption de service pour les clients finals.
+
+\subsection{Perspectives technologiques futures}
+Pour donner suite à ce travail, plusieurs perspectives prometteuses sont envisageables :
+\begin{itemize}
+    \item \textbf{Connexion avec de vrais réflectomètres optiques (RTU physiques) :} Développer une couche d'abstraction matérielle s'appuyant sur des protocoles de communication standardisés de type **SCPI (Standard Commands for Programmable Instruments)** ou via des APIs propriétaires VIAVI/EXFO pour remplacer notre émulateur par des mesures de terrains physiques issues de commutateurs optiques (OTH).
+    \item \textbf{Modèles d'IA basés sur des séries temporelles (Deep Learning) :} Remplacer ou compléter le classifieur Random Forest par des réseaux de neurones récurrents de type **LSTM (Long Short-Term Memory)** ou des **Transformers**, particulièrement adaptés pour prévoir à long terme l'évolution temporelle de la courbe d'atténuation à partir des télémesures brutes.
+    \item \textbf{Déploiement Cloud et orchestré :} Conteneuriser l'ensemble des microservices (Frontend, Backend, IA, DB) à l'aide de Docker et mettre en place une orchestration sous **Kubernetes** pour assurer une élasticité dynamique face à la montée en charge du parc d'équipements.
+\end{itemize}
+
+\newpage
+
+% ====================================================================
+% BIBLIOGRAPHIE
+% ====================================================================
+\section*{Bibliographie}
+\addcontentsline{toc}{section}{Bibliographie}
+
+\begin{enumerate}[label={[\arabic*]}]
+    \item Union Internationale des Télécommunications (ITU-T) -- \textit{Recommandation G.652 : Caractéristiques des câbles et fibres optiques monomodes}, Bureau de normalisation des télécommunications de l'UIT, Édition 2016.
+    
+    \item EXFO Inc. -- \textit{FTTH Test Guide: Testing PON and FTTH networks during construction, activation and maintenance}, EXFO Technical Library, 2021. \\
+    Disponible sur : \url{https://www.exfo.com}
+    
+    \item VIAVI Solutions -- \textit{Understanding OTDR (Optical Time-Domain Reflectometry): Principles and Best Practices}, VIAVI Reference Whitepaper, 2023. \\
+    Disponible sur : \url{https://www.viavisolutions.com}
+    
+    \item Pedregosa, F. et al. -- \textit{Scikit-learn: Machine Learning in Python}, Journal of Machine Learning Research, vol. 12, pp. 2825-2830, 2011.
+    
+    \item Socket.IO -- \textit{Real-time bidirectional event-based communication framework}, Socket.IO Official Documentation, 2025. \\
+    Disponible sur : \url{https://socket.io/docs/v4/}
+\end{enumerate}
+
+\end{document}

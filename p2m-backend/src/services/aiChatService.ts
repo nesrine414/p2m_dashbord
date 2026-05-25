@@ -123,6 +123,14 @@ const hasAlarmCountIntent = (message: string): boolean =>
   ['combien', 'nombre', 'count', 'total'].some((keyword) => includesNormalized(message, keyword)) &&
   ['alarme', 'alarm'].some((keyword) => includesNormalized(message, keyword));
 
+const hasRtuCountIntent = (message: string): boolean =>
+  ['combien', 'nombre', 'count', 'total'].some((keyword) => includesNormalized(message, keyword)) &&
+  hasRtuIntent(message);
+
+const hasRouteCountIntent = (message: string): boolean =>
+  ['combien', 'nombre', 'count', 'total'].some((keyword) => includesNormalized(message, keyword)) &&
+  hasRouteIntent(message);
+
 const getAlarmSeverityFilter = (message: string): AlarmSeverityFilter => {
   if (['critique', 'critical'].some((keyword) => includesNormalized(message, keyword))) {
     return 'critical';
@@ -498,12 +506,14 @@ const generateGroqReply = async (params: {
                   content: [
                     'You are NQMS, a telecom fiber supervision assistant for field technicians.',
                     'Answer in clear operational French.',
-                    'Your job is to rewrite the deterministic analysis using only the allowed facts.',
-                    'Do not invent entities, counts, causes, metrics, sites or actions that are not present in the allowed facts or deterministic analysis.',
-                    'If a fact is missing, say: information non disponible dans les donnees actuelles.',
+                    'Answer the user question accurately using ONLY the information provided in the Allowed facts.',
+                    'You can use the Deterministic analysis to add useful context, priority, causes or recommendations.',
+                    'Do not invent entities, counts, causes, metrics, sites or actions that are not present in the facts.',
+                    'If the user asks a specific question (like a count, a status, or a detail), answer it directly FIRST.',
+                    'If a fact is missing to answer the question, say: information non disponible dans les donnees actuelles.',
                     'Prefer short and useful wording over generic explanations.',
                     'If you use a technical term, explain it briefly in simple language.',
-                    'Use this structure whenever possible:',
+                    'If relevant to the question, you can use this structure:',
                     'Diagnostic',
                     'Causes probables',
                     'Verifications terrain',
@@ -576,14 +586,17 @@ const requireGroqReply = async (params: {
   grounding: GroundingPayload;
   mode?: GroqMode;
   username?: string;
-}): Promise<string> => {
+}): Promise<{ reply: string; provider: 'groq' | 'fallback' }> => {
   const groqReply = await generateGroqReply(params);
 
   if (!groqReply) {
-    throw new Error(GROQ_ONLY_ERROR);
+    return {
+      reply: params.mode === 'general' ? "Je suis désolé, le service d'IA (Groq) est indisponible pour le moment. Je ne peux répondre qu'aux questions opérationnelles préprogrammées." : params.fallbackReply,
+      provider: 'fallback'
+    };
   }
 
-  return groqReply;
+  return { reply: groqReply, provider: 'groq' };
 };
 
 const buildGlobalReply = (context: ChatContext): string => {
@@ -904,7 +917,7 @@ export const generateAiChatResponse = async (
       },
       allowedEntityNames: [],
     };
-    const groqReply = await requireGroqReply({
+    const groqResult = await requireGroqReply({
       message: trimmedMessage,
       context,
       fallbackReply: greetingReply,
@@ -912,14 +925,14 @@ export const generateAiChatResponse = async (
     });
 
     return {
-      reply: groqReply,
+      reply: groqResult.reply,
       suggestions: [
         'Explique cette alarme critique.',
         'Donne-moi une checklist pour une RTU injoignable.',
         'Analyse une route avec perte optique.',
       ],
       degradedMode: context.degradedMode,
-      provider: 'groq',
+      provider: groqResult.provider,
       context: {
         counts: {
           rtus: context.rtus.length,
@@ -960,7 +973,7 @@ export const generateAiChatResponse = async (
       allowedEntityNames: [],
     };
 
-    const groqReply = await requireGroqReply({
+    const groqResult = await requireGroqReply({
       message: trimmedMessage,
       context,
       fallbackReply: countReply,
@@ -968,14 +981,14 @@ export const generateAiChatResponse = async (
     });
 
     return {
-      reply: groqReply,
+      reply: groqResult.reply,
       suggestions: [
         'Combien d alarmes critiques actives ?',
         'Combien d alarmes majeures actives ?',
         'Resume les alarmes les plus prioritaires.',
       ],
       degradedMode: context.degradedMode,
-      provider: 'groq',
+      provider: groqResult.provider,
       context: {
         counts: {
           rtus: context.rtus.length,
@@ -1013,7 +1026,7 @@ export const generateAiChatResponse = async (
             normalizedMessage.includes(`#${String(alarm.id).toLowerCase()}`)))
     ) || null;
 
-  if (!matchedAlarm && hasAlarmIntent(trimmedMessage)) {
+  if (!matchedAlarm && hasAlarmIntent(trimmedMessage) && !hasAlarmCountIntent(trimmedMessage)) {
     const requestedSeverity = getAlarmSeverityFilter(trimmedMessage);
     matchedAlarm =
       context.alarms
@@ -1022,14 +1035,14 @@ export const generateAiChatResponse = async (
         .sort((left, right) => getAlarmPriorityScore(right) - getAlarmPriorityScore(left))[0] || null;
   }
 
-  if (!matchedRtu && hasRtuIntent(trimmedMessage)) {
+  if (!matchedRtu && hasRtuIntent(trimmedMessage) && !hasRtuCountIntent(trimmedMessage)) {
     matchedRtu =
       context.rtus
         .filter((rtu) => (hasUnavailableRtuIntent(trimmedMessage) ? ['offline', 'unreachable'].includes(rtu.status) : rtu.status !== 'online'))
         .sort((left, right) => getRtuPriorityScore(right) - getRtuPriorityScore(left))[0] || null;
   }
 
-  if (!matchedRoute && hasRouteIntent(trimmedMessage)) {
+  if (!matchedRoute && hasRouteIntent(trimmedMessage) && !hasRouteCountIntent(trimmedMessage)) {
     matchedRoute =
       context.routes
         .filter((route) => (hasBrokenRouteIntent(trimmedMessage) ? route.fiberStatus === 'broken' : route.fiberStatus !== 'normal'))
@@ -1037,10 +1050,10 @@ export const generateAiChatResponse = async (
   }
 
   const isGeneralConversation =
-    !hasProjectIntent(trimmedMessage) && !matchedRoute && !matchedRtu && !matchedAlarm && !hasAlarmCountIntent(trimmedMessage);
+    !hasProjectIntent(trimmedMessage) && !matchedRoute && !matchedRtu && !matchedAlarm && !hasAlarmCountIntent(trimmedMessage) && !hasRtuCountIntent(trimmedMessage) && !hasRouteCountIntent(trimmedMessage);
 
   if (isGeneralConversation) {
-    const generalReply = await requireGroqReply({
+    const groqResult = await requireGroqReply({
       message: trimmedMessage,
       context,
       fallbackReply: trimmedMessage,
@@ -1055,14 +1068,14 @@ export const generateAiChatResponse = async (
     });
 
     return {
-      reply: generalReply,
+      reply: groqResult.reply,
       suggestions: [
         'Explique cette alarme critique.',
         'Donne-moi une checklist pour une RTU injoignable.',
         'Pose-moi une autre question generale.',
       ],
       degradedMode: context.degradedMode,
-      provider: 'groq',
+      provider: groqResult.provider,
       context: {
         counts: {
           rtus: context.rtus.length,
@@ -1109,14 +1122,14 @@ export const generateAiChatResponse = async (
     matchedRtu,
   });
 
-  const groqReply = await requireGroqReply({
+  const groqResult = await requireGroqReply({
     message: trimmedMessage,
     context,
     fallbackReply: reply,
     grounding,
   });
 
-  reply = groqReply;
+  reply = groqResult.reply;
 
   const activeAlarms = context.alarms.filter((alarm) => isAlarmActive(alarm.lifecycleStatus)).length;
   const brokenRoutes = context.routes.filter((route) => route.fiberStatus === 'broken').length;
@@ -1130,7 +1143,7 @@ export const generateAiChatResponse = async (
       matchedRoute?.routeName
     ),
     degradedMode: context.degradedMode,
-    provider: 'groq',
+    provider: groqResult.provider,
     context: {
       matchedRtu: matchedRtu?.name,
       matchedAlarm: matchedAlarm ? `${matchedAlarm.alarmType} #${matchedAlarm.id}` : undefined,

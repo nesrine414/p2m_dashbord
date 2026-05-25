@@ -11,15 +11,15 @@
       "unit": "min"
     },
     "averageAttenuationDb": {
-      "warning": 7,
-      "critical": 12,
+      "warning": 80,
+      "critical": 100,
       "unit": "dB"
     }
   },
   "fibre": {
     "attenuationDb": {
-      "warning": 7,
-      "critical": 12,
+      "warning": 80,
+      "critical": 100,
       "unit": "dB"
     },
     "measurementAgeMinutes": {

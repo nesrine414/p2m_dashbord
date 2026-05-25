@@ -5,36 +5,25 @@ import {
   CircularProgress,
   FormControl,
   Grid,
-  InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
   Breadcrumbs,
   Link,
 } from '@mui/material';
-import { AutoGraphOutlined, RouteOutlined, Home, Map as MapIcon } from '@mui/icons-material';
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { StatusBadge } from '../components/common';
+import { AutoGraphOutlined, Home, Map as MapIcon } from '@mui/icons-material';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import RealtimeTunisiaMap from '../components/widgets/RealtimeTunisiaMap';
 import {
   BackendAlarm,
   BackendFiberRoute,
-  BackendOtdrTest,
   BackendRTU,
   getAlarms,
-  getRecentOtdrTests,
   getRTUs,
   getRouteAttenuationTrend,
   getTopology,
-  RouteAttenuationTrendPoint,
 } from '../services/api';
 import { FiberStatus } from '../types';
 import getSocket from '../utils/socket';
@@ -75,9 +64,8 @@ const MonitoringPage: React.FC = () => {
     const loadBaseData = async (showLoader = false) => {
       try {
         if (showLoader) setLoading(true);
-        const [topologyResponse, otdrResponse, alarmResponse, rtuResponse] = await Promise.all([
+        const [topologyResponse, alarmResponse, rtuResponse] = await Promise.all([
           getTopology(),
-          getRecentOtdrTests(),
           getAlarms({ page: 1, pageSize: 20 }),
           getRTUs(),
         ]);
@@ -85,9 +73,7 @@ const MonitoringPage: React.FC = () => {
         setRoutes(topologyResponse.routes);
         setAlarms(alarmResponse.data);
         setRtus(rtuResponse);
-        if (!selectedRouteId && topologyResponse.routes.length > 0) {
-            setSelectedRouteId(topologyResponse.routes[0].id);
-        }
+        setSelectedRouteId((previous) => previous ?? (topologyResponse.routes[0]?.id ?? null));
       } catch {
         if (showLoader) setError('Erreur de chargement des données de supervision.');
       } finally {

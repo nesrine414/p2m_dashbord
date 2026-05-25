@@ -36,6 +36,8 @@ const BASE_NODES: RtuNode[] = [
 const getNodeColor = (status: RTUStatus) => {
   switch (status) {
     case RTUStatus.ONLINE: return '#00FF88';
+    case RTUStatus.WARNING: return '#FFB800';
+    case RTUStatus.OFFLINE: return '#9e9e9e';
     case RTUStatus.UNREACHABLE: return '#FF3366';
     default: return '#FF3366';
   }
@@ -289,7 +291,7 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({
         const rawPath = Array.isArray(route.path) ? route.path : null;
         let positions: [number, number][] = [];
         if (rawPath && rawPath.length >= 2) {
-            positions = rawPath.map(pair => [parseCoordinate(pair?.[0])!, parseCoordinate(pair?.[1])!]).filter(p => p[0] !== null);
+            positions = rawPath.map(pair => [parseCoordinate(pair?.[0])!, parseCoordinate(pair?.[1])!] as [number, number]).filter(p => p[0] !== null);
         } else {
             const fromKey = normalizeKey(route.source);
             const toKey = normalizeKey(route.destination);
@@ -298,7 +300,7 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({
             if (from && to) positions = [[from.lat, from.lon], [to.lat, to.lon]];
         }
         if (positions.length < 2) return null;
-        return { id: route.id, status, layer: 'fiber', positions, routeName: route.routeName, source: route.source, destination: route.destination, lengthKm: route.lengthKm, attenuationDb: route.attenuationDb, reflectionEvents: route.reflectionEvents, lastTestTime: route.lastTestTime };
+        return { id: route.id, status, layer: 'fiber' as const, positions, routeName: route.routeName, source: route.source, destination: route.destination, lengthKm: route.lengthKm, attenuationDb: route.attenuationDb, reflectionEvents: route.reflectionEvents, lastTestTime: route.lastTestTime };
     }).filter(isNonNullable);
   }, [routes, loading, nodeMap]);
 
@@ -309,9 +311,9 @@ const RealtimeTunisiaMap: React.FC<RealtimeTunisiaMapProps> = ({
         const from = findNodeByAlias(route.from, displayNodes);
         const to = findNodeByAlias(route.to, displayNodes);
         if (!from || !to) return null;
-        const viaNodes = Array.isArray(route.via) ? route.via.map(v => findNodeByAlias(v, displayNodes)).filter(isNonNullable) : [];
+        const viaNodes = Array.isArray(route.via) ? route.via.map((v: string) => findNodeByAlias(v, displayNodes)).filter(isNonNullable) : [];
         const routeNodes = [from, ...viaNodes, to];
-        return { id: route.id || `backbone-${index}`, status: toFiberStatus(route.status), layer: 'backbone', routeName: route.routeName || `${route.from}-${route.to}`, source: route.from, destination: route.to, positions: buildRoutePathThroughNodes(routeNodes, route.id || route.routeName || `${index}`) };
+        return { id: route.id || `backbone-${index}`, status: toFiberStatus(route.status), layer: 'backbone' as const, routeName: route.routeName || `${route.from}-${route.to}`, source: route.from, destination: route.to, positions: buildRoutePathThroughNodes(routeNodes, route.id || route.routeName || `${index}`) };
       }).filter(isNonNullable);
   }, [displayNodes]);
 

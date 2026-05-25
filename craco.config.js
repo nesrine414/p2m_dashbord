@@ -1,4 +1,5 @@
 module.exports = {
+  eslint: null,
   webpack: {
     configure: (webpackConfig) => {
       if (Array.isArray(webpackConfig.plugins)) {

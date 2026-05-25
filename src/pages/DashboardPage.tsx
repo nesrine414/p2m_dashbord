@@ -16,7 +16,6 @@ import RecentAlarmsTable, { AlarmRow } from '../components/widgets/RecentAlarmsT
 import CriticalRoutesWidget from '../components/widgets/CriticalRoutesWidget';
 import { RTUCard } from '../components/widgets/RTUCardsWidget';
 import RTUCardsWidget from '../components/widgets/RTUCardsWidget';
-import HardwareAlertsWidget from '../components/widgets/HardwareAlertsWidget';
 import { normalizeRtuStatus } from '../utils/rtuStatus';
 import {
   BackendAlarm,
