@@ -3,7 +3,11 @@ import { DashboardStats } from '../types';
 import { getStoredToken } from './auth';
 import { SupervisionTelemetryBundle } from '../types/liveSupervision';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const DEFAULT_API_BASE_URL =
+  typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:5000/api`
+    : 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || DEFAULT_API_BASE_URL;
 const AUTH_TOKEN_KEY = 'nqms_auth_token';
 const AUTH_EXEMPT_PATHS = new Set(['/login', '/register']);
 

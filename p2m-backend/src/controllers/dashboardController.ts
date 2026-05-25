@@ -479,7 +479,7 @@ export const getRouteAttenuationTrend = async (req: Request, res: Response): Pro
     const destinationName = (fibre.get('name') as string) || `Fibre-${fibre.get('id') as number}`;
     const routeName = buildRouteName(sourceName, destinationName, fibre.get('name') as string);
 
-    const measurements = await Measurement.findAll({
+    let measurements = await Measurement.findAll({
       where: {
         fibreId: routeId,
         timestamp: {
@@ -489,6 +489,16 @@ export const getRouteAttenuationTrend = async (req: Request, res: Response): Pro
       order: [['timestamp', 'DESC']],
       limit,
     });
+
+    if (measurements.length === 0) {
+      measurements = await Measurement.findAll({
+        where: {
+          fibreId: routeId,
+        },
+        order: [['timestamp', 'DESC']],
+        limit,
+      });
+    }
 
     const points = measurements
       .slice()

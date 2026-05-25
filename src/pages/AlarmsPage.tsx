@@ -468,7 +468,7 @@ const AlarmsPage: React.FC = () => {
         mb={3}
       >
         <Box>
-          <Typography variant="h4" fontWeight={800} color="white">
+          <Typography variant="h4" fontWeight={800} color="text.primary">
             Alarmes et evenements
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -647,61 +647,61 @@ const AlarmsPage: React.FC = () => {
 
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#fff5f6', border: '1px solid #ffd6dc' }}>
+            <Typography variant="caption" sx={{ color: '#8a2434', fontWeight: 800 }}>
               Critiques
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#ff8d9a">
+            <Typography variant="h5" fontWeight={800} color="#d7263d">
               {summary.critical}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#403327', border: '1px solid #8a6a45' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#fff8ed', border: '1px solid #ffe1b8' }}>
+            <Typography variant="caption" sx={{ color: '#8a5200', fontWeight: 800 }}>
               Majeures
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#ffc47f">
+            <Typography variant="h5" fontWeight={800} color="#d97706">
               {summary.major}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#303b2a', border: '1px solid #5a7350' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#f3fbf4', border: '1px solid #ccefd1' }}>
+            <Typography variant="caption" sx={{ color: '#236b2e', fontWeight: 800 }}>
               Mineures
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#c3eca1">
+            <Typography variant="h5" fontWeight={800} color="#238636">
               {summary.minor}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#3a2f43', border: '1px solid #746088' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#f6f2ff', border: '1px solid #ded0ff' }}>
+            <Typography variant="caption" sx={{ color: '#5b35a5', fontWeight: 800 }}>
               Actives
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#d6a7ff">
+            <Typography variant="h5" fontWeight={800} color="#6f42c1">
               {summary.active}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2e3948', border: '1px solid #516782' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#eef7ff', border: '1px solid #c9e4ff' }}>
+            <Typography variant="caption" sx={{ color: '#14558f', fontWeight: 800 }}>
               En cours
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#9cc6ff">
+            <Typography variant="h5" fontWeight={800} color="#0b75c9">
               {summary.inProgress}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-          <Paper sx={{ p: 2, borderRadius: 3, backgroundColor: '#2a373a', border: '1px solid #587a7f' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: '#eefafa', border: '1px solid #c5eeee' }}>
+            <Typography variant="caption" sx={{ color: '#17666a', fontWeight: 800 }}>
               Cloturees
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#8ae8ef">
+            <Typography variant="h5" fontWeight={800} color="#16888f">
               {summary.closed}
             </Typography>
           </Paper>
@@ -770,24 +770,26 @@ const AlarmsPage: React.FC = () => {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-            <Typography variant="h6" color="white" mb={2}>
+          <Paper sx={{ p: 0, borderRadius: 2, overflow: 'hidden', backgroundColor: '#ffffff', border: '1px solid #dee2e6' }}>
+            <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #e9ecef' }}>
+              <Typography variant="h6" color="text.primary" fontWeight={800}>
               File active des alarmes
-            </Typography>
+              </Typography>
+            </Box>
             <TableContainer>
               <Table size="small">
-                <TableHead>
+                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Severite</TableCell>
-                    <TableCell>Statut</TableCell>
-                    <TableCell>Message</TableCell>
-                    <TableCell>RTU</TableCell>
-                    <TableCell>Route</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Localisation</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>ID</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Severite</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Statut</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Message</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>RTU</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Route</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Localisation</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -797,20 +799,20 @@ const AlarmsPage: React.FC = () => {
                     const isInProgress = alarm.lifecycleStatus === AlarmLifecycleStatus.IN_PROGRESS;
 
                     return (
-                      <TableRow key={alarm.id} hover>
-                        <TableCell>{alarm.id}</TableCell>
-                        <TableCell>{alarm.alarmType}</TableCell>
+                      <TableRow key={alarm.id} hover sx={{ '&:nth-of-type(even)': { backgroundColor: '#fbfcfd' } }}>
+                        <TableCell sx={{ color: '#495057', fontWeight: 700 }}>{alarm.id}</TableCell>
+                        <TableCell sx={{ color: '#343a40' }}>{alarm.alarmType}</TableCell>
                         <TableCell>
                           <StatusBadge status={alarm.severity} />
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={alarm.lifecycleStatus} variant="outlined" />
                         </TableCell>
-                        <TableCell sx={{ minWidth: 220 }}>{alarm.message}</TableCell>
-                        <TableCell>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
-                        <TableCell>{getRouteLabel(alarm.routeId)}</TableCell>
-                        <TableCell>{formatDateTime(alarm.occurredAt)}</TableCell>
-                        <TableCell>{alarm.localizationKm || 'N/D'}</TableCell>
+                        <TableCell sx={{ minWidth: 220, color: '#495057' }}>{alarm.message}</TableCell>
+                        <TableCell sx={{ color: '#343a40', fontWeight: 600 }}>{alarm.rtuName || `RTU-${alarm.rtuId || 'N/D'}`}</TableCell>
+                        <TableCell sx={{ color: '#495057' }}>{getRouteLabel(alarm.routeId)}</TableCell>
+                        <TableCell sx={{ color: '#6c757d' }}>{formatDateTime(alarm.occurredAt)}</TableCell>
+                        <TableCell sx={{ color: '#495057' }}>{alarm.localizationKm || 'N/D'}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
                             <Button
@@ -842,16 +844,16 @@ const AlarmsPage: React.FC = () => {
 
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={3}>
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Typography variant="h6" color="white" mb={2}>
+            <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6' }}>
+              <Typography variant="h6" color="text.primary" fontWeight={800} mb={2}>
                 Repartition de severite par zone
               </Typography>
               <Box sx={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={alarmZoneVolumes}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
-                    <XAxis dataKey="zone" stroke="#9aa9bd" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#9aa9bd" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e1e7ef" />
+                    <XAxis dataKey="zone" stroke="#5f6b7a" tick={{ fontSize: 11, fill: '#5f6b7a' }} />
+                    <YAxis stroke="#5f6b7a" tick={{ fill: '#5f6b7a' }} />
                     <Tooltip />
                     <Bar dataKey="critical" stackId="a" fill="#f44336" />
                     <Bar dataKey="major" stackId="a" fill="#ff9800" />
@@ -861,21 +863,21 @@ const AlarmsPage: React.FC = () => {
               </Box>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
-              <Typography variant="h6" color="white" mb={1.4}>
+            <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6' }}>
+              <Typography variant="h6" color="text.primary" fontWeight={800} mb={1.4}>
                 Procedure
               </Typography>
               <Stack spacing={1.2}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#495057' }}>
                   1. Verifiez la localisation et isolez le segment impacte.
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#495057' }}>
                   2. Cliquez sur Prise en charge pour passer directement en cours de traitement.
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#495057' }}>
                   3. Une fois l intervention terminee, cloturez l alarme.
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#495057' }}>
                   4. Une alarme cloturee manuellement n est plus recreee automatiquement.
                 </Typography>
               </Stack>

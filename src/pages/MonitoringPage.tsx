@@ -475,7 +475,7 @@ const MonitoringPage: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={800} color="white" mb={0.5}>
+      <Typography variant="h4" fontWeight={800} color="text.primary" mb={0.5}>
         Vue 2 - Reseau
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
@@ -499,51 +499,51 @@ const MonitoringPage: React.FC = () => {
 
       <Grid container spacing={2.5} mb={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#27382e', border: '1px solid #4b6b59' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2.3, borderRadius: 2, backgroundColor: '#f3fbf4', border: '1px solid #ccefd1' }}>
+            <Typography variant="caption" sx={{ color: '#236b2e', fontWeight: 800 }}>
               Fibre normale
             </Typography>
-            <Typography variant="h5" color="#8fe7a7" fontWeight={700}>
+            <Typography variant="h5" color="#238636" fontWeight={800}>
               {summary.normal}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#3a3228', border: '1px solid #7c6646' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2.3, borderRadius: 2, backgroundColor: '#fff8ed', border: '1px solid #ffe1b8' }}>
+            <Typography variant="caption" sx={{ color: '#8a5200', fontWeight: 800 }}>
               Fibre degradee
             </Typography>
-            <Typography variant="h5" color="#ffc98c" fontWeight={700}>
+            <Typography variant="h5" color="#d97706" fontWeight={800}>
               {summary.degraded}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#422d33', border: '1px solid #8a5762' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2.3, borderRadius: 2, backgroundColor: '#fff5f6', border: '1px solid #ffd6dc' }}>
+            <Typography variant="caption" sx={{ color: '#8a2434', fontWeight: 800 }}>
               Fibre rompue
             </Typography>
-            <Typography variant="h5" color="#ff8d9a" fontWeight={700}>
+            <Typography variant="h5" color="#d7263d" fontWeight={800}>
               {summary.broken}
             </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Paper sx={{ p: 2.3, borderRadius: 3, backgroundColor: '#252d40', border: '1px solid #46546c' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Paper sx={{ p: 2.3, borderRadius: 2, backgroundColor: '#eef7ff', border: '1px solid #c9e4ff' }}>
+            <Typography variant="caption" sx={{ color: '#14558f', fontWeight: 800 }}>
               Attenuation moyenne
             </Typography>
-            <Typography variant="h5" color="white" fontWeight={700}>
+            <Typography variant="h5" color="#0b75c9" fontWeight={800}>
               {summary.avgAttenuation} dB
             </Typography>
           </Paper>
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', mb: 3 }}>
+      <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6', mb: 3 }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-          <RouteOutlined sx={{ color: '#8fd3ff' }} />
-          <Typography variant="h6" color="white">
+          <RouteOutlined sx={{ color: '#0b75c9' }} />
+          <Typography variant="h6" color="text.primary" fontWeight={800}>
             Carte GIS
           </Typography>
         </Stack>
@@ -552,7 +552,7 @@ const MonitoringPage: React.FC = () => {
 
       <Grid container spacing={3} mb={3}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6' }}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={1.2}
@@ -561,8 +561,8 @@ const MonitoringPage: React.FC = () => {
               mb={2}
             >
               <Stack direction="row" spacing={1} alignItems="center">
-                <AutoGraphOutlined sx={{ color: '#86c8ff' }} />
-                <Typography variant="h6" color="white">
+                <AutoGraphOutlined sx={{ color: '#0b75c9' }} />
+                <Typography variant="h6" color="text.primary" fontWeight={800}>
                   Tendance attenuation par route
                 </Typography>
               </Stack>
@@ -624,19 +624,20 @@ const MonitoringPage: React.FC = () => {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendDisplayPoints}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3a4e" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e1e7ef" />
                     <XAxis
                       type="number"
                       scale="time"
                       dataKey="timestampMs"
                       domain={trendTimeDomain}
                       ticks={trendTimeTicks}
-                      stroke="#9aa9bd"
+                      stroke="#5f6b7a"
+                      tick={{ fill: '#5f6b7a' }}
                       tickFormatter={(value: number) => formatTrendTick(value, trendWindowMinutes)}
                       minTickGap={40}
                       interval={0}
                     />
-                    <YAxis stroke="#9aa9bd" domain={trendDomain} tickFormatter={(value: number) => value.toFixed(2)} />
+                    <YAxis stroke="#5f6b7a" tick={{ fill: '#5f6b7a' }} domain={trendDomain} tickFormatter={(value: number) => value.toFixed(2)} />
                     <Tooltip
                       formatter={(value: number | string | null) =>
                         typeof value === 'number' ? `${value.toFixed(3)} dB/km` : 'N/D'
@@ -680,23 +681,23 @@ const MonitoringPage: React.FC = () => {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
-            <Typography variant="h6" color="white" mb={2}>
+          <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6', height: '100%' }}>
+            <Typography variant="h6" color="text.primary" fontWeight={800} mb={2}>
               Flux d'evenements
             </Typography>
             <Stack spacing={1.5}>
               {liveEvents.map((event) => (
-                <Box key={event.id} sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#293247' }}>
+                <Box key={event.id} sx={{ p: 1.5, borderRadius: 2, backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: '#6c757d', fontWeight: 700 }}>
                       {event.timestamp}
                     </Typography>
                     <StatusBadge status={event.severity} />
                   </Stack>
-                  <Typography variant="body2" color="white" mt={0.6}>
+                  <Typography variant="body2" sx={{ color: '#343a40', fontWeight: 600 }} mt={0.6}>
                     {event.message}
                   </Typography>
-                  <Typography variant="caption" color="#8fb3d1">
+                  <Typography variant="caption" sx={{ color: '#0b75c9', fontWeight: 700 }}>
                     {event.source}
                   </Typography>
                 </Box>
@@ -708,32 +709,32 @@ const MonitoringPage: React.FC = () => {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, xl: 8 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6' }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-              <RouteOutlined sx={{ color: '#8fd3ff' }} />
-              <Typography variant="h6" color="white">
+              <RouteOutlined sx={{ color: '#0b75c9' }} />
+              <Typography variant="h6" color="text.primary" fontWeight={800}>
                 Routes optiques
               </Typography>
             </Stack>
             <TableContainer>
               <Table size="small">
-                <TableHead>
+                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableRow>
-                    <TableCell>Route</TableCell>
-                    <TableCell>Trajet</TableCell>
-                    <TableCell>Etat fibre</TableCell>
-                    <TableCell>Etat route</TableCell>
-                    <TableCell>Longueur</TableCell>
-                    <TableCell>Attenuation</TableCell>
-                    <TableCell>Reflexion</TableCell>
-                    <TableCell>Dernier test</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Route</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Trajet</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Etat fibre</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Etat route</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Longueur</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Attenuation</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Reflexion</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Dernier test</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {routes.map((route) => (
-                    <TableRow key={route.id} hover>
-                      <TableCell>{route.routeName}</TableCell>
-                      <TableCell>
+                    <TableRow key={route.id} hover sx={{ '&:nth-of-type(even)': { backgroundColor: '#fbfcfd' } }}>
+                      <TableCell sx={{ color: '#343a40', fontWeight: 700 }}>{route.routeName}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>
                         {route.source} to {route.destination}
                       </TableCell>
                       <TableCell>
@@ -742,12 +743,12 @@ const MonitoringPage: React.FC = () => {
                       <TableCell>
                         <StatusBadge status={route.routeStatus} variant="outlined" />
                       </TableCell>
-                      <TableCell>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{route.lengthKm ? `${route.lengthKm.toFixed(1)} km` : 'N/D'}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>
                         {route.attenuationDb && route.attenuationDb > 0 ? `${route.attenuationDb.toFixed(1)} dB` : 'N/D'}
                       </TableCell>
-                      <TableCell>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
-                      <TableCell>{formatDateTime(route.lastTestTime)}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{route.reflectionEvents ? 'Oui' : 'Non'}</TableCell>
+                      <TableCell sx={{ color: '#6c757d' }}>{formatDateTime(route.lastTestTime)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -757,33 +758,33 @@ const MonitoringPage: React.FC = () => {
         </Grid>
 
         <Grid size={{ xs: 12, xl: 4 }}>
-          <Paper sx={{ p: 2.5, borderRadius: 3, backgroundColor: '#22283a', border: '1px solid #3f4a63', height: '100%' }}>
+          <Paper sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff', border: '1px solid #dee2e6', height: '100%' }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-              <DeviceHubOutlined sx={{ color: '#9bb9ff' }} />
-              <Typography variant="h6" color="white">
+              <DeviceHubOutlined sx={{ color: '#0b75c9' }} />
+              <Typography variant="h6" color="text.primary" fontWeight={800}>
                 Tests OTDR recents ({summary.failedTests} echecs)
               </Typography>
             </Stack>
             <TableContainer>
               <Table size="small">
-                <TableHead>
+                <TableHead sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableRow>
-                    <TableCell>Route</TableCell>
-                    <TableCell>Mode</TableCell>
-                    <TableCell>Impulsion</TableCell>
-                    <TableCell>Plage</TableCell>
-                    <TableCell>Lambda</TableCell>
-                    <TableCell>Resultat</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Route</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Mode</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Impulsion</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Plage</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Lambda</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#343a40' }}>Resultat</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {otdrTests.map((test) => (
-                    <TableRow key={test.id} hover>
-                      <TableCell>{test.routeName}</TableCell>
-                      <TableCell>{test.mode}</TableCell>
-                      <TableCell>{test.pulseWidth || 'N/D'}</TableCell>
-                      <TableCell>{test.dynamicRangeDb ? `${test.dynamicRangeDb} dB` : 'N/D'}</TableCell>
-                      <TableCell>{test.wavelengthNm} nm</TableCell>
+                    <TableRow key={test.id} hover sx={{ '&:nth-of-type(even)': { backgroundColor: '#fbfcfd' } }}>
+                      <TableCell sx={{ color: '#343a40', fontWeight: 700 }}>{test.routeName}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{test.mode}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{test.pulseWidth || 'N/D'}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{test.dynamicRangeDb ? `${test.dynamicRangeDb} dB` : 'N/D'}</TableCell>
+                      <TableCell sx={{ color: '#495057' }}>{test.wavelengthNm} nm</TableCell>
                       <TableCell>
                         <StatusBadge status={test.result} />
                       </TableCell>
