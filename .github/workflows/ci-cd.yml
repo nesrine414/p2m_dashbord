@@ -2,6 +2,8 @@ name: CI/CD Pipeline for P2M Dashboard
 
 on:
   push:
+    branches: [ main, master, development ]
+  pull_request:
     branches: [ main, master ]
 
 jobs:
@@ -10,16 +12,18 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Tests
         run: npm test -- --watchAll=false
@@ -50,8 +54,7 @@ jobs:
           format: 'table'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
-      - name: Trigger Render Deploy Hook
-        if: success()
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
 
-      
+      - name: Trigger Render Deploy Hook
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
