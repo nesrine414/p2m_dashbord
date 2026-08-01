@@ -39,6 +39,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/p2m-dashboard:latest
