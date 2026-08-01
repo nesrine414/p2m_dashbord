@@ -152,23 +152,34 @@ const DashboardPage: React.FC = () => {
     void loadDashboardData(true);
     const socket = getSocket();
     const onRealtimeUpdate = () => void loadDashboardData(false);
+    const onKpiUpdated = (payload: unknown) => {
+      const next = toDashboardStatsPayload(payload);
+      if (next) setStats(next);
+    };
     socket.on('emulator_cycle_completed', onRealtimeUpdate);
     socket.on('new_alarm', onRealtimeUpdate);
-    socket.on('kpi_updated', (payload) => {
-         const next = toDashboardStatsPayload(payload);
-         if (next) setStats(next);
-    });
+    socket.on('kpi_updated', onKpiUpdated);
 
-    const refreshInterval = window.setInterval(() => loadDashboardData(false), 30000);
-    return () => { active = false; window.clearInterval(refreshInterval); socket.off('new_alarm', onRealtimeUpdate); };
+    const refreshInterval = window.setInterval(() => { void loadDashboardData(false); }, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+      socket.off('emulator_cycle_completed', onRealtimeUpdate);
+      socket.off('new_alarm', onRealtimeUpdate);
+      socket.off('kpi_updated', onKpiUpdated);
+    };
   }, []);
 
   const summary = useMemo(() => {
     const brokenFibers = routes.filter((item) => item.fiberStatus === FiberStatus.BROKEN).length;
     const testsFailed = otdrTests.filter((item) => item.result === 'fail').length;
+    const online = stats?.rtuOnline ?? 0;
+    const warning = stats?.rtuWarning ?? 0;
     return {
-      online: stats?.rtuOnline || 0,
-      offline: stats?.rtuOffline || 0,
+      online,
+      warning,
+      connected: online + warning,
+      offline: stats?.rtuOffline ?? 0,
       activeCritical: stats?.criticalAlarms || 0,
       brokenFibers,
       testsFailed,
@@ -205,7 +216,8 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="RTU CONNECTÉS"
-            value={`${summary.online}/${summary.totalRtus}`}
+            value={`${summary.connected}/${summary.totalRtus}`}
+            subtitle={`Online: ${summary.online} • Warning: ${summary.warning}`}
             icon={<CheckCircleOutline />}
             gradient="linear-gradient(135deg, #17a2b8 0%, #117a8b 100%)"
             color="#17a2b8"
@@ -248,7 +260,7 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <WidgetCard
             title="MTTR Moyen"
-            value={formatMttrValue(stats?.mttr || 0)}
+            value={formatMttrValue(stats?.mttr ?? null)}
             subtitle="Temps de rétablissement"
             icon={<AccessTime />}
             color="#007bff"

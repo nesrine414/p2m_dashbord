@@ -548,7 +548,9 @@ const MonitoringPage: React.FC = () => {
             Carte GIS
           </Typography>
         </Stack>
-        <RealtimeTunisiaMap routes={routes} rtus={rtus} loading={loading} />
+        <Box sx={{ height: { xs: 320, sm: 380, md: 440 }, minHeight: 320 }}>
+          <RealtimeTunisiaMap routes={routes} rtus={rtus} loading={loading} />
+        </Box>
       </Paper>
 
       <Grid container spacing={3} mb={3}>

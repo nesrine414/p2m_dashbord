@@ -436,7 +436,18 @@ Afin d'assurer des performances optimales et une supervision en temps réel, la 
 \end{tabular}
 \end{center}
 
-
+\subsection{Architecture et Conception du Chatbot Intelligent}
+Le chatbot intégré à la console NQMS est conçu pour assister les opérateurs NOC dans la prise de décision rapide. Contrairement à un simple agent de discussion, il s'agit d'un assistant technique contextuel dont l'architecture est détaillée ci-dessous :
+\begin{itemize}
+    \item \textbf{Modèle de Langage (LLM) :} Le système s'appuie sur le modèle \textbf{Llama 3.1 (8B Parameters)} de Meta. Ce modèle a été sélectionné pour son excellent rapport performance/taille, lui permettant de comprendre le français technique de supervision et de structurer des diagnostics rigoureux.
+    \item \textbf{API d'accès à l'IA :} Le backend Express communique de manière asynchrone avec l'API de \textbf{Groq Cloud} via des requêtes HTTP sécurisées. Groq permet d'atteindre des vitesses d'inférence en temps réel exceptionnelles (débit supérieur à $100 \text{ tokens/seconde}$ et temps de réponse initial inférieur à $400\text{ ms}$).
+    \item \textbf{Méthodologie RAG (Retrieval-Augmented Generation) \& Prompt Engineering} :
+    \begin{enumerate}
+        \item \textbf{Extraction contextuelle (Retrieval) :} À chaque requête de l'opérateur, le backend analyse l'intention et extrait par des requêtes SQL ciblées l'état des entités concernées (ex. la température du RTU de Tunis, le statut de la route Tunis-Ariana ou le cycle de vie des alarmes actives).
+        \item \textbf{Génération augmentée (Augmentation) :} Ces données réelles de la base PostgreSQL sont injectées sous format JSON (faits autorisés) directement dans le prompt système du LLM. Le prompt est construit avec des consignes strictes (guardrails) de mise à la terre (grounding) ordonnant au modèle de s'appuyer exclusivement sur ces faits et d'utiliser une structure de diagnostic opérationnelle.
+        \item \textbf{Guardrails de Grounding et Mode Dégradé} : Pour éliminer le risque d'hallucination, le backend vérifie que les entités citées dans la réponse du LLM font partie du périmètre autorisé. Si le LLM échoue à cette vérification ou si l'API de Groq est indisponible, le chatbot bascule automatiquement sur un \textbf{mode dégradé déterministe} qui génère un diagnostic textuel structuré pré-calculé à partir des données SQL.
+    \end{enumerate}
+\end{itemize}
 
 \subsection{Conclusion}
 Le système NQMS repose sur un ensemble de technologies modernes et complémentaires qui assurent la supervision centralisée en temps réel, le traitement intelligent des données optiques et la visualisation intuitive des incidents. Dans ce qui suit, nous détaillerons le modèle de données relationnel qui structure la persistance de toutes ces informations.
@@ -496,7 +507,7 @@ Toutes les 6 heures, le backend Node.js agrège les télémétries historiques d
 \end{enumerate}
 
 \subsection{Inférence, horizon prédictif et métriques de validation}
-La sortie du modèle fournit une probabilité de défaillance (comprise entre 0.0 et 1.0) dans un horizon temporel de **48 heures**. Le système classe ce risque :
+La sortie du modèle fournit une probabilité de défaillance (comprise entre 0.0 et 1.0) dans un horizon temporel de \textbf{48 heures}. Le système classe ce risque :
 \begin{itemize}
     \item \textbf{Risque Faible (Low) :} Probabilité $< 0.50$. Pas d'action requise.
     \item \textbf{Risque Modéré (Medium) :} Probabilité entre $0.50$ et $0.70$. Surveillance accrue.
@@ -504,10 +515,59 @@ La sortie du modèle fournit une probabilité de défaillance (comprise entre 0.
     \item \textbf{Risque Critique (Critical) :} Probabilité $> 0.85$. Génération immédiate d'une alerte de maintenance préventive majeure pour envoyer un technicien sur zone.
 \end{itemize}
 
-Les performances réelles de notre modèle (version v2.0) validées lors des tests croisés sont d'un très haut niveau pour un modèle prédictif :
-*   **Précision globale (Accuracy) :** \textbf{85.23 \%}
-*   **F1-Score :** \textbf{81.21 \%}
-*   **ROC-AUC :** \textbf{0.89}
+Lors de la validation expérimentale, nous avons évalué notre pipeline d'apprentissage sous deux configurations distinctes afin d'évaluer la faisabilité d'une anticipation sans fuite de données :
+
+\begin{enumerate}
+    \item \textbf{Configuration de Détection d'Anomalies (Temps Réel)} : Ce modèle intègre les paramètres physiques instantanés (atténuation courante, réflectance). Les performances de classification sont exceptionnelles avec une exactitude (Accuracy) de \textbf{99.8 \%} et un rappel (Recall) de la classe Panne de \textbf{99.5 \%}. Ce modèle est idéal pour le diagnostic en temps réel, mais il réagit à des pannes déjà déclarées et ne permet pas d'anticipation à long terme.
+    
+    \item \textbf{Configuration d'Anticipation Stricte à 48 heures} : Afin d'anticiper la panne avant l'apparition des symptômes sur la fibre, cette configuration exclut toutes les caractéristiques physiques instantanées. Le modèle doit prédire la panne à partir de la température ambiante du boîtier RTU et des métadonnées de l'infrastructure (âge, constructeur, type de fibre). En mode anticipation stricte, les performances sont plus modestes : l'exactitude globale s'établit à \textbf{64.09 \%} (XGBoost) et le rappel (Recall) de la classe Panne tombe à \textbf{22.38 \%} (taux de non-détection de 78 \%).
+\end{enumerate}
+
+Le tableau~\ref{tab:model_comparison} présente les résultats comparatifs des modèles testés sur le jeu d'évaluation en mode \textbf{Anticipation Stricte} :
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des performances des modèles en mode Anticipation Stricte à 48h.}
+\label{tab:model_comparison}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Modèle} & \textbf{Accuracy} & \textbf{F1-Score Macro} & \textbf{Recall Panne} & \textbf{Précision Panne} & \textbf{F1-Score Panne} \\
+\midrule
+\textbf{XGBoost} & 64.09 \% & 54.36 \% & \textbf{22.38 \%} & 64.94 \% & 33.29 \% \\
+\textbf{CatBoost} & 64.65 \% & 53.63 \% & 19.86 \% & 70.88 \% & 31.02 \% \\
+\textbf{Random Forest} & 65.88 \% & 52.31 \% & 15.67 \% & 94.56 \% & 26.88 \% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Analyse de la faible détection et de la confusion des classes}
+Le taux élevé de non-détection (78 \%) en mode anticipation stricte est une limitation majeure mais attendue, liée à des explications physiques et structurelles :
+\begin{itemize}
+    \item \textbf{Caractère aléatoire des pannes physiques soudaines} : Les pannes de type coupure franche (\textit{Fiber\_Cut}) dues à des incidents de travaux publics ou de coupure réseau d'alimentation (\textit{RTU\_Down}) surviennent de façon discrète et immédiate. N'ayant pas accès aux mesures optiques instantanées (pour éviter le data leakage), le modèle ne dispose d'aucun signal physique précurseur lui permettant d'anticiper ces événements à l'avance.
+    \item \textbf{Confusion sémantique et physique des classes} : Le modèle binaire regroupe sous l'unique étiquette « Panne » des anomalies de natures très différentes. Les dégradations lentes (vieillissement de la fibre, hausse de perte par micro-courbures dues aux cycles thermiques) possèdent des tendances mesurables et anticipables, contrairement aux coupures. Cette confusion sémantique entre \textit{Dégradation} (progressive) et \textit{Coupure} (soudaine) au sein de la même classe perturbe les frontières de décision du classifieur, qui se rabat sur la prédiction de la classe majoritaire (« Normal »).
+\end{itemize}
+
+\subsection{Scénarios de Validation Opérationnelle}
+Pour valider le fonctionnement pratique du système NQMS et le comportement de ses composants temps réel et prédictifs, trois scénarios de validation ont été élaborés et simulés :
+
+\begin{description}[leftmargin=1cm, style=nextline]
+    \item[\textbf{Scénario 1 : Détection instantanée d'une coupure physique}]
+    \begin{itemize}
+        \item \textit{Description :} Une rupture totale de la fibre reliant Tunis à l'Ariana survient lors de travaux.
+        \item \textit{Comportement :} L'émulateur injecte instantanément une atténuation élevée ($25\text{ dB}$) et une chute de puissance ($<-40\text{ dBm}$). Le backend Node.js traite la télémétrie, stocke l'alarme en base et pousse via WebSocket une alerte critique au frontend. Le NOC reçoit la notification visuelle en moins de $100\text{ ms}$, et le chatbot propose une fiche d'intervention.
+    \end{itemize}
+    \item[\textbf{Scénario 2 : Anticipation d'une dégradation progressive}]
+    \begin{itemize}
+        \item \textit{Description :} Une contrainte mécanique (pression) augmente lentement sur le câble optique.
+        \item \textit{Comportement :} Le signal subit une augmentation graduelle de l'atténuation ($+0.1\text{ dB/heure}$). Le service d'IA détecte cette dérive sur l'historique glissant. La probabilité de panne dépasse $0.75$, déclenchant une alerte de maintenance préventive $24\text{h}$ avant l'interruption effective du trafic.
+    \end{itemize}
+    \item[\textbf{Scénario 3 : Faux positif environnemental (Surchauffe du boîtier RTU)}]
+    \begin{itemize}
+        \item \textit{Description :} Une panne de climatisation dans le local technique fait monter la température du boîtier RTU à $55^\circ\text{C}$.
+        \item \textit{Comportement :} Le signal optique de la fibre reste nominal, mais le modèle d'IA identifie un risque élevé de panne matérielle imminente (\texttt{RTU\_Down}) en raison de la surchauffe de la sonde. Une alerte préventive mineure est émise pour dépanner le système de climatisation du local.
+    \end{itemize}
+\end{description}
 
 \newpage
 
@@ -535,7 +595,7 @@ La communication entre les boîtiers de test distants et le centre de supervisio
 \subsection{Mise en action}
 La plateforme a été soumise à des tests en conditions proches du réel pour évaluer la pertinence du module prédictif et l'ergonomie de l'assistance intelligente.
 \begin{itemize}
-    \item \textbf{Performance de l'IA :} Le modèle Random Forest a démontré une grande robustesse, atteignant une précision globale de \textbf{85.23 \%} lors de la détection de pannes à 48 heures. Le système génère avec succès des alertes de maintenance préventive.
+    \item \textbf{Performance de l'IA :} Les tests ont mis en évidence la complémentarité des approches. Le modèle de diagnostic temps réel présente une exactitude de \textbf{99.8 \%} pour identifier les défaillances immédiates. Le modèle d'anticipation stricte à 48h affiche une exactitude de \textbf{64.09 \%} due aux limites physiques de prédiction des coupures soudaines, mais il parvient à lever des alertes préventives ciblées sur les dérives progressives de puissance.
     \item \textbf{Assistant Intelligent (Chatbot) :} Le chatbot intégré a prouvé sa capacité à assister les opérateurs. En posant des questions en langage naturel ("Quel est l'état du RTU de Tunis ?"), l'opérateur obtient un diagnostic complet ancré dans les données réelles du réseau.
     \item \textbf{Suivi des KPIs :} Le panneau supérieur affiche en permanence des indicateurs vitaux : Disponibilité Réseau (cible : $> 99.9\%$), MTTR (temps moyen de réparation), et Répartition des alarmes par sévérité.
 \end{itemize}
@@ -554,13 +614,16 @@ Le projet de Préparation Métier (P2M) nous a permis d'apporter une solution te
 \subsection{Bilan du projet}
 Grâce à la mise en place d'une architecture microservices découplée, nous avons réussi à concevoir un système performant capable d'acquérir des télémétries en temps réel de manière asynchrone, d'identifier instantanément des anomalies physiques sur la fibre optique et de notifier les opérateurs NOC sans latence appréciable via les WebSockets. 
 
-L'intégration d'un classifieur Random Forest, alimenté par 8 caractéristiques temporelles physiques et système, a permis d'ouvrir la voie à la maintenance préventive en prédisant l'occurrence de pannes physiques majeures dans les 48 heures avec une excellente précision de **85.23 \%**. Ce résultat se traduit concrètement par une baisse potentielle importante du MTTR et une réduction significative du taux d'interruption de service pour les clients finals.
+L'intégration d'un classifieur Random Forest (avec évaluation comparative de XGBoost et CatBoost), alimenté par des caractéristiques physiques et système, a permis d'ouvrir la voie à la maintenance préventive. Le modèle de diagnostic temps réel atteint une précision de \textbf{99.8 \%}, tandis que le modèle d'anticipation stricte à 48h s'établit à \textbf{64.09 \%} en raison de l'imprévisibilité inhérente aux coupures soudaines. Ce résultat se traduit concrètement par une baisse potentielle importante du MTTR et pose les bases d'une maintenance proactive.
 
 \subsection{Perspectives technologiques futures}
 Pour donner suite à ce travail, plusieurs perspectives prometteuses sont envisageables :
 \begin{itemize}
     \item \textbf{Connexion avec de vrais réflectomètres optiques (RTU physiques) :} Développer une couche d'abstraction matérielle s'appuyant sur des protocoles de communication standardisés de type **SCPI (Standard Commands for Programmable Instruments)** ou via des APIs propriétaires VIAVI/EXFO pour remplacer notre émulateur par des mesures de terrains physiques issues de commutateurs optiques (OTH).
-    \item \textbf{Modèles d'IA basés sur des séries temporelles (Deep Learning) :} Remplacer ou compléter le classifieur Random Forest par des réseaux de neurones récurrents de type **LSTM (Long Short-Term Memory)** ou des **Transformers**, particulièrement adaptés pour prévoir à long terme l'évolution temporelle de la courbe d'atténuation à partir des télémesures brutes.
+    \item \textbf{Décomposition du problème IA (Multi-modèles) :} Pour pallier la faible détection (Recall 22 \%) et la confusion des classes (Dégradation progressive vs Coupure soudaine), il convient de scinder l'IA en deux modèles distincts : un modèle non supervisé d'anomalies (ex. Isolation Forest) dédié aux coupures brusques, et un modèle de régression (ex. XGBoost Regressor) supervisé dédié à l'anticipation de la dérive lente de l'atténuation.
+    \item \textbf{Pénalisation asymétrique et ajustement de seuil (Threshold Tuning) :} Afin de privilégier la détection des pannes réelles (maximisation du Rappel), il est envisagé d'ajuster le seuil de décision du modèle d'anticipation (ex. abaisser le seuil critique à 0.30 au lieu de 0.50) ou d'implémenter des fonctions de perte pondérées pénalisant plus sévèrement les Faux Négatifs lors de l'entraînement.
+    \item \textbf{Feature Engineering temporel et glissant :} Intégrer des descripteurs basés sur l'évolution historique glissante (pentes d'atténuation sur 24h, écarts-types mobiles des variations thermiques) afin de capturer la dynamique temporelle du réseau sans introduire de fuite de données instantanée.
+    \item \textbf{Modèles d'IA basés sur le Deep Learning pour séries temporelles :} Remplacer le classifieur classique par des réseaux de neurones récurrents de type **LSTM (Long Short-Term Memory)** ou des architectures de type **Transformers**, idéaux pour prédire des trajectoires de dégradation à long terme.
     \item \textbf{Déploiement Cloud et orchestré :} Conteneuriser l'ensemble des microservices (Frontend, Backend, IA, DB) à l'aide de Docker et mettre en place une orchestration sous **Kubernetes** pour assurer une élasticité dynamique face à la montée en charge du parc d'équipements.
 \end{itemize}
 
